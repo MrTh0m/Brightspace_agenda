@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
 <style>
-/* ── Reset & tokens ─────────────────────────────────────── */
+/* ── Reset & tokens ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -24,14 +24,15 @@
   --shadow:   0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
   --font:     system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  --c-blue:   #1a7fc1; --bg-blue:  #e8f3fb;
-  --c-indigo: #4b44b0; --bg-indigo:#eeecfd;
-  --c-green:  #0d6e4f; --bg-green: #e0f4ec;
-  --c-orange: #b06010; --bg-orange:#faebd4;
-  --c-red:    #c0302e; --bg-red:   #fce8e8;
-  --c-grey:   #888580; --bg-grey:  #f0eeea;
-  --c-teal:   #0e7490; --bg-teal:  #e0f5f9;
-  --c-violet: #6d28d9; --bg-violet:#ede9fe;
+  --c-blue:   #1a7fc1; --bg-blue:   #e8f3fb;
+  --c-indigo: #4b44b0; --bg-indigo: #eeecfd;
+  --c-green:  #0d6e4f; --bg-green:  #e0f4ec;
+  --c-orange: #b06010; --bg-orange: #faebd4;
+  --c-red:    #c0302e; --bg-red:    #fce8e8;
+  --c-grey:   #888580; --bg-grey:   #f0eeea;
+  --c-teal:   #0e7490; --bg-teal:   #e0f5f9;
+  --c-violet: #6d28d9; --bg-violet: #ede9fe;
+  --c-amber:  #92400e; --bg-amber:  #fef3c7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,13 +42,13 @@
     --text:#e8e6e0; --text2:#9c9994; --text3:#666360;
     --bg-blue:#172233; --bg-indigo:#1e1c38; --bg-green:#112a20;
     --bg-orange:#2b1e0b; --bg-red:#2e1313; --bg-grey:#272624;
-    --bg-teal:#0d2830; --bg-violet:#1e1438;
-    --shadow:0 1px 4px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
+    --bg-teal:#0d2830; --bg-violet:#1e1438; --bg-amber:#2a1f08;
+    --shadow: 0 1px 4px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
   }
 }
 
 body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
-.page { max-width:900px; margin:0 auto; padding:28px 20px 60px; }
+.page { max-width:940px; margin:0 auto; padding:28px 20px 60px; }
 
 /* ── Topbar ── */
 .topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:28px; }
@@ -63,7 +64,7 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); min-hei
   font-family:var(--font); display:inline-flex; align-items:center;
   gap:6px; transition:background .15s; white-space:nowrap; text-decoration:none;
 }
-.btn:hover { background:var(--bg2); }
+.btn:hover   { background:var(--bg2); }
 .btn.primary { background:var(--text); color:var(--bg); border-color:transparent; }
 .btn.primary:hover { opacity:.85; }
 
@@ -74,9 +75,9 @@ body { font-family:var(--font); background:var(--bg); color:var(--text); min-hei
   text-align:center; margin-bottom:24px; box-shadow:var(--shadow);
 }
 .setup-card .icon-wrap {
-  width:56px; height:56px; border-radius:14px;
-  background:var(--bg-blue); display:flex; align-items:center;
-  justify-content:center; margin:0 auto 16px; font-size:24px; color:var(--c-blue);
+  width:56px; height:56px; border-radius:14px; background:var(--bg-blue);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 16px; font-size:24px; color:var(--c-blue);
 }
 .setup-card h2 { font-size:17px; font-weight:600; margin-bottom:8px; }
 .setup-card p  { font-size:13px; color:var(--text2); line-height:1.6; max-width:440px; margin:0 auto 20px; }
@@ -125,7 +126,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 .stat .s-sub   { font-size:10px; margin-top:4px; opacity:.7; }
 
 /* ── Tab bar ── */
-.tab-bar { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; gap:0; }
+.tab-bar { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; }
 .tab {
   padding:10px 18px; font-size:13px; font-weight:600;
   color:var(--text2); cursor:pointer; border:none; background:transparent;
@@ -161,12 +162,13 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 .past-label input { cursor:pointer; accent-color:var(--c-blue); }
 
 /* ── Card base ── */
-.list  { display:flex; flex-direction:column; gap:10px; }
+.list { display:flex; flex-direction:column; gap:10px; }
 .card-item {
   background:var(--bg3); border:1px solid var(--border);
   border-radius:var(--radius); padding:14px 16px;
   display:flex; gap:14px; align-items:flex-start;
   box-shadow:var(--shadow); transition:opacity .2s, border-color .15s;
+  animation:fade-in .2s ease both;
 }
 .card-item:hover { border-color:var(--border2); }
 .card-item.past  { opacity:.55; }
@@ -174,7 +176,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 /* ── Countdown badge (devoirs) ── */
 .countdown {
   border-radius:10px; padding:10px 13px;
-  text-align:center; min-width:66px; flex-shrink:0;
+  text-align:center; min-width:68px; flex-shrink:0;
   border:1px solid transparent;
 }
 .countdown .cd-label { font-size:15px; font-weight:700; line-height:1.2; }
@@ -184,13 +186,12 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 .time-badge {
   border-radius:10px; padding:10px 13px;
   text-align:center; min-width:72px; flex-shrink:0;
-  border:1px solid transparent;
-  background:var(--bg-teal); color:var(--c-teal); border-color:#0e74901a;
+  background:var(--bg-teal); color:var(--c-teal); border:1px solid #0e749022;
 }
-.time-badge .tb-day   { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
-.time-badge .tb-date  { font-size:15px; font-weight:700; line-height:1.2; margin:2px 0; }
-.time-badge .tb-time  { font-size:10px; opacity:.85; }
-.time-badge.past-ev   { background:var(--bg-grey); color:var(--c-grey); border-color:transparent; }
+.time-badge .tb-day  { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+.time-badge .tb-date { font-size:15px; font-weight:700; line-height:1.2; margin:2px 0; }
+.time-badge .tb-time { font-size:10px; opacity:.85; }
+.time-badge.past-ev  { background:var(--bg-grey); color:var(--c-grey); border-color:transparent; }
 
 /* ── Card body ── */
 .card-body { flex:1; min-width:0; }
@@ -200,49 +201,60 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
   padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600;
 }
 .card-title {
-  font-size:15px; font-weight:600; margin-bottom:2px;
+  font-size:15px; font-weight:600; margin-bottom:4px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .card-meta {
-  font-size:12px; color:var(--text2); margin-bottom:2px;
+  font-size:12px; color:var(--text2); margin-bottom:3px;
   display:flex; align-items:center; gap:6px; flex-wrap:wrap;
 }
 .card-desc {
   font-size:12px; color:var(--text3);
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  margin-top:2px;
 }
+
+/* ── Course block ── */
 .course-block {
   display:flex; align-items:center; gap:6px;
-  margin-top:5px; flex-wrap:wrap;
+  margin-bottom:5px; flex-wrap:wrap;
 }
 .course-code {
   font-size:11px; font-weight:700; font-family:monospace;
   padding:2px 7px; border-radius:5px;
   background:var(--bg-violet); color:var(--c-violet);
-  letter-spacing:.5px;
+  letter-spacing:.5px; flex-shrink:0;
 }
-.course-name {
-  font-size:12px; color:var(--text2); font-weight:500;
-}
+.course-name { font-size:13px; color:var(--text); font-weight:500; }
 
-/* ── Card actions ── */
-.card-actions { display:flex; flex-direction:column; gap:5px; flex-shrink:0; align-items:stretch; }
+/* ── Card actions (right column) ── */
+.card-actions {
+  display:flex; flex-direction:column; gap:5px;
+  flex-shrink:0; align-items:stretch; min-width:120px;
+}
 .action-btn {
-  height:30px; padding:0 10px; border-radius:7px;
+  height:28px; padding:0 10px; border-radius:7px;
   border:1px solid var(--border); background:var(--bg2);
   color:var(--text2); font-size:11px; display:flex;
   align-items:center; gap:5px; cursor:pointer; white-space:nowrap;
-  font-family:var(--font); text-decoration:none; transition:background .15s;
+  font-family:var(--font); text-decoration:none; transition:background .15s, color .15s;
 }
-.action-btn:hover { background:var(--border); color:var(--text); }
-.action-btn.teams {
-  background:var(--bg-indigo); color:var(--c-indigo); border-color:var(--c-indigo)33;
+.action-btn:hover { background:var(--border2); color:var(--text); }
+
+/* Colored variants */
+.action-btn.teams      { background:var(--bg-indigo); color:var(--c-indigo); border-color:var(--c-indigo)33; }
+.action-btn.teams:hover{ background:var(--c-indigo); color:#fff; }
+
+.action-btn.casier      { background:var(--bg-amber); color:var(--c-amber); border-color:var(--c-amber)33; }
+.action-btn.casier:hover{ background:var(--c-amber); color:#fff; }
+
+.action-btn.bs-event      { background:var(--bg-blue); color:var(--c-blue); border-color:var(--c-blue)33; }
+.action-btn.bs-event:hover{ background:var(--c-blue); color:#fff; }
+
+/* ── Separator between button groups ── */
+.action-sep {
+  height:1px; background:var(--border); margin:3px 0;
 }
-.action-btn.teams:hover { background:var(--c-indigo); color:#fff; }
-.action-btn.brightspace {
-  background:var(--bg-blue); color:var(--c-blue); border-color:var(--c-blue)33;
-}
-.action-btn.brightspace:hover { background:var(--c-blue); color:#fff; }
 
 /* ── Empty / loading ── */
 .state-box {
@@ -251,7 +263,6 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
   text-align:center; color:var(--text2);
 }
 .state-box .big-icon { font-size:36px; display:block; margin-bottom:12px; }
-.state-box p { font-size:14px; }
 
 /* ── Footer ── */
 .note { font-size:11px; color:var(--text3); text-align:center; margin-top:24px; line-height:1.8; }
@@ -267,10 +278,9 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 }
 .toast.show { opacity:1; transform:translateY(0); }
 
-@keyframes spin     { to { transform:rotate(360deg); } }
-@keyframes fade-in  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin    { to { transform:rotate(360deg); } }
+@keyframes fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
 .spin { animation:spin 1s linear infinite; display:inline-block; }
-.card-item { animation:fade-in .2s ease both; }
 </style>
 </head>
 <body>
@@ -360,7 +370,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
     <!-- Devoirs tab -->
     <div id="pane-devoirs">
       <div class="filters">
-        <button class="chip active" data-filter="all"       onclick="setFilter(this,'devoirs')"><i class="ti ti-list"></i> Tous</button>
+        <button class="chip active" data-filter="all"        onclick="setFilter(this,'devoirs')"><i class="ti ti-list"></i> Tous</button>
         <button class="chip"        data-filter="individuel" onclick="setFilter(this,'devoirs')"><i class="ti ti-user"></i> Individuel</button>
         <button class="chip"        data-filter="collectif"  onclick="setFilter(this,'devoirs')"><i class="ti ti-users"></i> Collectif</button>
         <label class="past-label">
@@ -369,6 +379,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
         </label>
       </div>
       <div class="list" id="devoirs-list"></div>
+      <p class="note" id="footer-devoirs"></p>
     </div>
 
     <!-- Sessions tab -->
@@ -383,21 +394,20 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
       <div class="list" id="sessions-list"></div>
     </div>
 
-    <p class="note" id="footer-note"></p>
-  </div>
+  </div><!-- /dashboard -->
+</div><!-- /page -->
 
-</div>
 <div class="toast" id="toast"></div>
 
 <script>
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Config & state
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 const CORS_PROXIES = [
   u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
   u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
-const STORAGE_KEY = 'emmgo_ics_url';
+const STORAGE_KEY = 'emmgo_ics_url_v2';
 
 let allDevoirs  = [];
 let allSessions = [];
@@ -405,10 +415,10 @@ let filterDevoirs  = 'all';
 let filterSessions = 'all';
 let currentTab = 'devoirs';
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Toast
-══════════════════════════════════════════════ */
-function toast(msg, dur = 2600) {
+══════════════════════════════════════════════════════════════ */
+function toast(msg, dur = 2800) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
@@ -416,136 +426,232 @@ function toast(msg, dur = 2600) {
   t._t = setTimeout(() => t.classList.remove('show'), dur);
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    ICS parsing
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function unfold(txt) {
-  return txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n')
-    .reduce((a,l) => {
-      if ((l[0]===' '||l[0]==='\t') && a.length) a[a.length-1] += l.slice(1);
+  return txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
+    .reduce((a, l) => {
+      if ((l[0] === ' ' || l[0] === '\t') && a.length) a[a.length - 1] += l.slice(1);
       else a.push(l);
       return a;
     }, []);
 }
 
 function parseICS(txt) {
-  const lines = unfold(txt), evts = [];
-  let cur = null, curParams = {};
+  const lines = unfold(txt);
+  const events = [];
+  let cur = null;
   for (const l of lines) {
-    if (l === 'BEGIN:VEVENT') { cur = {}; curParams = {}; }
-    else if (l === 'END:VEVENT' && cur) { evts.push(cur); cur = null; }
+    if (l === 'BEGIN:VEVENT') { cur = {}; }
+    else if (l === 'END:VEVENT' && cur) { events.push(cur); cur = null; }
     else if (cur) {
       const ci = l.indexOf(':');
       if (ci > 0) {
-        const rawKey = l.slice(0, ci);
-        const val    = l.slice(ci + 1);
-        const key    = rawKey.split(';')[0].toUpperCase();
-        cur[key] = val;
-        // Keep raw full line for DTSTART/DTEND to preserve TZID
-        if (key === 'DTSTART' || key === 'DTEND') cur['_RAW_' + key] = l;
+        // Keep full value (handles params like DTSTART;TZID=...)
+        const key = l.slice(0, ci).split(';')[0].toUpperCase();
+        cur[key] = l.slice(ci + 1);
       }
     }
   }
-  return evts;
+  return events;
 }
 
 function parseDt(s) {
   if (!s) return null;
-  s = s.trim().replace('Z','');
+  s = s.trim().replace('Z', '');
   if (s.length === 8) return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
   if (s.includes('T')) return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8), +s.slice(9,11), +s.slice(11,13));
   return null;
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
+   Text cleaning utilities
+══════════════════════════════════════════════════════════════ */
+function unescape(s) {
+  return (s || '').replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').replace(/\\/g, '');
+}
+function cleanDesc(s) {
+  return unescape(s).replace(/\s+/g, ' ').trim();
+}
+function extractUrls(text) {
+  return (text.match(/https?:\/\/\S+/gi) || []).map(u => u.replace(/[.,;>)]+$/, ''));
+}
+
+/* ══════════════════════════════════════════════════════════════
    Course info extraction
-══════════════════════════════════════════════ */
-const CODE_RE = /\b([A-Z]{2,6}\d{2,5}[A-Z]?)\b/;
+  
+   Brightspace session title format:
+     2026_PGMC05_2026-03 Management agile et responsable
+  
+   We also look in: CATEGORIES, LOCATION (if not a URL), SUMMARY
+══════════════════════════════════════════════════════════════ */
+const CODE_RE = /\b([A-Z]{2,5}\d{2,4}[A-Z]?)\b/;
+
+// Parse "2026_PGMC05_2026-03 Management agile et responsable"
+const SESSION_TITLE_RE = /^\d{4}_([A-Z0-9]+)_\d{4}-\d{2}\s+(.+)$/i;
 
 function parseCourseInfo(ev) {
-  // Sources to check in order: CATEGORIES, SUMMARY, DESCRIPTION
-  const sources = [
-    ev.CATEGORIES || '',
-    ev.SUMMARY    || '',
-    ev.DESCRIPTION || '',
-  ].map(s => s.replace(/\\n/g,' ').replace(/\\/g,'').trim());
-
   let code = '', name = '';
 
-  // 1. Extract code (e.g. PGMC03, PGMC09)
-  for (const src of sources) {
-    const m = src.match(CODE_RE);
-    if (m) { code = m[1]; break; }
+  // 1. Try session title format first (most precise for sessions)
+  const titleMatch = (ev.SUMMARY || '').match(SESSION_TITLE_RE);
+  if (titleMatch) {
+    code = titleMatch[1];
+    name = titleMatch[2].trim();
   }
 
-  // 2. Extract name from CATEGORIES (most reliable in Brightspace)
-  if (ev.CATEGORIES) {
-    const cats = ev.CATEGORIES.replace(/\\/g,'').split(',').map(s => s.trim()).filter(Boolean);
-    // Prefer the category that isn't just a code and isn't a generic keyword
-    const skip = ['assessment','co-construction','live session','cours distanciel','devoir'];
-    const nameCat = cats.find(c => {
-      const cl = c.toLowerCase();
-      return !CODE_RE.test(c) && !skip.some(k => cl.includes(k)) && c.length > 4;
-    });
-    if (nameCat) name = nameCat;
-    // If no name found yet, try the category that contains the code
-    if (!name && code) {
-      const withCode = cats.find(c => c.includes(code));
-      if (withCode) name = withCode.replace(code, '').replace(/[-_\s]+/g,' ').trim();
+  // 2. Try CATEGORIES for code/name if not found yet
+  if (!code || !name) {
+    if (ev.CATEGORIES) {
+      const cats = unescape(ev.CATEGORIES).split(',').map(s => s.trim()).filter(Boolean);
+      const skipWords = ['assessment','co-construction','live session','cours distanciel','devoir'];
+
+      for (const cat of cats) {
+        const cl = cat.toLowerCase();
+        if (!code) {
+          const m = cat.match(CODE_RE);
+          if (m) { code = m[1]; continue; }
+        }
+        if (!name && !CODE_RE.test(cat) && !skipWords.some(k => cl.includes(k)) && cat.length > 4) {
+          name = cat;
+        }
+      }
     }
   }
 
-  // 3. Fallback: try to extract from SUMMARY after removing known prefixes
-  if (!name && ev.SUMMARY) {
-    const s = ev.SUMMARY
-      .replace(/^(assessment|co-construction)\s*[:\-]?\s*/i, '')
-      .replace(/\s*à échéance\s*$/i, '')
-      .replace(CODE_RE, '')
-      .replace(/[-_\s]+/g,' ').trim();
-    // Only use if it looks like a course name (more than one word or long)
-    if (s.length > 6 && (s.includes(' ') || s.length > 12)) name = s;
+  // 3. Extract code from SUMMARY if still missing
+  if (!code) {
+    const m = (ev.SUMMARY || '').match(CODE_RE);
+    if (m) code = m[1];
+  }
+
+  // 4. LOCATION as course name if it's not a URL and not a Teams link
+  if (!name) {
+    const loc = unescape(ev.LOCATION || '').trim();
+    if (loc && !loc.startsWith('http') && !loc.toLowerCase().includes('teams') && loc.length > 3) {
+      name = loc;
+    }
   }
 
   return { code, name };
 }
 
-function getBrightspaceUrl(ev) {
-  // The URL field in ICS events from Brightspace
-  if (ev.URL) return ev.URL.replace(/\\/g,'').trim();
-  // Also check DESCRIPTION for a Brightspace link
-  if (ev.DESCRIPTION) {
-    const m = (ev.DESCRIPTION).match(/https?:\/\/[^\s\\]+brightspace\.com[^\s\\]*/i);
-    if (m) return m[0];
-  }
-  return '';
+/* ══════════════════════════════════════════════════════════════
+   Brightspace URL extraction
+  
+   For devoirs, we expect (in DESCRIPTION or URL field):
+   - "Casier" / dropbox URL  → path contains "dropbox", "locker", "submiss", "evaluation"
+   - "Afficher l'événement"  → URL field or path contains "/le/", "calendar", "courseid"
+══════════════════════════════════════════════════════════════ */
+function parseBrightspaceUrls(ev) {
+  const rawDesc = unescape(ev.DESCRIPTION || '');
+  const rawUrl  = unescape(ev.URL || '').trim();
+
+  const allUrls = [...new Set([
+    rawUrl,
+    ...extractUrls(rawDesc),
+  ])].filter(u => u.length > 10);
+
+  const bsUrls = allUrls.filter(u =>
+    u.includes('brightspace.com') || u.includes('emlyon.bright') || u.includes('d2l')
+  );
+
+  // Casier = dropbox / submission / locker
+  const casierUrl = bsUrls.find(u =>
+    /dropbox|locker|submiss|evaluation\/submissions|/i.test(u)
+  ) || '';
+
+  // Événement = calendar event or course page (prefer URL field)
+  const eventUrl = (() => {
+    if (rawUrl && rawUrl.includes('brightspace')) return rawUrl;
+    return bsUrls.find(u => u !== casierUrl) || '';
+  })();
+
+  return { casierUrl, eventUrl };
 }
 
+/* ══════════════════════════════════════════════════════════════
+   Teams URL extraction (prioritises LOCATION field)
+══════════════════════════════════════════════════════════════ */
 function getTeamsUrl(ev) {
-  const haystack = [(ev.DESCRIPTION||''), (ev.LOCATION||''), (ev.URL||'')].join(' ')
-    .replace(/\\n/g,' ').replace(/\\/g,'');
-  const m = haystack.match(/https?:\/\/teams\.microsoft\.com[^\s"<>]*/i)
-         || haystack.match(/https?:\/\/teams\.live\.com[^\s"<>]*/i);
+  // LOCATION is the primary source for session join links
+  const loc = unescape(ev.LOCATION || '');
+  const locUrls = extractUrls(loc);
+  const teamsFromLoc = locUrls.find(u =>
+    u.includes('teams.microsoft.com') || u.includes('teams.live.com')
+  );
+  if (teamsFromLoc) return teamsFromLoc;
+
+  // Fallback: search in DESCRIPTION
+  const desc = unescape(ev.DESCRIPTION || '');
+  const m = desc.match(/https?:\/\/teams\.microsoft\.com[^\s"<>]*/i)
+          || desc.match(/https?:\/\/teams\.live\.com[^\s"<>]*/i);
   return m ? m[0] : '';
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
+   Instructor extraction from DESCRIPTION
+  
+   Brightspace typically writes:
+   "Intervenants : Prénom Nom, Prénom Nom"
+   or includes names at the beginning of the description.
+══════════════════════════════════════════════════════════════ */
+function getInstructors(ev) {
+  const desc = unescape(ev.DESCRIPTION || '');
+
+  // Pattern 1: explicit label
+  const explicit = desc.match(/(?:intervenant|professeur|enseignant|animateur|speaker)[s]?\s*[:\-]\s*([^\n]+)/i);
+  if (explicit) return explicit[1].trim();
+
+  // Pattern 2: ORGANIZER field (sometimes present in Brightspace ICS)
+  if (ev.ORGANIZER) {
+    const cn = ev.ORGANIZER.match(/CN=([^:;]+)/i);
+    if (cn) return cn[1].trim();
+  }
+
+  // Pattern 3: first non-URL line of description that looks like a name
+  const lines = desc.split('\n').map(s => s.trim()).filter(s =>
+    s.length > 3 &&
+    s.length < 80 &&
+    !s.startsWith('http') &&
+    !/^\d/.test(s) &&         // not starting with a number
+    !/[<>{}[\]@#]/.test(s)   // not HTML or code
+  );
+  // Return first line if it looks like a name (contains capital letters, no verbs pattern)
+  if (lines[0] && /[A-ZÀÉÈÊ]/.test(lines[0])) return lines[0];
+
+  return '';
+}
+
+/* ══════════════════════════════════════════════════════════════
    Event classification
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function isDevoir(ev) {
   const s = (ev.SUMMARY     || '').toLowerCase();
   const d = (ev.DESCRIPTION || '').toLowerCase();
-  return s.includes('assessment') || s.includes('co-construction')
-      || d.includes('assessment') || d.includes('co-construction')
+  return s.includes('assessment')
+      || s.includes('co-construction')
+      || d.includes('assessment')
+      || d.includes('co-construction')
       || s.endsWith('à échéance');
 }
 
 function isSession(ev) {
   const s = (ev.SUMMARY     || '').toLowerCase();
-  const d = (ev.DESCRIPTION || '').toLowerCase();
   const l = (ev.LOCATION    || '').toLowerCase();
-  return s.includes('live session') || s.includes('cours distanciel')
-      || d.includes('live session') || d.includes('cours distanciel')
-      || l.includes('live session');
+
+  // Direct keyword match in title or location
+  if (s.includes('live session')     || s.includes('cours distanciel'))   return true;
+  if (l.includes('live session')     || l.includes('cours distanciel'))   return true;
+
+  // A Teams link in LOCATION strongly implies a virtual session
+  if (l.includes('teams.microsoft.com') || l.includes('teams.live.com'))  return true;
+
+  // Also check if title matches session title format
+  if (SESSION_TITLE_RE.test(ev.SUMMARY || ''))                             return true;
+
+  return false;
 }
 
 function getType(ev) {
@@ -553,33 +659,35 @@ function getType(ev) {
   return (s.includes('co-construction') || d.includes('co-construction')) ? 'collectif' : 'individuel';
 }
 
-function cleanTitle(s) {
+function cleanDevoirTitle(s) {
   return s
-    .replace(/^assessment\s*[:\-]\s*/i, '')
-    .replace(/^co-construction\s*[:\-]\s*/i, '')
+    .replace(/^(assessment|co-construction)\s*[:\-]?\s*/i, '')
     .replace(/\s*à échéance\s*$/i, '')
     .trim() || s;
 }
 
 function cleanSessionTitle(s) {
+  // Remove the "2026_PGMC05_2026-03" prefix if present
+  const m = s.match(SESSION_TITLE_RE);
+  if (m) return m[2].trim();
   return s
     .replace(/live session\s*[:\-]?\s*/i, '')
     .replace(/cours distanciel\s*[:\-]?\s*/i, '')
     .trim() || s;
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Date helpers
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function getDays(d) {
   const n = new Date(); n.setHours(0,0,0,0);
   return Math.ceil((d - n) / 86400000);
 }
 function fmtShort(d)  { return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }); }
+function fmtLong(d)   { return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
 function fmtDay(d)    { return d.toLocaleDateString('fr-FR', { weekday:'short' }); }
 function fmtDayNum(d) { return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }); }
 function fmtTime(d)   { return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }); }
-function fmtLong(d)   { return d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short', year:'numeric' }); }
 
 function urgColor(n) {
   if (n < 0)   return 'var(--c-grey)';
@@ -602,48 +710,57 @@ function urgLabel(n) {
   return `J−${n}`;
 }
 
-/* ══════════════════════════════════════════════
-   Calendar links
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   Calendar export links
+══════════════════════════════════════════════════════════════ */
 function gcUrl(ev) {
-  const t  = encodeURIComponent(ev.SUMMARY || 'Devoir');
-  const ds = ev._date ? ev._date.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z' : '';
+  const t  = encodeURIComponent(ev.SUMMARY || '');
+  const ds = ev._date    ? ev._date.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z' : '';
   const de = ev._dateEnd ? ev._dateEnd.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z' : ds;
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${ds}/${de}&details=${encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0,400))}`;
+  const d  = encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0, 500));
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${ds}/${de}&details=${d}`;
 }
 function outlookUrl(ev) {
-  const t  = encodeURIComponent(ev.SUMMARY || 'Devoir');
-  const ds = ev._date ? ev._date.toISOString() : '';
+  const t  = encodeURIComponent(ev.SUMMARY || '');
+  const ds = ev._date    ? ev._date.toISOString() : '';
   const de = ev._dateEnd ? ev._dateEnd.toISOString() : ds;
-  return `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${t}&startdt=${ds}&enddt=${de}&body=${encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0,400))}`;
-}
-function cleanDesc(s) {
-  return (s||'').replace(/\\n/g,' ').replace(/\\/g,'').replace(/\s+/g,' ').trim();
+  const d  = encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0, 500));
+  return `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${t}&startdt=${ds}&enddt=${de}&body=${d}`;
 }
 
-function copyTask(list, idx) {
-  const ev   = list[idx];
+/* ══════════════════════════════════════════════════════════════
+   Copy task to clipboard
+══════════════════════════════════════════════════════════════ */
+function copyTask(idx) {
+  const ev   = allDevoirs[idx];
   const days = getDays(ev._date);
   const lines = [
-    `☐ ${ev._title || ev.SUMMARY}`,
+    `☐ ${ev._title}`,
     `Échéance : ${fmtLong(ev._date)}`,
     `Type : ${ev._type === 'individuel' ? 'Individuel (Assessment)' : 'Collectif (Co-construction)'}`,
-    ev._courseCode ? `Code : ${ev._courseCode}` : null,
+    ev._courseCode ? `Code matière : ${ev._courseCode}` : null,
     ev._courseName ? `Matière : ${ev._courseName}` : null,
-    ev._bsUrl ? `Brightspace : ${ev._bsUrl}` : null,
+    ev._casierUrl  ? `Casier : ${ev._casierUrl}` : null,
+    ev._eventUrl   ? `Événement Brightspace : ${ev._eventUrl}` : null,
     days >= 0 ? `Délai restant : J−${days}` : '✔ Rendu',
   ].filter(Boolean).join('\n');
+
   navigator.clipboard.writeText(lines)
     .then(() => toast('✓ Tâche copiée — colle dans Google Tasks ou Microsoft To Do'))
-    .catch(() => { const ta=document.createElement('textarea'); ta.value=lines; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); toast('✓ Copié !'); });
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = lines; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta);
+      toast('✓ Copié !');
+    });
 }
 
-/* ══════════════════════════════════════════════
-   Load & process
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   Load & process calendar
+══════════════════════════════════════════════════════════════ */
 function getIcsUrl() {
-  return document.getElementById('ics-url').value.trim()
-      || document.getElementById('ics-url-setup').value.trim();
+  return (document.getElementById('ics-url').value
+       || document.getElementById('ics-url-setup').value).trim();
 }
 function syncUrlFields() {
   const a = document.getElementById('ics-url').value.trim();
@@ -664,15 +781,18 @@ async function loadCalendar() {
   showLoading();
 
   let txt = null;
+
+  // 1. Direct fetch (works locally or if CORS allowed)
   try {
     const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
   } catch(_) {}
 
+  // 2. CORS proxies
   if (!txt) {
     for (const proxy of CORS_PROXIES) {
       try {
-        const r = await fetch(proxy(url), { signal: AbortSignal.timeout(10000) });
+        const r = await fetch(proxy(url), { signal: AbortSignal.timeout(12000) });
         if (!r.ok) continue;
         const ct = r.headers.get('content-type') || '';
         const body = ct.includes('json') ? ((await r.json()).contents || '') : await r.text();
@@ -682,7 +802,7 @@ async function loadCalendar() {
   }
 
   if (!txt) {
-    showError('Impossible de charger automatiquement (CORS Brightspace). Télécharge le .ics et colle son contenu ci-dessous.');
+    showError('Impossible de charger automatiquement (CORS Brightspace). Télécharge le .ics depuis Brightspace et colle son contenu ci-dessous.');
     return;
   }
   processICS(txt);
@@ -695,42 +815,39 @@ function tryPaste(val) {
 function processICS(txt) {
   const all = parseICS(txt);
 
-  allDevoirs = all
-    .filter(isDevoir)
-    .map(ev => {
-      const ci = parseCourseInfo(ev);
-      return {
-        ...ev,
-        _date:       parseDt(ev.DTSTART) || parseDt(ev.DTEND),
-        _dateEnd:    parseDt(ev.DTEND),
-        _type:       getType(ev),
-        _title:      cleanTitle(ev.SUMMARY || ''),
-        _courseCode: ci.code,
-        _courseName: ci.name,
-        _bsUrl:      getBrightspaceUrl(ev),
-      };
-    })
-    .filter(e => e._date)
-    .sort((a,b) => a._date - b._date);
+  // ── Devoirs ──────────────────────────────────────────────
+  allDevoirs = all.filter(isDevoir).map(ev => {
+    const ci    = parseCourseInfo(ev);
+    const bsUrls = parseBrightspaceUrls(ev);
+    return {
+      ...ev,
+      _date:       parseDt(ev.DTSTART) || parseDt(ev.DTEND),
+      _dateEnd:    parseDt(ev.DTEND),
+      _type:       getType(ev),
+      _title:      cleanDevoirTitle(ev.SUMMARY || ''),
+      _courseCode: ci.code,
+      _courseName: ci.name,
+      _casierUrl:  bsUrls.casierUrl,
+      _eventUrl:   bsUrls.eventUrl,
+    };
+  }).filter(e => e._date).sort((a,b) => a._date - b._date);
 
-  allSessions = all
-    .filter(ev => isSession(ev) && !isDevoir(ev))
-    .map(ev => {
-      const ci = parseCourseInfo(ev);
-      return {
-        ...ev,
-        _date:       parseDt(ev.DTSTART),
-        _dateEnd:    parseDt(ev.DTEND),
-        _title:      cleanSessionTitle(ev.SUMMARY || ''),
-        _courseCode: ci.code,
-        _courseName: ci.name,
-        _teamsUrl:   getTeamsUrl(ev),
-        _bsUrl:      getBrightspaceUrl(ev),
-      };
-    })
-    .filter(e => e._date)
-    .sort((a,b) => a._date - b._date);
+  // ── Live sessions ─────────────────────────────────────────
+  allSessions = all.filter(ev => isSession(ev) && !isDevoir(ev)).map(ev => {
+    const ci = parseCourseInfo(ev);
+    return {
+      ...ev,
+      _date:        parseDt(ev.DTSTART),
+      _dateEnd:     parseDt(ev.DTEND),
+      _title:       cleanSessionTitle(ev.SUMMARY || ''),
+      _courseCode:  ci.code,
+      _courseName:  ci.name,
+      _teamsUrl:    getTeamsUrl(ev),
+      _instructors: getInstructors(ev),
+    };
+  }).filter(e => e._date).sort((a,b) => a._date - b._date);
 
+  // ── Show dashboard ────────────────────────────────────────
   hideLoading();
   document.getElementById('setup-card').style.display     = 'none';
   document.getElementById('dashboard').style.display      = '';
@@ -741,12 +858,12 @@ function processICS(txt) {
   renderStats();
   renderDevoirs();
   renderSessions();
-  toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} live sessions`);
+  toast(`✓ ${allDevoirs.length} devoir${allDevoirs.length > 1 ? 's' : ''} · ${allSessions.length} live session${allSessions.length > 1 ? 's' : ''}`);
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Tab & filter
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function switchTab(tab) {
   currentTab = tab;
   document.getElementById('pane-devoirs').style.display  = tab === 'devoirs'  ? '' : 'none';
@@ -756,38 +873,35 @@ function switchTab(tab) {
 }
 
 function setFilter(btn, pane) {
-  const parent = btn.closest('.filters');
-  parent.querySelectorAll('.chip[data-filter]').forEach(b => b.classList.remove('active'));
+  btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (pane === 'devoirs')  { filterDevoirs  = btn.dataset.filter; renderDevoirs(); }
   if (pane === 'sessions') { filterSessions = btn.dataset.filter; renderSessions(); }
 }
 
 function updateBadges() {
-  const fd = allDevoirs.filter(d => getDays(d._date) >= 0).length;
-  const fs = allSessions.filter(s => getDays(s._date) >= 0).length;
-  document.getElementById('badge-devoirs').textContent  = fd;
-  document.getElementById('badge-sessions').textContent = fs;
-  document.getElementById('past-count-devoirs').textContent  = allDevoirs.filter(d => getDays(d._date) < 0).length;
-  document.getElementById('past-count-sessions').textContent = allSessions.filter(s => getDays(s._date) < 0).length;
+  document.getElementById('badge-devoirs').textContent         = allDevoirs.filter(d => getDays(d._date) >= 0).length;
+  document.getElementById('badge-sessions').textContent        = allSessions.filter(s => getDays(s._date) >= 0).length;
+  document.getElementById('past-count-devoirs').textContent    = allDevoirs.filter(d => getDays(d._date) < 0).length;
+  document.getElementById('past-count-sessions').textContent   = allSessions.filter(s => getDays(s._date) < 0).length;
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Stats
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function renderStats() {
-  const fd = allDevoirs.filter(d => getDays(d._date) >= 0);
+  const fd     = allDevoirs.filter(d => getDays(d._date) >= 0);
   const urgent = fd.filter(d => getDays(d._date) <= 7).length;
   const indiv  = fd.filter(d => d._type === 'individuel').length;
   const coll   = fd.filter(d => d._type === 'collectif').length;
   const fs     = allSessions.filter(s => getDays(s._date) >= 0).length;
 
   const items = [
-    { l:'Devoirs',    v:fd.length, sub:`${allDevoirs.filter(d=>getDays(d._date)<0).length} rendus`,      c:'var(--c-blue)',   bg:'var(--bg-blue)',   i:'ti-file-text' },
-    { l:'Individuels',v:indiv,     sub:'Assessments',                                                    c:'var(--c-indigo)', bg:'var(--bg-indigo)', i:'ti-user'      },
-    { l:'Collectifs', v:coll,      sub:'Co-constructions',                                               c:'var(--c-green)',  bg:'var(--bg-green)',  i:'ti-users'     },
-    { l:'Urgents ≤7j',v:urgent,    sub:urgent>0?'À traiter vite':'Rien d\'urgent',                      c:urgent>0?'var(--c-red)':'var(--c-green)', bg:urgent>0?'var(--bg-red)':'var(--bg-green)', i:'ti-alarm' },
-    { l:'Sessions',   v:fs,        sub:`${allSessions.filter(s=>getDays(s._date)<0).length} passées`,    c:'var(--c-teal)',   bg:'var(--bg-teal)',   i:'ti-video'     },
+    { l:'Devoirs à venir', v:fd.length, sub:`${allDevoirs.filter(d=>getDays(d._date)<0).length} rendu(s)`,   c:'var(--c-blue)',   bg:'var(--bg-blue)',   i:'ti-file-text' },
+    { l:'Individuels',     v:indiv,     sub:'Assessments',                                                    c:'var(--c-indigo)', bg:'var(--bg-indigo)', i:'ti-user'      },
+    { l:'Collectifs',      v:coll,      sub:'Co-constructions',                                               c:'var(--c-green)',  bg:'var(--bg-green)',  i:'ti-users'     },
+    { l:'Urgents ≤7j',     v:urgent,    sub:urgent>0?'À traiter vite':'Rien d\'urgent',                      c:urgent>0?'var(--c-red)':'var(--c-green)', bg:urgent>0?'var(--bg-red)':'var(--bg-green)', i:'ti-alarm' },
+    { l:'Live Sessions',   v:fs,        sub:`${allSessions.filter(s=>getDays(s._date)<0).length} passée(s)`, c:'var(--c-teal)',   bg:'var(--bg-teal)',   i:'ti-video'     },
   ];
 
   document.getElementById('stats-grid').innerHTML = items.map(({l,v,sub,c,bg,i}) => `
@@ -798,9 +912,9 @@ function renderStats() {
     </div>`).join('');
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Render devoirs
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function renderDevoirs() {
   const showPast = document.getElementById('show-past-devoirs').checked;
   const filtered = allDevoirs
@@ -810,6 +924,7 @@ function renderDevoirs() {
   const el = document.getElementById('devoirs-list');
   if (!filtered.length) {
     el.innerHTML = `<div class="state-box"><i class="ti ti-mood-happy big-icon"></i><p>Aucun devoir pour ce filtre.</p></div>`;
+    document.getElementById('footer-devoirs').textContent = '';
     return;
   }
 
@@ -819,20 +934,37 @@ function renderDevoirs() {
     const isPast = days < 0;
     const uc = urgColor(days), ub = urgBg(days);
 
+    // Pills
     const typePill = ev._type === 'individuel'
       ? `<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
       : `<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
     const pastPill = isPast
       ? `<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Rendu</span>` : '';
 
+    // Course block
     const courseBlock = (ev._courseCode || ev._courseName) ? `
       <div class="course-block">
         ${ev._courseCode ? `<span class="course-code">${ev._courseCode}</span>` : ''}
         ${ev._courseName ? `<span class="course-name">${ev._courseName}</span>` : ''}
       </div>` : '';
 
-    const bsBtn = ev._bsUrl
-      ? `<a class="action-btn brightspace" href="${ev._bsUrl}" target="_blank" rel="noopener" title="Ouvrir dans Brightspace"><i class="ti ti-school"></i> Brightspace</a>` : '';
+    // Action buttons
+    const casierBtn = ev._casierUrl
+      ? `<a class="action-btn casier" href="${ev._casierUrl}" target="_blank" rel="noopener"
+            title="Déposer le devoir (casier Brightspace)">
+           <i class="ti ti-inbox-up"></i> Casier
+         </a>` : '';
+
+    const eventBtn = ev._eventUrl
+      ? `<a class="action-btn bs-event" href="${ev._eventUrl}" target="_blank" rel="noopener"
+            title="Afficher l'événement dans Brightspace">
+           <i class="ti ti-school"></i> Afficher l'événement
+         </a>` : '';
+
+    const bsBlock = (casierBtn || eventBtn) ? `
+      ${casierBtn}
+      ${eventBtn}
+      <div class="action-sep"></div>` : '';
 
     return `
     <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
@@ -840,126 +972,159 @@ function renderDevoirs() {
         <div class="cd-label">${urgLabel(days)}</div>
         <div class="cd-date">${fmtShort(ev._date)}</div>
       </div>
+
       <div class="card-body">
         <div class="tags">${typePill}${pastPill}</div>
-        <div class="card-title" title="${(ev._title||ev.SUMMARY).replace(/"/g,'&quot;')}">${ev._title||ev.SUMMARY}</div>
         ${courseBlock}
+        <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
+        <div class="card-meta">
+          <i class="ti ti-calendar-event" style="font-size:11px"></i>
+          <span>${fmtLong(ev._date)}</span>
+        </div>
       </div>
+
       <div class="card-actions">
-        <button class="action-btn" onclick="copyTask(allDevoirs,${idx})" title="Copier pour Google Tasks / To Do">
+        ${bsBlock}
+        <button class="action-btn" onclick="copyTask(${idx})" title="Copier pour Google Tasks / Microsoft To Do">
           <i class="ti ti-clipboard-copy"></i> Copier tâche
         </button>
-        ${bsBtn}
-        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
-        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
+        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener">
+          <i class="ti ti-brand-google"></i> Google Cal.
+        </a>
+        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener">
+          <i class="ti ti-brand-office"></i> Outlook
+        </a>
       </div>
     </div>`;
   }).join('');
 
-  document.getElementById('footer-note').innerHTML =
-    `${allDevoirs.length} devoirs détectés &nbsp;·&nbsp; <strong>Brightspace</strong> = page du devoir &nbsp;·&nbsp; <strong>Copier tâche</strong> = coller dans Google Tasks / Microsoft To Do`;
+  document.getElementById('footer-devoirs').innerHTML =
+    `${allDevoirs.length} devoirs dans le calendrier &nbsp;·&nbsp; ` +
+    `<strong>Casier</strong> = déposer le rendu &nbsp;·&nbsp; ` +
+    `<strong>Afficher l'événement</strong> = page Brightspace de l'événement &nbsp;·&nbsp; ` +
+    `<strong>Copier tâche</strong> = coller dans Google Tasks / To Do`;
 }
 
-/* ══════════════════════════════════════════════
-   Render sessions
-══════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   Render live sessions
+══════════════════════════════════════════════════════════════ */
 function renderSessions() {
   const showPast = document.getElementById('show-past-sessions').checked;
   const filtered = allSessions.filter(s => showPast || getDays(s._date) >= 0);
 
   const el = document.getElementById('sessions-list');
   if (!filtered.length) {
-    el.innerHTML = `<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune session live à venir.</p></div>`;
+    el.innerHTML = `<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune live session à venir.</p></div>`;
     return;
   }
 
   el.innerHTML = filtered.map((ev, i) => {
-    const days   = getDays(ev._date);
-    const isPast = days < 0;
-    const hasTime = ev._date && ev._date.getHours() + ev._date.getMinutes() > 0;
-    const timeStr = hasTime
-      ? `${fmtTime(ev._date)}${ev._dateEnd ? ' – ' + fmtTime(ev._dateEnd) : ''}`
-      : 'Heure non précisée';
+    const days    = getDays(ev._date);
+    const isPast  = days < 0;
+    const hasTime = ev._date && (ev._date.getHours() + ev._date.getMinutes() > 0);
 
+    const startStr = hasTime ? fmtTime(ev._date) : '–';
+    const endStr   = (hasTime && ev._dateEnd) ? fmtTime(ev._dateEnd) : '';
+    const timeStr  = endStr ? `${startStr} – ${endStr}` : startStr;
+    const duration = (hasTime && ev._dateEnd && ev._date)
+      ? Math.round((ev._dateEnd - ev._date) / 60000)
+      : 0;
+
+    // Course block
     const courseBlock = (ev._courseCode || ev._courseName) ? `
       <div class="course-block">
         ${ev._courseCode ? `<span class="course-code">${ev._courseCode}</span>` : ''}
         ${ev._courseName ? `<span class="course-name">${ev._courseName}</span>` : ''}
       </div>` : '';
 
-    const teamsBtn = ev._teamsUrl
-      ? `<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener" title="Rejoindre la réunion Teams"><i class="ti ti-brand-teams"></i> Rejoindre</a>` : '';
-    const bsBtn = ev._bsUrl
-      ? `<a class="action-btn brightspace" href="${ev._bsUrl}" target="_blank" rel="noopener" title="Ouvrir dans Brightspace"><i class="ti ti-school"></i> Brightspace</a>` : '';
+    // Instructors
+    const instructorLine = ev._instructors
+      ? `<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`
+      : '';
 
-    const desc = cleanDesc(ev.DESCRIPTION).slice(0,140);
+    // Teams button
+    const teamsBtn = ev._teamsUrl
+      ? `<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"
+            title="Rejoindre la réunion Teams">
+           <i class="ti ti-brand-teams"></i> Rejoindre Teams
+         </a>
+         <div class="action-sep"></div>` : '';
 
     return `
     <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
       <div class="time-badge ${isPast?'past-ev':''}">
         <div class="tb-day">${fmtDay(ev._date)}</div>
-        <div class="tb-date">${fmtDayNum(ev._date)}</div>
-        <div class="tb-time">${hasTime ? fmtTime(ev._date) : '–'}</div>
+        <div class="tb-date">${fmtShort(ev._date)}</div>
+        <div class="tb-time">${startStr}</div>
       </div>
+
       <div class="card-body">
         <div class="tags">
-          <span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>
+          <span class="pill" style="background:var(--bg-teal);color:var(--c-teal)">
+            <i class="ti ti-video"></i> Live Session
+          </span>
           ${isPast ? `<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>` : ''}
         </div>
-        <div class="card-title" title="${(ev._title||ev.SUMMARY).replace(/"/g,'&quot;')}">${ev._title||ev.SUMMARY}</div>
         ${courseBlock}
+        <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
         <div class="card-meta">
           <i class="ti ti-clock" style="font-size:11px"></i>
           <span>${timeStr}</span>
-          ${ev._dateEnd && ev._date ? `<span style="color:var(--text3)">·</span><span>${Math.round((ev._dateEnd-ev._date)/60000)} min</span>` : ''}
+          ${duration ? `<span style="color:var(--text3)">·</span><span>${duration} min</span>` : ''}
         </div>
-        ${desc ? `<div class="card-desc">${desc}</div>` : ''}
+        ${instructorLine}
       </div>
+
       <div class="card-actions">
         ${teamsBtn}
-        ${bsBtn}
-        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
-        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
+        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener">
+          <i class="ti ti-brand-google"></i> Google Cal.
+        </a>
+        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener">
+          <i class="ti ti-brand-office"></i> Outlook
+        </a>
       </div>
     </div>`;
   }).join('');
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Export .ics
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function exportICS() {
   const showPast = document.getElementById('show-past-devoirs').checked;
   const toExport = allDevoirs
     .filter(d => filterDevoirs === 'all' || d._type === filterDevoirs)
     .filter(d => showPast || getDays(d._date) >= 0);
+
   const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//EMMGO Dashboard//FR','X-WR-CALNAME:Devoirs EMMGO'];
   toExport.forEach(ev => {
     lines.push('BEGIN:VEVENT');
-    ['DTSTART','DTEND','SUMMARY','DESCRIPTION','CATEGORIES','URL','UID'].forEach(k => { if (ev[k]) lines.push(`${k}:${ev[k]}`); });
+    ['DTSTART','DTEND','SUMMARY','DESCRIPTION','CATEGORIES','URL','LOCATION','UID'].forEach(k => {
+      if (ev[k]) lines.push(`${k}:${ev[k]}`);
+    });
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
+
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], {type:'text/calendar;charset=utf-8'}));
+  a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type:'text/calendar;charset=utf-8' }));
   a.download = 'devoirs-emmgo.ics';
   a.click();
   toast('↓ .ics téléchargé');
 }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    UI helpers
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 function toggleSettings() {
   const p = document.getElementById('settings-panel');
   p.style.display = p.style.display === 'none' ? '' : 'none';
 }
 function showLoading() {
-  document.getElementById('setup-card').style.display  = 'none';
+  ['setup-card','err-box','paste-zone'].forEach(id => document.getElementById(id).style.display = 'none');
   document.getElementById('loading-box').style.display = '';
   document.getElementById('dashboard').style.display   = 'none';
-  document.getElementById('err-box').style.display     = 'none';
-  document.getElementById('paste-zone').style.display  = 'none';
 }
 function hideLoading() { document.getElementById('loading-box').style.display = 'none'; }
 function showError(msg) {
@@ -972,9 +1137,9 @@ function showError(msg) {
 }
 function hideError() { document.getElementById('err-box').style.display = 'none'; }
 
-/* ══════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════════════
    Init
-══════════════════════════════════════════════ */
+══════════════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', () => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
