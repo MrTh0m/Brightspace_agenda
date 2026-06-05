@@ -155,6 +155,14 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
 }
 .chip:hover  { background:var(--bg2); }
 .chip.active { background:var(--text); color:var(--bg); border-color:transparent; }
+.disc-filters { margin-top:-10px; margin-bottom:16px; flex-wrap:wrap; gap:6px; }
+.chip-count {
+  font-size:10px; font-weight:700;
+  background:rgba(0,0,0,.1); color:inherit;
+  padding:1px 6px; border-radius:8px; margin-left:3px;
+}
+.chip.active .chip-count { background:rgba(255,255,255,.25); }
+
 .past-label {
   margin-left:auto; display:flex; align-items:center; gap:6px;
   font-size:12px; color:var(--text2); cursor:pointer;
@@ -308,7 +316,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
     <h3><i class="ti ti-link"></i> URL du calendrier ICS Brightspace</h3>
     <div class="field-row">
       <input type="url" id="ics-url"
-        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=TON_TOKEN"
+        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MY_TOKEN"
         placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/...">
       <button class="btn primary" onclick="loadCalendar()">Charger</button>
     </div>
@@ -335,7 +343,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
     <p>Ton URL ICS est déjà configurée. Clique sur <strong>Charger</strong> pour voir tes devoirs et live sessions.</p>
     <div class="url-field">
       <input type="url" id="ics-url-setup"
-        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=TON_TOKEN"
+        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MY_TOKEN"
         placeholder="https://emlyon.brightspace.com/...">
       <button class="btn primary" onclick="loadFromSetup()">
         <i class="ti ti-player-play"></i> Charger
@@ -378,6 +386,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
           Passés (<span id="past-count-devoirs">0</span>)
         </label>
       </div>
+      <div class="filters disc-filters" id="disc-filter-devoirs" style="display:none"></div>
       <div class="list" id="devoirs-list"></div>
       <p class="note" id="footer-devoirs"></p>
     </div>
@@ -391,6 +400,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
           Passées (<span id="past-count-sessions">0</span>)
         </label>
       </div>
+      <div class="filters disc-filters" id="disc-filter-sessions" style="display:none"></div>
       <div class="list" id="sessions-list"></div>
     </div>
 
@@ -411,8 +421,10 @@ const STORAGE_KEY = 'emmgo_ics_url_v2';
 
 let allDevoirs  = [];
 let allSessions = [];
-let filterDevoirs  = 'all';
-let filterSessions = 'all';
+let filterDevoirs      = 'all';
+let filterSessions     = 'all';
+let filterDiscDevoirs  = 'all';   // active discipline filter for devoirs
+let filterDiscSessions = 'all';   // active discipline filter for sessions
 let currentTab = 'devoirs';
 
 /* ══════════════════════════════════════════════════════════════
@@ -448,9 +460,14 @@ function parseICS(txt) {
     else if (cur) {
       const ci = l.indexOf(':');
       if (ci > 0) {
-        // Keep full value (handles params like DTSTART;TZID=...)
-        const key = l.slice(0, ci).split(';')[0].toUpperCase();
-        cur[key] = l.slice(ci + 1);
+        // Preserve full key including params (e.g. DTSTART;TZID=...)
+        // but store under the base key name
+        const rawKey = l.slice(0, ci);
+        const key    = rawKey.split(';')[0].toUpperCase();
+        const val    = l.slice(ci + 1);
+        cur[key] = val;
+        // Also store X- properties and their variants verbatim
+        // so getTeamsUrl can scan them
       }
     }
   }
@@ -459,10 +476,17 @@ function parseICS(txt) {
 
 function parseDt(s) {
   if (!s) return null;
-  s = s.trim().replace('Z', '');
+  s = s.trim();
+  const isUTC = s.endsWith('Z');
+  s = s.replace('Z', '');
+  // Date only (VALUE=DATE)
   if (s.length === 8) return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
-  if (s.includes('T')) return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8), +s.slice(9,11), +s.slice(11,13));
-  return null;
+  if (!s.includes('T')) return null;
+  const Y=+s.slice(0,4), M=+s.slice(4,6)-1, D=+s.slice(6,8), h=+s.slice(9,11), m=+s.slice(11,13);
+  // UTC → browser will display in local timezone (Europe/Paris = UTC+2 in summer)
+  if (isUTC) return new Date(Date.UTC(Y, M, D, h, m));
+  // No Z and no TZID → already in local time (TZID=Europe/Paris typically)
+  return new Date(Y, M, D, h, m);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -574,20 +598,28 @@ function parseBrightspaceUrls(ev) {
 /* ══════════════════════════════════════════════════════════════
    Teams URL extraction (prioritises LOCATION field)
 ══════════════════════════════════════════════════════════════ */
-function getTeamsUrl(ev) {
-  // LOCATION is the primary source for session join links
-  const loc = unescape(ev.LOCATION || '');
-  const locUrls = extractUrls(loc);
-  const teamsFromLoc = locUrls.find(u =>
-    u.includes('teams.microsoft.com') || u.includes('teams.live.com')
-  );
-  if (teamsFromLoc) return teamsFromLoc;
+function getMeetingUrl(ev) {
+  // The meeting URL (Teams, virtual-room.em-lyon.com, Zoom, etc.)
+  // is embedded in the LOCATION field by Brightspace.
+  // After ICS line-folding is resolved by unfold(), the full URL is on one line.
+  // Example LOCATION value:
+  //   "Cours distanciel/distant classes  /  PGMC09 Live session https://virtual-room.em-lyon.com/pgmc09 (Transformation Digitale)"
 
-  // Fallback: search in DESCRIPTION
-  const desc = unescape(ev.DESCRIPTION || '');
-  const m = desc.match(/https?:\/\/teams\.microsoft\.com[^\s"<>]*/i)
-          || desc.match(/https?:\/\/teams\.live\.com[^\s"<>]*/i);
-  return m ? m[0] : '';
+  const loc = unescape(ev.LOCATION || '');
+
+  // 1. Extract first URL from LOCATION (most reliable)
+  const fromLoc = extractUrls(loc)[0];
+  if (fromLoc) return fromLoc.replace(/[),;]+$/, ''); // trim trailing punctuation/parentheses
+
+  // 2. Fallback: scan DESCRIPTION, URL, and all X- custom fields
+  const haystack = [
+    ev.DESCRIPTION || '',
+    ev.URL         || '',
+    ...Object.values(ev).filter((_, i) => Object.keys(ev)[i].startsWith('X-')),
+  ].map(unescape).join('\n');
+
+  const m = haystack.match(/https?:\/\/\S+/i);
+  return m ? m[0].replace(/[),;]+$/, '') : '';
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -638,18 +670,20 @@ function isDevoir(ev) {
 }
 
 function isSession(ev) {
-  const s = (ev.SUMMARY     || '').toLowerCase();
-  const l = (ev.LOCATION    || '').toLowerCase();
+  const s = (ev.SUMMARY  || '').toLowerCase();
+  const l = (ev.LOCATION || '').toLowerCase();
 
-  // Direct keyword match in title or location
-  if (s.includes('live session')     || s.includes('cours distanciel'))   return true;
-  if (l.includes('live session')     || l.includes('cours distanciel'))   return true;
+  if (s.includes('live session')    || s.includes('cours distanciel'))  return true;
+  if (l.includes('live session')    || l.includes('cours distanciel'))  return true;
+  if (l.includes('teams.microsoft') || l.includes('teams.live.com'))    return true;
+  if (l.includes('virtual-room.em-lyon.com'))                           return true;
 
-  // A Teams link in LOCATION strongly implies a virtual session
-  if (l.includes('teams.microsoft.com') || l.includes('teams.live.com'))  return true;
+  // Title matches Brightspace structured session format: 2026_PGMC05_2026-03 ...
+  if (SESSION_TITLE_RE.test(ev.SUMMARY || ''))                          return true;
 
-  // Also check if title matches session title format
-  if (SESSION_TITLE_RE.test(ev.SUMMARY || ''))                             return true;
+  // Any field contains a virtual room URL
+  const allVals = Object.values(ev).join(' ').toLowerCase();
+  if (allVals.includes('virtual-room.em-lyon'))                         return true;
 
   return false;
 }
@@ -815,24 +849,7 @@ function tryPaste(val) {
 function processICS(txt) {
   const all = parseICS(txt);
 
-  // ── Devoirs ──────────────────────────────────────────────
-  allDevoirs = all.filter(isDevoir).map(ev => {
-    const ci    = parseCourseInfo(ev);
-    const bsUrls = parseBrightspaceUrls(ev);
-    return {
-      ...ev,
-      _date:       parseDt(ev.DTSTART) || parseDt(ev.DTEND),
-      _dateEnd:    parseDt(ev.DTEND),
-      _type:       getType(ev),
-      _title:      cleanDevoirTitle(ev.SUMMARY || ''),
-      _courseCode: ci.code,
-      _courseName: ci.name,
-      _casierUrl:  bsUrls.casierUrl,
-      _eventUrl:   bsUrls.eventUrl,
-    };
-  }).filter(e => e._date).sort((a,b) => a._date - b._date);
-
-  // ── Live sessions ─────────────────────────────────────────
+  // ── Live sessions (process first to build code→name map) ───────
   allSessions = all.filter(ev => isSession(ev) && !isDevoir(ev)).map(ev => {
     const ci = parseCourseInfo(ev);
     return {
@@ -842,8 +859,48 @@ function processICS(txt) {
       _title:       cleanSessionTitle(ev.SUMMARY || ''),
       _courseCode:  ci.code,
       _courseName:  ci.name,
-      _teamsUrl:    getTeamsUrl(ev),
+      _teamsUrl:    getMeetingUrl(ev),
       _instructors: getInstructors(ev),
+    };
+  }).filter(e => e._date).sort((a,b) => a._date - b._date);
+
+  // Build code → long name map from sessions (they carry the full name in the title)
+  const courseCodeMap = {};
+  allSessions.forEach(s => {
+    if (s._courseCode && s._courseName) courseCodeMap[s._courseCode] = s._courseName;
+  });
+
+  // ── Devoirs ────────────────────────────────────────────────────
+  allDevoirs = all.filter(isDevoir).map(ev => {
+    const ci     = parseCourseInfo(ev);
+    const bsUrls = parseBrightspaceUrls(ev);
+
+    // LOCATION is the primary source of the discipline name for devoirs
+    // (it's the course/module name set by the teacher, not a URL)
+    const loc = unescape(ev.LOCATION || '').trim();
+    const locIsName = loc
+      && !loc.startsWith('http')
+      && !loc.toLowerCase().includes('virtual-room')
+      && !loc.toLowerCase().includes('teams')
+      && loc.length > 3;
+
+    // Priority: LOCATION name  →  parseCourseInfo name  →  code-map lookup
+    let courseName = locIsName ? loc : (ci.name || '');
+    const courseCode = ci.code;
+    if (!courseName && courseCode && courseCodeMap[courseCode]) {
+      courseName = courseCodeMap[courseCode];
+    }
+
+    return {
+      ...ev,
+      _date:       parseDt(ev.DTSTART) || parseDt(ev.DTEND),
+      _dateEnd:    parseDt(ev.DTEND),
+      _type:       getType(ev),
+      _title:      cleanDevoirTitle(ev.SUMMARY || ''),
+      _courseCode: courseCode,
+      _courseName: courseName,
+      _casierUrl:  bsUrls.casierUrl,
+      _eventUrl:   bsUrls.eventUrl,
     };
   }).filter(e => e._date).sort((a,b) => a._date - b._date);
 
@@ -871,12 +928,63 @@ function switchTab(tab) {
   document.getElementById('tab-devoirs').classList.toggle('active',  tab === 'devoirs');
   document.getElementById('tab-sessions').classList.toggle('active', tab === 'sessions');
 }
-
 function setFilter(btn, pane) {
   btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (pane === 'devoirs')  { filterDevoirs  = btn.dataset.filter; renderDevoirs(); }
   if (pane === 'sessions') { filterSessions = btn.dataset.filter; renderSessions(); }
+}
+
+function setDisciplineFilter(pane, key, btn) {
+  const container = document.getElementById(`disc-filter-${pane}`);
+  container.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (pane === 'devoirs')  { filterDiscDevoirs  = key; renderDevoirs(); }
+  if (pane === 'sessions') { filterDiscSessions = key; renderSessions(); }
+}
+
+// Build and inject discipline filter chips for a pane.
+// items = allDevoirs or allSessions, preFiltered by type/past but NOT by discipline.
+function renderDisciplineChips(pane, items) {
+  const container = document.getElementById(`disc-filter-${pane}`);
+  if (!container) return;
+
+  // Count occurrences per discipline (using _courseName as key)
+  const counts = {};
+  items.forEach(ev => {
+    const key = (ev._courseName || '').trim();
+    if (key) counts[key] = (counts[key] || 0) + 1;
+  });
+
+  const disciplines = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+
+  // Hide the bar if 0 or 1 discipline (no point filtering)
+  if (disciplines.length <= 1) { container.style.display = 'none'; return; }
+
+  const activePaneFilter = pane === 'devoirs' ? filterDiscDevoirs : filterDiscSessions;
+  const total = items.length;
+
+  container.style.display = 'flex';
+  container.innerHTML = [
+    // "Toutes" chip
+    `<button class="chip${activePaneFilter === 'all' ? ' active' : ''}"
+       onclick="setDisciplineFilter('${pane}','all',this)">
+       <i class="ti ti-list"></i> Toutes
+       <span class="chip-count">${total}</span>
+     </button>`,
+    // One chip per discipline, sorted by count desc
+    ...disciplines.map(([name, count]) => {
+      const isActive = activePaneFilter === name;
+      // Truncate long names for display
+      const label = name.length > 32 ? name.slice(0, 30) + '…' : name;
+      // Escape for data attribute
+      const safe = name.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
+      return `<button class="chip${isActive ? ' active' : ''}" title="${safe}"
+         onclick="setDisciplineFilter('${pane}','${safe}',this)">
+         ${label}<span class="chip-count">${count}</span>
+       </button>`;
+    }),
+  ].join('');
 }
 
 function updateBadges() {
@@ -917,9 +1025,19 @@ function renderStats() {
 ══════════════════════════════════════════════════════════════ */
 function renderDevoirs() {
   const showPast = document.getElementById('show-past-devoirs').checked;
-  const filtered = allDevoirs
+
+  // Base list (type + past filter only) — used for discipline chip counts
+  const base = allDevoirs
     .filter(d => filterDevoirs === 'all' || d._type === filterDevoirs)
     .filter(d => showPast || getDays(d._date) >= 0);
+
+  // Render discipline chips based on base list
+  renderDisciplineChips('devoirs', base);
+
+  // Apply discipline filter on top
+  const filtered = base.filter(d =>
+    filterDiscDevoirs === 'all' || (d._courseName || '').trim() === filterDiscDevoirs
+  );
 
   const el = document.getElementById('devoirs-list');
   if (!filtered.length) {
@@ -1010,7 +1128,17 @@ function renderDevoirs() {
 ══════════════════════════════════════════════════════════════ */
 function renderSessions() {
   const showPast = document.getElementById('show-past-sessions').checked;
-  const filtered = allSessions.filter(s => showPast || getDays(s._date) >= 0);
+
+  // Base list (past filter only) — used for discipline chip counts
+  const base = allSessions.filter(s => showPast || getDays(s._date) >= 0);
+
+  // Render discipline chips based on base list
+  renderDisciplineChips('sessions', base);
+
+  // Apply discipline filter on top
+  const filtered = base.filter(s =>
+    filterDiscSessions === 'all' || (s._courseName || '').trim() === filterDiscSessions
+  );
 
   const el = document.getElementById('sessions-list');
   if (!filtered.length) {
@@ -1042,11 +1170,11 @@ function renderSessions() {
       ? `<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`
       : '';
 
-    // Teams button
-    const teamsBtn = ev._teamsUrl
+    // Join button (virtual room, Teams, Zoom…)
+    const joinBtn = ev._teamsUrl
       ? `<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"
-            title="Rejoindre la réunion Teams">
-           <i class="ti ti-brand-teams"></i> Rejoindre Teams
+            title="Rejoindre la session en ligne (${ev._teamsUrl})">
+           <i class="ti ti-video"></i> Rejoindre
          </a>
          <div class="action-sep"></div>` : '';
 
@@ -1076,7 +1204,7 @@ function renderSessions() {
       </div>
 
       <div class="card-actions">
-        ${teamsBtn}
+        ${joinBtn}
         <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener">
           <i class="ti ti-brand-google"></i> Google Cal.
         </a>
