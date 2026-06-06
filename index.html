@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="system">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,287 +8,310 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
 <style>
-/* ── Reset & tokens ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Light (default) ── */
 :root {
-  --bg:       #faf9f6;
-  --bg2:      #f2f1ed;
-  --bg3:      #ffffff;
-  --border:   #e2e0d8;
-  --border2:  #ccc9be;
-  --text:     #1c1b18;
-  --text2:    #706e66;
-  --text3:    #a09d93;
-  --radius:   14px;
-  --shadow:   0 1px 4px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
-  --font:     system-ui, -apple-system, "Segoe UI", sans-serif;
-
-  --c-blue:   #1a7fc1; --bg-blue:   #e8f3fb;
-  --c-indigo: #4b44b0; --bg-indigo: #eeecfd;
-  --c-green:  #0d6e4f; --bg-green:  #e0f4ec;
-  --c-orange: #b06010; --bg-orange: #faebd4;
-  --c-red:    #c0302e; --bg-red:    #fce8e8;
-  --c-grey:   #888580; --bg-grey:   #f0eeea;
-  --c-teal:   #0e7490; --bg-teal:   #e0f5f9;
-  --c-violet: #6d28d9; --bg-violet: #ede9fe;
-  --c-amber:  #92400e; --bg-amber:  #fef3c7;
+  --bg:#faf9f6; --bg2:#f2f1ed; --bg3:#ffffff;
+  --border:#e2e0d8; --border2:#ccc9be;
+  --text:#1c1b18; --text2:#706e66; --text3:#a09d93;
+  --radius:14px;
+  --shadow:0 1px 4px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+  --font:system-ui,-apple-system,"Segoe UI",sans-serif;
+  --c-blue:#1a7fc1;  --bg-blue:#e8f3fb;
+  --c-indigo:#4b44b0;--bg-indigo:#eeecfd;
+  --c-green:#0d6e4f; --bg-green:#e0f4ec;
+  --c-orange:#b06010;--bg-orange:#faebd4;
+  --c-red:#c0302e;   --bg-red:#fce8e8;
+  --c-grey:#888580;  --bg-grey:#f0eeea;
+  --c-teal:#0e7490;  --bg-teal:#e0f5f9;
+  --c-violet:#6d28d9;--bg-violet:#ede9fe;
+  --c-amber:#92400e; --bg-amber:#fef3c7;
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:#18171a; --bg2:#222128; --bg3:#2a2932;
-    --border:#38363f; --border2:#4a4857;
-    --text:#e8e6e0; --text2:#9c9994; --text3:#666360;
-    --bg-blue:#172233; --bg-indigo:#1e1c38; --bg-green:#112a20;
-    --bg-orange:#2b1e0b; --bg-red:#2e1313; --bg-grey:#272624;
-    --bg-teal:#0d2830; --bg-violet:#1e1438; --bg-amber:#2a1f08;
-    --shadow: 0 1px 4px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
+/* ── Dark (system) ── */
+@media (prefers-color-scheme:dark) {
+  html[data-theme="system"] {
+    --bg:#18171a;--bg2:#222128;--bg3:#2a2932;
+    --border:#38363f;--border2:#4a4857;
+    --text:#e8e6e0;--text2:#9c9994;--text3:#666360;
+    --bg-blue:#172233;--bg-indigo:#1e1c38;--bg-green:#112a20;
+    --bg-orange:#2b1e0b;--bg-red:#2e1313;--bg-grey:#272624;
+    --bg-teal:#0d2830;--bg-violet:#1e1438;--bg-amber:#2a1f08;
+    --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
   }
 }
+/* ── Dark (forced) ── */
+html[data-theme="dark"] {
+  --bg:#18171a;--bg2:#222128;--bg3:#2a2932;
+  --border:#38363f;--border2:#4a4857;
+  --text:#e8e6e0;--text2:#9c9994;--text3:#666360;
+  --bg-blue:#172233;--bg-indigo:#1e1c38;--bg-green:#112a20;
+  --bg-orange:#2b1e0b;--bg-red:#2e1313;--bg-grey:#272624;
+  --bg-teal:#0d2830;--bg-violet:#1e1438;--bg-amber:#2a1f08;
+  --shadow:0 1px 4px rgba(0,0,0,.3),0 4px 16px rgba(0,0,0,.2);
+}
 
-body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; }
-.page { max-width:940px; margin:0 auto; padding:28px 20px 60px; }
+body { font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh; }
+.page { max-width:940px;margin:0 auto;padding:28px 20px 60px; }
 
 /* ── Topbar ── */
-.topbar { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:28px; }
-.brand h1 { font-size:20px; font-weight:700; letter-spacing:-.3px; }
-.brand p  { font-size:12px; color:var(--text2); margin-top:3px; }
-.btn-row  { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:28px; }
+.brand h1 { font-size:20px;font-weight:700;letter-spacing:-.3px; }
+.brand p  { font-size:12px;color:var(--text2);margin-top:3px; }
+.btn-row  { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
 
 /* ── Buttons ── */
 .btn {
-  height:34px; padding:0 14px; border-radius:8px;
-  border:1px solid var(--border); background:var(--bg3);
-  color:var(--text); cursor:pointer; font-size:13px;
-  font-family:var(--font); display:inline-flex; align-items:center;
-  gap:6px; transition:background .15s; white-space:nowrap; text-decoration:none;
+  height:34px;padding:0 14px;border-radius:8px;
+  border:1px solid var(--border);background:var(--bg3);
+  color:var(--text);cursor:pointer;font-size:13px;
+  font-family:var(--font);display:inline-flex;align-items:center;
+  gap:6px;transition:background .15s;white-space:nowrap;text-decoration:none;
 }
 .btn:hover   { background:var(--bg2); }
-.btn.primary { background:var(--text); color:var(--bg); border-color:transparent; }
+.btn.primary { background:var(--text);color:var(--bg);border-color:transparent; }
 .btn.primary:hover { opacity:.85; }
 
 /* ── Setup card ── */
 .setup-card {
-  background:var(--bg3); border:1px solid var(--border);
-  border-radius:var(--radius); padding:32px 28px;
-  text-align:center; margin-bottom:24px; box-shadow:var(--shadow);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:32px 28px;
+  text-align:center;margin-bottom:24px;box-shadow:var(--shadow);
 }
 .setup-card .icon-wrap {
-  width:56px; height:56px; border-radius:14px; background:var(--bg-blue);
-  display:flex; align-items:center; justify-content:center;
-  margin:0 auto 16px; font-size:24px; color:var(--c-blue);
+  width:56px;height:56px;border-radius:14px;background:var(--bg-blue);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;font-size:24px;color:var(--c-blue);
 }
-.setup-card h2 { font-size:17px; font-weight:600; margin-bottom:8px; }
-.setup-card p  { font-size:13px; color:var(--text2); line-height:1.6; max-width:440px; margin:0 auto 20px; }
-.url-field { display:flex; gap:8px; max-width:580px; margin:0 auto; }
+.setup-card h2 { font-size:17px;font-weight:600;margin-bottom:8px; }
+.setup-card p  { font-size:13px;color:var(--text2);line-height:1.6;max-width:440px;margin:0 auto 20px; }
+.url-field { display:flex;gap:8px;max-width:580px;margin:0 auto; }
 .url-field input { flex:1; }
 
 /* ── Form ── */
-input[type="text"], input[type="url"], textarea {
-  height:36px; padding:0 12px;
-  background:var(--bg); color:var(--text);
-  border:1px solid var(--border2); border-radius:8px;
-  font-size:13px; font-family:var(--font); width:100%;
+input[type="text"],input[type="url"],textarea {
+  height:36px;padding:0 12px;
+  background:var(--bg);color:var(--text);
+  border:1px solid var(--border2);border-radius:8px;
+  font-size:13px;font-family:var(--font);width:100%;
   transition:border-color .15s;
 }
-input:focus, textarea:focus { outline:none; border-color:var(--c-blue); }
-textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
+input:focus,textarea:focus { outline:none;border-color:var(--c-blue); }
+textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
 /* ── Settings panel ── */
 .settings-panel {
-  background:var(--bg3); border:1px solid var(--border);
-  border-radius:var(--radius); padding:20px;
-  margin-bottom:20px; box-shadow:var(--shadow);
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:20px;
+  margin-bottom:20px;box-shadow:var(--shadow);
 }
-.settings-panel h3 { font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:6px; }
-.field-row { display:flex; gap:8px; align-items:center; }
+.settings-panel h3 { font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+.field-row { display:flex;gap:8px;align-items:center; }
 .field-row input { flex:1; }
 .error-msg {
-  display:flex; align-items:flex-start; gap:8px;
-  background:var(--bg-red); color:var(--c-red);
-  border:1px solid #e8a5a4; border-radius:8px;
-  padding:10px 12px; font-size:13px; margin-top:12px; line-height:1.5;
+  display:flex;align-items:flex-start;gap:8px;
+  background:var(--bg-red);color:var(--c-red);
+  border:1px solid #e8a5a4;border-radius:8px;
+  padding:10px 12px;font-size:13px;margin-top:12px;line-height:1.5;
 }
 .paste-zone { margin-top:14px; }
-.paste-zone label { font-size:12px; font-weight:600; color:var(--text2); display:block; margin-bottom:6px; }
+.paste-zone label { font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px; }
 .paste-zone .hint {
-  font-size:11px; color:var(--text3); margin-top:6px;
-  background:var(--bg2); border-radius:6px; padding:8px 10px; line-height:1.6;
+  font-size:11px;color:var(--text3);margin-top:6px;
+  background:var(--bg2);border-radius:6px;padding:8px 10px;line-height:1.6;
 }
 
 /* ── Stats ── */
-.stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:20px; }
-@media (max-width:620px) { .stats { grid-template-columns:repeat(2,1fr); } }
-.stat { border-radius:var(--radius); padding:13px 14px; border:1px solid transparent; }
-.stat .s-label { font-size:10px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; display:flex; align-items:center; gap:5px; margin-bottom:9px; }
-.stat .s-val   { font-size:26px; font-weight:700; line-height:1; }
-.stat .s-sub   { font-size:10px; margin-top:4px; opacity:.7; }
+.stats { display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px; }
+@media(max-width:620px){ .stats{grid-template-columns:repeat(2,1fr);} }
+.stat { border-radius:var(--radius);padding:13px 14px;border:1px solid transparent; }
+.stat .s-label { font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;display:flex;align-items:center;gap:5px;margin-bottom:9px; }
+.stat .s-val   { font-size:26px;font-weight:700;line-height:1; }
+.stat .s-sub   { font-size:10px;margin-top:4px;opacity:.7; }
 
-/* ── Tab bar ── */
-.tab-bar { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; }
+/* ── Tabs ── */
+.tab-bar { display:flex;border-bottom:2px solid var(--border);margin-bottom:20px; }
 .tab {
-  padding:10px 18px; font-size:13px; font-weight:600;
-  color:var(--text2); cursor:pointer; border:none; background:transparent;
-  font-family:var(--font); border-bottom:2px solid transparent;
-  margin-bottom:-2px; display:flex; align-items:center; gap:7px;
-  transition:color .15s;
+  padding:10px 18px;font-size:13px;font-weight:600;
+  color:var(--text2);cursor:pointer;border:none;background:transparent;
+  font-family:var(--font);border-bottom:2px solid transparent;
+  margin-bottom:-2px;display:flex;align-items:center;gap:7px;transition:color .15s;
 }
 .tab:hover { color:var(--text); }
-.tab.active { color:var(--text); border-bottom-color:var(--text); }
+.tab.active { color:var(--text);border-bottom-color:var(--text); }
 .tab .badge {
-  display:inline-flex; align-items:center; justify-content:center;
-  min-width:18px; height:18px; padding:0 5px;
-  border-radius:9px; font-size:10px; font-weight:700;
-  background:var(--bg2); color:var(--text2);
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 5px;
+  border-radius:9px;font-size:10px;font-weight:700;
+  background:var(--bg2);color:var(--text2);
 }
-.tab.active .badge { background:var(--text); color:var(--bg); }
+.tab.active .badge { background:var(--text);color:var(--bg); }
 
-/* ── Filter bar ── */
-.filters { display:flex; gap:8px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+/* ── Filters ── */
+.filters { display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap; }
 .chip {
-  height:30px; padding:0 14px; border-radius:15px;
-  border:1px solid var(--border); background:transparent;
-  color:var(--text2); cursor:pointer; font-size:12px;
-  font-family:var(--font); display:inline-flex; align-items:center; gap:5px;
-  transition:background .15s, color .15s;
+  height:30px;padding:0 14px;border-radius:15px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--text2);cursor:pointer;font-size:12px;
+  font-family:var(--font);display:inline-flex;align-items:center;gap:5px;
+  transition:background .15s,color .15s;
 }
 .chip:hover  { background:var(--bg2); }
-.chip.active { background:var(--text); color:var(--bg); border-color:transparent; }
-.disc-filters { margin-top:-10px; margin-bottom:16px; flex-wrap:wrap; gap:6px; }
+.chip.active { background:var(--text);color:var(--bg);border-color:transparent; }
 .chip-count {
-  font-size:10px; font-weight:700;
-  background:rgba(0,0,0,.1); color:inherit;
-  padding:1px 6px; border-radius:8px; margin-left:3px;
+  font-size:10px;font-weight:700;
+  background:rgba(0,0,0,.1);color:inherit;
+  padding:1px 6px;border-radius:8px;margin-left:3px;
 }
 .chip.active .chip-count { background:rgba(255,255,255,.25); }
-
+.disc-filters { margin-top:-10px;margin-bottom:16px;flex-wrap:wrap;gap:6px; }
 .past-label {
-  margin-left:auto; display:flex; align-items:center; gap:6px;
-  font-size:12px; color:var(--text2); cursor:pointer;
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--text2);cursor:pointer;
 }
-.past-label input { cursor:pointer; accent-color:var(--c-blue); }
+.past-label input { cursor:pointer;accent-color:var(--c-blue); }
 
-/* ── Card base ── */
-.list { display:flex; flex-direction:column; gap:10px; }
+/* ── Cards ── */
+.list { display:flex;flex-direction:column;gap:10px; }
 .card-item {
-  background:var(--bg3); border:1px solid var(--border);
-  border-radius:var(--radius); padding:14px 16px;
-  display:flex; gap:14px; align-items:flex-start;
-  box-shadow:var(--shadow); transition:opacity .2s, border-color .15s;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;
+  display:flex;gap:14px;align-items:flex-start;
+  box-shadow:var(--shadow);transition:opacity .2s,border-color .15s;
   animation:fade-in .2s ease both;
 }
 .card-item:hover { border-color:var(--border2); }
 .card-item.past  { opacity:.55; }
+.card-item.rendu { opacity:.6; }
 
-/* ── Countdown badge (devoirs) ── */
+/* ── Countdown (devoirs) ── */
 .countdown {
-  border-radius:10px; padding:10px 13px;
-  text-align:center; min-width:68px; flex-shrink:0;
-  border:1px solid transparent;
+  border-radius:10px;padding:10px 13px;
+  text-align:center;min-width:68px;flex-shrink:0;border:1px solid transparent;
 }
-.countdown .cd-label { font-size:15px; font-weight:700; line-height:1.2; }
-.countdown .cd-date  { font-size:10px; margin-top:3px; opacity:.8; }
+.countdown .cd-label { font-size:15px;font-weight:700;line-height:1.2; }
+.countdown .cd-date  { font-size:10px;margin-top:3px;opacity:.8; }
 
 /* ── Time badge (sessions) ── */
 .time-badge {
-  border-radius:10px; padding:10px 13px;
-  text-align:center; min-width:72px; flex-shrink:0;
-  background:var(--bg-teal); color:var(--c-teal); border:1px solid #0e749022;
+  border-radius:10px;padding:10px 13px;
+  text-align:center;min-width:72px;flex-shrink:0;
+  background:var(--bg-teal);color:var(--c-teal);border:1px solid #0e749022;
 }
-.time-badge .tb-day  { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
-.time-badge .tb-date { font-size:15px; font-weight:700; line-height:1.2; margin:2px 0; }
-.time-badge .tb-time { font-size:10px; opacity:.85; }
-.time-badge.past-ev  { background:var(--bg-grey); color:var(--c-grey); border-color:transparent; }
+.time-badge .tb-day  { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px; }
+.time-badge .tb-date { font-size:15px;font-weight:700;line-height:1.2;margin:2px 0; }
+.time-badge .tb-time { font-size:10px;opacity:.85; }
+.time-badge.past-ev  { background:var(--bg-grey);color:var(--c-grey);border-color:transparent; }
 
 /* ── Card body ── */
-.card-body { flex:1; min-width:0; }
-.tags { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:6px; }
-.pill {
-  display:inline-flex; align-items:center; gap:4px;
-  padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600;
-}
-.card-title {
-  font-size:15px; font-weight:600; margin-bottom:4px;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.card-meta {
-  font-size:12px; color:var(--text2); margin-bottom:3px;
-  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
-}
-.card-desc {
-  font-size:12px; color:var(--text3);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-  margin-top:2px;
-}
+.card-body { flex:1;min-width:0; }
+.tags { display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px; }
+.pill { display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600; }
+.card-title { font-size:15px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.card-meta  { font-size:12px;color:var(--text2);margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+.card-desc  { font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px; }
+.course-block { display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap; }
+.course-code  { font-size:11px;font-weight:700;font-family:monospace;padding:2px 7px;border-radius:5px;background:var(--bg-violet);color:var(--c-violet);letter-spacing:.5px;flex-shrink:0; }
+.course-name  { font-size:13px;color:var(--text);font-weight:500; }
 
-/* ── Course block ── */
-.course-block {
-  display:flex; align-items:center; gap:6px;
-  margin-bottom:5px; flex-wrap:wrap;
-}
-.course-code {
-  font-size:11px; font-weight:700; font-family:monospace;
-  padding:2px 7px; border-radius:5px;
-  background:var(--bg-violet); color:var(--c-violet);
-  letter-spacing:.5px; flex-shrink:0;
-}
-.course-name { font-size:13px; color:var(--text); font-weight:500; }
+/* ── Rendu card state ── */
+.card-item.rendu { opacity:.5; filter:grayscale(.3); }
+.card-item.rendu .countdown { filter:grayscale(.6); }
+.rendu-check { display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none; }
+.rendu-check input { cursor:pointer;accent-color:var(--c-green);width:14px;height:14px; }
+.rendu-check.auto { color:var(--text3);cursor:default;font-style:italic; }
 
-/* ── Card actions (right column) ── */
-.card-actions {
-  display:flex; flex-direction:column; gap:5px;
-  flex-shrink:0; align-items:stretch; min-width:120px;
-}
+/* ── Actions ── */
+.card-actions { display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:stretch;min-width:120px; }
 .action-btn {
-  height:28px; padding:0 10px; border-radius:7px;
-  border:1px solid var(--border); background:var(--bg2);
-  color:var(--text2); font-size:11px; display:flex;
-  align-items:center; gap:5px; cursor:pointer; white-space:nowrap;
-  font-family:var(--font); text-decoration:none; transition:background .15s, color .15s;
+  height:28px;padding:0 10px;border-radius:7px;
+  border:1px solid var(--border);background:var(--bg2);
+  color:var(--text2);font-size:11px;display:flex;
+  align-items:center;gap:5px;cursor:pointer;white-space:nowrap;
+  font-family:var(--font);text-decoration:none;transition:background .15s,color .15s;
 }
-.action-btn:hover { background:var(--border2); color:var(--text); }
+.action-btn:hover { background:var(--border2);color:var(--text); }
+.action-btn.teams      { background:var(--bg-indigo);color:var(--c-indigo);border-color:var(--c-indigo)33; }
+.action-btn.teams:hover{ background:var(--c-indigo);color:#fff; }
+.action-btn.casier      { background:var(--bg-amber);color:var(--c-amber);border-color:var(--c-amber)33; }
+.action-btn.casier:hover{ background:var(--c-amber);color:#fff; }
+.action-btn.bs-event      { background:var(--bg-blue);color:var(--c-blue);border-color:var(--c-blue)33; }
+.action-btn.bs-event:hover{ background:var(--c-blue);color:#fff; }
+.action-sep { height:1px;background:var(--border);margin:3px 0; }
 
-/* Colored variants */
-.action-btn.teams      { background:var(--bg-indigo); color:var(--c-indigo); border-color:var(--c-indigo)33; }
-.action-btn.teams:hover{ background:var(--c-indigo); color:#fff; }
-
-.action-btn.casier      { background:var(--bg-amber); color:var(--c-amber); border-color:var(--c-amber)33; }
-.action-btn.casier:hover{ background:var(--c-amber); color:#fff; }
-
-.action-btn.bs-event      { background:var(--bg-blue); color:var(--c-blue); border-color:var(--c-blue)33; }
-.action-btn.bs-event:hover{ background:var(--c-blue); color:#fff; }
-
-/* ── Separator between button groups ── */
-.action-sep {
-  height:1px; background:var(--border); margin:3px 0;
+/* ── Show more button ── */
+.show-more {
+  width:100%;margin-top:10px;padding:10px;
+  background:var(--bg3);border:1px dashed var(--border2);
+  border-radius:var(--radius);color:var(--text2);
+  font-size:13px;cursor:pointer;font-family:var(--font);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:background .15s,color .15s;
 }
+.show-more:hover { background:var(--bg2);color:var(--text); }
+
+/* ── Progression tab ── */
+.prog-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px; }
+.prog-card {
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);
+}
+.prog-card .pc-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px; }
+.prog-card .pc-title  { font-size:14px;font-weight:600;line-height:1.3; }
+.prog-card .pc-code   { font-size:11px;font-family:monospace;background:var(--bg-violet);color:var(--c-violet);padding:2px 7px;border-radius:5px;flex-shrink:0; }
+.prog-bar-wrap { background:var(--bg2);border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px; }
+.prog-bar      { height:100%;border-radius:6px;transition:width .4s; }
+.prog-stats    { display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap; }
+.prog-stat     { display:flex;align-items:center;gap:4px; }
+.prog-deadline { font-size:11px;color:var(--text3);margin-top:8px;display:flex;align-items:center;gap:5px; }
+.prog-type-row { display:flex;gap:8px;margin-top:8px;font-size:11px; }
+.prog-type-pill{ padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600; }
+
+.week-chart { margin-bottom:24px; }
+.week-chart h3 { font-size:13px;font-weight:600;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+.week-row { display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12px;position:relative; }
+.week-label { width:76px;color:var(--text2);flex-shrink:0;font-size:11px; }
+.week-bar-wrap { flex:1;background:var(--bg2);border-radius:4px;height:22px;overflow:hidden;display:flex; }
+.week-bar-solid   { height:100%;display:flex;align-items:center;padding-left:6px;font-size:11px;font-weight:700;color:#fff;transition:width .4s;flex-shrink:0; }
+.week-bar-hatch   { height:100%;transition:width .4s;flex-shrink:0; }
+.week-count { flex-shrink:0;color:var(--text2);font-size:11px;width:20px;text-align:right; }
+/* Current week */
+.week-row.week-current .week-label { color:var(--c-blue);font-weight:700; }
+.week-row.week-current .week-bar-wrap { box-shadow:0 0 0 2px var(--c-blue);border-radius:4px; }
+/* Tooltip */
+.week-tooltip {
+  display:none;position:absolute;left:88px;top:26px;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:10px;padding:10px 13px;
+  font-size:11px;z-index:200;box-shadow:var(--shadow);
+  min-width:200px;max-width:320px;line-height:1.9;color:var(--text);
+  pointer-events:none;
+}
+.week-row:hover .week-tooltip { display:block; }
+.week-tooltip .tt-item { display:flex;align-items:baseline;gap:6px; }
+.week-tooltip .tt-dot  { width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:2px; }
 
 /* ── Empty / loading ── */
-.state-box {
-  background:var(--bg3); border:1px solid var(--border);
-  border-radius:var(--radius); padding:3rem 2rem;
-  text-align:center; color:var(--text2);
-}
-.state-box .big-icon { font-size:36px; display:block; margin-bottom:12px; }
+.state-box { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;color:var(--text2); }
+.state-box .big-icon { font-size:36px;display:block;margin-bottom:12px; }
 
 /* ── Footer ── */
-.note { font-size:11px; color:var(--text3); text-align:center; margin-top:24px; line-height:1.8; }
+.note { font-size:11px;color:var(--text3);text-align:center;margin-top:24px;line-height:1.8; }
 
 /* ── Toast ── */
 .toast {
-  position:fixed; bottom:20px; right:20px; z-index:999;
-  background:var(--text); color:var(--bg);
-  padding:10px 16px; border-radius:10px; font-size:13px;
+  position:fixed;bottom:20px;right:20px;z-index:999;
+  background:var(--text);color:var(--bg);
+  padding:10px 16px;border-radius:10px;font-size:13px;
   box-shadow:0 4px 20px rgba(0,0,0,.25);
-  opacity:0; transform:translateY(6px);
-  transition:opacity .25s, transform .25s; pointer-events:none;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .25s,transform .25s;pointer-events:none;
 }
-.toast.show { opacity:1; transform:translateY(0); }
+.toast.show { opacity:1;transform:translateY(0); }
 
-@keyframes spin    { to { transform:rotate(360deg); } }
-@keyframes fade-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-.spin { animation:spin 1s linear infinite; display:inline-block; }
+@keyframes spin    { to{transform:rotate(360deg);} }
+@keyframes fade-in { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+.spin { animation:spin 1s linear infinite;display:inline-block; }
 </style>
 </head>
 <body>
@@ -304,6 +327,9 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
       <button class="btn" id="btn-export" onclick="exportICS()" style="display:none">
         <i class="ti ti-file-download"></i> Export .ics
       </button>
+      <button class="btn" id="btn-theme" onclick="cycleTheme()" title="Changer le thème">
+        <i class="ti ti-sun" id="theme-icon"></i>
+      </button>
       <button class="btn" onclick="toggleSettings()"><i class="ti ti-settings"></i></button>
       <button class="btn primary" onclick="loadCalendar()">
         <i class="ti ti-refresh"></i> Actualiser
@@ -316,8 +342,8 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
     <h3><i class="ti ti-link"></i> URL du calendrier ICS Brightspace</h3>
     <div class="field-row">
       <input type="url" id="ics-url"
-        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN"
-        placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/...">
+        value=""
+        placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
       <button class="btn primary" onclick="loadCalendar()">Charger</button>
     </div>
     <div class="error-msg" id="err-box" style="display:none">
@@ -340,11 +366,11 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
   <div class="setup-card" id="setup-card">
     <div class="icon-wrap"><i class="ti ti-calendar-down"></i></div>
     <h2>Connecte ton agenda Brightspace</h2>
-    <p>Ton URL ICS est déjà configurée. Clique sur <strong>Charger</strong> pour voir tes devoirs et live sessions.</p>
+    <p>Saisis ton URL ICS Brightspace pour voir tes devoirs et live sessions.</p>
     <div class="url-field">
       <input type="url" id="ics-url-setup"
-        value="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN"
-        placeholder="https://emlyon.brightspace.com/...">
+        value=""
+        placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
       <button class="btn primary" onclick="loadFromSetup()">
         <i class="ti ti-player-play"></i> Charger
       </button>
@@ -360,10 +386,8 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
   <!-- Dashboard -->
   <div id="dashboard" style="display:none">
 
-    <!-- Stats -->
     <div class="stats" id="stats-grid"></div>
 
-    <!-- Tabs -->
     <div class="tab-bar">
       <button class="tab active" id="tab-devoirs" onclick="switchTab('devoirs')">
         <i class="ti ti-file-text"></i> Devoirs
@@ -373,9 +397,12 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
         <i class="ti ti-video"></i> Live Sessions
         <span class="badge" id="badge-sessions">0</span>
       </button>
+      <button class="tab" id="tab-prog" onclick="switchTab('prog')">
+        <i class="ti ti-chart-bar"></i> Progression
+      </button>
     </div>
 
-    <!-- Devoirs tab -->
+    <!-- Devoirs pane -->
     <div id="pane-devoirs">
       <div class="filters">
         <button class="chip active" data-filter="all"        onclick="setFilter(this,'devoirs')"><i class="ti ti-list"></i> Tous</button>
@@ -391,7 +418,7 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
       <p class="note" id="footer-devoirs"></p>
     </div>
 
-    <!-- Sessions tab -->
+    <!-- Sessions pane -->
     <div id="pane-sessions" style="display:none">
       <div class="filters">
         <button class="chip active" data-filter="all" onclick="setFilter(this,'sessions')"><i class="ti ti-list"></i> Toutes</button>
@@ -404,630 +431,425 @@ textarea { height:auto; padding:10px 12px; resize:vertical; line-height:1.5; }
       <div class="list" id="sessions-list"></div>
     </div>
 
-  </div><!-- /dashboard -->
-</div><!-- /page -->
+    <!-- Progression pane -->
+    <div id="pane-prog" style="display:none">
+      <div id="prog-content"></div>
+    </div>
+
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 /* ══════════════════════════════════════════════════════════════
-   Config & state
+   Constants & state
 ══════════════════════════════════════════════════════════════ */
-// Proxy cascade :
-// 1. proxy.php local (même serveur → pas de CORS, le plus fiable)
-// 2. corsproxy.io
-// 3. allorigins.win
-// 4. codetabs
-// Chaque entrée retourne { url, isJson } — isJson=true si la réponse est
-// enveloppée dans { contents: "..." } (format allorigins).
-const CORS_PROXIES = [
-  u => ({ url: `proxy.php?url=${encodeURIComponent(u)}`,                          isJson: false }),
-  u => ({ url: `https://corsproxy.io/?url=${encodeURIComponent(u)}`,             isJson: false }),
-  u => ({ url: `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,    isJson: true  }),
-  u => ({ url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, isJson: false }),
-];
-const STORAGE_KEY = 'emmgo_ics_url_v2';
+const STORAGE_KEY  = 'emmgo_ics_url_v2';
+const RENDU_KEY    = 'emmgo_rendu_v1';
+const THEME_KEY    = 'emmgo_theme';
+const PAGE_SIZE    = 5;
 
-let allDevoirs  = [];
-let allSessions = [];
-let filterDevoirs      = 'all';
-let filterSessions     = 'all';
-let filterDiscDevoirs  = 'all';   // active discipline filter for devoirs
-let filterDiscSessions = 'all';   // active discipline filter for sessions
-let currentTab = 'devoirs';
+const CORS_PROXIES = [
+  u => ({ url:`proxy.php?url=${encodeURIComponent(u)}`,                           isJson:false }),
+  u => ({ url:`https://corsproxy.io/?url=${encodeURIComponent(u)}`,              isJson:false }),
+  u => ({ url:`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,     isJson:true  }),
+  u => ({ url:`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,isJson:false }),
+];
+
+let allDevoirs     = [];
+let allSessions    = [];
+let filterDevoirs  = 'all';
+let filterSessions = 'all';
+let filterDiscDevoirs  = 'all';
+let filterDiscSessions = 'all';
+let shownDevoirs   = PAGE_SIZE;
+let shownSessions  = PAGE_SIZE;
+let currentTab     = 'devoirs';
+
+/* ══════════════════════════════════════════════════════════════
+   Theme
+══════════════════════════════════════════════════════════════ */
+const THEMES = ['system','light','dark'];
+const THEME_ICONS = { system:'ti-brightness', light:'ti-sun', dark:'ti-moon' };
+const THEME_LABELS = { system:'Système', light:'Clair', dark:'Sombre' };
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('theme-icon');
+  const btn  = document.getElementById('btn-theme');
+  if (icon) icon.className = `ti ${THEME_ICONS[theme]}`;
+  if (btn)  btn.title = `Thème : ${THEME_LABELS[theme]}`;
+}
+
+function cycleTheme() {
+  const cur  = document.documentElement.getAttribute('data-theme') || 'system';
+  const next = THEMES[(THEMES.indexOf(cur) + 1) % THEMES.length];
+  applyTheme(next);
+  try { localStorage.setItem(THEME_KEY, next); } catch(_) {}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Rendu state (localStorage)
+══════════════════════════════════════════════════════════════ */
+function getRenduMap() {
+  try { return JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { return {}; }
+}
+function isRendu(uid)      { return !!getRenduMap()[uid]; }
+// A devoir is "effectively rendered" if manually checked OR if its date is past.
+// This survives cache loss: past devoirs are always considered rendered.
+function effectivelyRendu(ev) {
+  return isRendu(ev.UID) || getDays(ev._date) < 0;
+}
+function setRendu(uid, val) {
+  const m = getRenduMap();
+  if (val) m[uid] = true; else delete m[uid];
+  try { localStorage.setItem(RENDU_KEY, JSON.stringify(m)); } catch(_) {}
+}
+function toggleRendu(uid, isPast) {
+  if (isPast) return; // past devoirs are auto-rendered, no manual toggle needed
+  setRendu(uid, !isRendu(uid));
+  renderDevoirs();
+  renderProgression();
+  renderStats();
+  toast(isRendu(uid) ? '✓ Marqué comme rendu' : 'Marqué comme non rendu');
+}
 
 /* ══════════════════════════════════════════════════════════════
    Toast
 ══════════════════════════════════════════════════════════════ */
-function toast(msg, dur = 2800) {
+function toast(msg, dur=2600) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), dur);
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), dur);
 }
 
 /* ══════════════════════════════════════════════════════════════
    ICS parsing
 ══════════════════════════════════════════════════════════════ */
 function unfold(txt) {
-  return txt.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n')
-    .reduce((a, l) => {
-      if ((l[0] === ' ' || l[0] === '\t') && a.length) a[a.length - 1] += l.slice(1);
+  return txt.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n')
+    .reduce((a,l) => {
+      if ((l[0]===' '||l[0]==='\t')&&a.length) a[a.length-1]+=l.slice(1);
       else a.push(l);
       return a;
-    }, []);
+    },[]);
 }
-
 function parseICS(txt) {
-  const lines = unfold(txt);
-  const events = [];
-  let cur = null;
-  for (const l of lines) {
-    if (l === 'BEGIN:VEVENT') { cur = {}; }
-    else if (l === 'END:VEVENT' && cur) { events.push(cur); cur = null; }
-    else if (cur) {
-      const ci = l.indexOf(':');
-      if (ci > 0) {
-        // Preserve full key including params (e.g. DTSTART;TZID=...)
-        // but store under the base key name
-        const rawKey = l.slice(0, ci);
-        const key    = rawKey.split(';')[0].toUpperCase();
-        const val    = l.slice(ci + 1);
-        cur[key] = val;
-        // Also store X- properties and their variants verbatim
-        // so getTeamsUrl can scan them
-      }
-    }
+  const lines=unfold(txt),events=[];let cur=null;
+  for(const l of lines){
+    if(l==='BEGIN:VEVENT'){cur={};}
+    else if(l==='END:VEVENT'&&cur){events.push(cur);cur=null;}
+    else if(cur){const ci=l.indexOf(':');if(ci>0){cur[l.slice(0,ci).split(';')[0].toUpperCase()]=l.slice(ci+1);}}
   }
   return events;
 }
-
 function parseDt(s) {
-  if (!s) return null;
-  s = s.trim();
-  const isUTC = s.endsWith('Z');
-  s = s.replace('Z', '');
-  // Date only (VALUE=DATE)
-  if (s.length === 8) return new Date(+s.slice(0,4), +s.slice(4,6)-1, +s.slice(6,8));
-  if (!s.includes('T')) return null;
-  const Y=+s.slice(0,4), M=+s.slice(4,6)-1, D=+s.slice(6,8), h=+s.slice(9,11), m=+s.slice(11,13);
-  // UTC → browser will display in local timezone (Europe/Paris = UTC+2 in summer)
-  if (isUTC) return new Date(Date.UTC(Y, M, D, h, m));
-  // No Z and no TZID → already in local time (TZID=Europe/Paris typically)
-  return new Date(Y, M, D, h, m);
+  if(!s)return null;
+  s=s.trim();
+  const isUTC=s.endsWith('Z');
+  s=s.replace('Z','');
+  if(s.length===8)return new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8));
+  if(!s.includes('T'))return null;
+  const Y=+s.slice(0,4),M=+s.slice(4,6)-1,D=+s.slice(6,8),h=+s.slice(9,11),m=+s.slice(11,13);
+  return isUTC ? new Date(Date.UTC(Y,M,D,h,m)) : new Date(Y,M,D,h,m);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Text cleaning utilities
+   Text helpers
 ══════════════════════════════════════════════════════════════ */
-function unescape(s) {
-  return (s || '').replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\').replace(/\\/g, '');
-}
-function cleanDesc(s) {
-  return unescape(s).replace(/\s+/g, ' ').trim();
-}
-function extractUrls(text) {
-  return (text.match(/https?:\/\/\S+/gi) || []).map(u => u.replace(/[.,;>)]+$/, ''));
-}
+function unescape(s){return(s||'').replace(/\\n/g,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\').replace(/\\/g,'');}
+function cleanDesc(s){return unescape(s).replace(/\s+/g,' ').trim();}
+function extractUrls(text){return(text.match(/https?:\/\/\S+/gi)||[]).map(u=>u.replace(/[),;]+$/,''));}
 
 /* ══════════════════════════════════════════════════════════════
-   Course info extraction
-  
-   Brightspace session title format:
-     2026_PGMC05_2026-03 Management agile et responsable
-  
-   We also look in: CATEGORIES, LOCATION (if not a URL), SUMMARY
+   Course info
 ══════════════════════════════════════════════════════════════ */
-const CODE_RE = /\b([A-Z]{2,5}\d{2,4}[A-Z]?)\b/;
-
-// Parse "2026_PGMC05_2026-03 Management agile et responsable"
-const SESSION_TITLE_RE = /^\d{4}_([A-Z0-9]+)_\d{4}-\d{2}\s+(.+)$/i;
+const SESSION_TITLE_RE=/^\d{4}_([A-Z0-9]+)_\d{4}-\d{2}\s+(.+)$/i;
+const CODE_RE=/\b([A-Z]{2,5}\d{2,4}[A-Z]?)\b/;
 
 function parseCourseInfo(ev) {
-  let code = '', name = '';
-
-  // 1. Try session title format first (most precise for sessions)
-  const titleMatch = (ev.SUMMARY || '').match(SESSION_TITLE_RE);
-  if (titleMatch) {
-    code = titleMatch[1];
-    name = titleMatch[2].trim();
-  }
-
-  // 2. Try CATEGORIES for code/name if not found yet
-  if (!code || !name) {
-    if (ev.CATEGORIES) {
-      const cats = unescape(ev.CATEGORIES).split(',').map(s => s.trim()).filter(Boolean);
-      const skipWords = ['assessment','co-construction','live session','cours distanciel','devoir'];
-
-      for (const cat of cats) {
-        const cl = cat.toLowerCase();
-        if (!code) {
-          const m = cat.match(CODE_RE);
-          if (m) { code = m[1]; continue; }
-        }
-        if (!name && !CODE_RE.test(cat) && !skipWords.some(k => cl.includes(k)) && cat.length > 4) {
-          name = cat;
-        }
-      }
+  let code='',name='';
+  const titleMatch=(ev.SUMMARY||'').match(SESSION_TITLE_RE);
+  if(titleMatch){code=titleMatch[1];name=titleMatch[2].trim();}
+  if(!code&&ev.CATEGORIES){
+    const cats=unescape(ev.CATEGORIES).split(',').map(s=>s.trim()).filter(Boolean);
+    for(const cat of cats){
+      if(!code){const m=cat.match(CODE_RE);if(m){code=m[1];continue;}}
+      const skip=['assessment','co-construction','live session','cours distanciel','devoir'];
+      if(!name&&!CODE_RE.test(cat)&&!skip.some(k=>cat.toLowerCase().includes(k))&&cat.length>4)name=cat;
     }
   }
-
-  // 3. Extract code from SUMMARY if still missing
-  if (!code) {
-    const m = (ev.SUMMARY || '').match(CODE_RE);
-    if (m) code = m[1];
+  if(!code){const m=(ev.SUMMARY||'').match(CODE_RE);if(m)code=m[1];}
+  if(!name){
+    const loc=unescape(ev.LOCATION||'').trim();
+    if(loc&&!loc.startsWith('http')&&!loc.toLowerCase().includes('teams')&&loc.length>3)name=loc;
   }
-
-  // 4. LOCATION as course name if it's not a URL and not a Teams link
-  if (!name) {
-    const loc = unescape(ev.LOCATION || '').trim();
-    if (loc && !loc.startsWith('http') && !loc.toLowerCase().includes('teams') && loc.length > 3) {
-      name = loc;
-    }
-  }
-
-  return { code, name };
+  return{code,name};
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Brightspace URL extraction
-  
-   For devoirs, we expect (in DESCRIPTION or URL field):
-   - "Casier" / dropbox URL  → path contains "dropbox", "locker", "submiss", "evaluation"
-   - "Afficher l'événement"  → URL field or path contains "/le/", "calendar", "courseid"
+   Brightspace URLs
 ══════════════════════════════════════════════════════════════ */
 function parseBrightspaceUrls(ev) {
-  const rawDesc = unescape(ev.DESCRIPTION || '');
-  const rawUrl  = unescape(ev.URL || '').trim();
-
-  const allUrls = [...new Set([
-    rawUrl,
-    ...extractUrls(rawDesc),
-  ])].filter(u => u.length > 10);
-
-  const bsUrls = allUrls.filter(u =>
-    u.includes('brightspace.com') || u.includes('emlyon.bright') || u.includes('d2l')
-  );
-
-  // Casier = dropbox / submission / locker
-  const casierUrl = bsUrls.find(u =>
-    /dropbox|locker|submiss|evaluation\/submissions|/i.test(u)
-  ) || '';
-
-  // Événement = calendar event or course page (prefer URL field)
-  const eventUrl = (() => {
-    if (rawUrl && rawUrl.includes('brightspace')) return rawUrl;
-    return bsUrls.find(u => u !== casierUrl) || '';
-  })();
-
-  return { casierUrl, eventUrl };
+  const rawDesc=unescape(ev.DESCRIPTION||'');
+  const rawUrl=unescape(ev.URL||'').trim();
+  const allUrls=[...new Set([rawUrl,...extractUrls(rawDesc)])].filter(u=>u.length>10);
+  const bsUrls=allUrls.filter(u=>u.includes('brightspace.com')||u.includes('d2l'));
+  const casierUrl=bsUrls.find(u=>/dropbox|locker|submiss/i.test(u))||'';
+  const eventUrl=(()=>{if(rawUrl&&rawUrl.includes('brightspace'))return rawUrl;return bsUrls.find(u=>u!==casierUrl)||'';})();
+  return{casierUrl,eventUrl};
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Teams URL extraction (prioritises LOCATION field)
+   Meeting URL
 ══════════════════════════════════════════════════════════════ */
 function getMeetingUrl(ev) {
-  // The meeting URL (Teams, virtual-room.em-lyon.com, Zoom, etc.)
-  // is embedded in the LOCATION field by Brightspace.
-  // After ICS line-folding is resolved by unfold(), the full URL is on one line.
-  // Example LOCATION value:
-  //   "Cours distanciel/distant classes  /  PGMC09 Live session https://virtual-room.em-lyon.com/pgmc09 (Transformation Digitale)"
-
-  const loc = unescape(ev.LOCATION || '');
-
-  // 1. Extract first URL from LOCATION (most reliable)
-  const fromLoc = extractUrls(loc)[0];
-  if (fromLoc) return fromLoc.replace(/[),;]+$/, ''); // trim trailing punctuation/parentheses
-
-  // 2. Fallback: scan DESCRIPTION, URL, and all X- custom fields
-  const haystack = [
-    ev.DESCRIPTION || '',
-    ev.URL         || '',
-    ...Object.values(ev).filter((_, i) => Object.keys(ev)[i].startsWith('X-')),
-  ].map(unescape).join('\n');
-
-  const m = haystack.match(/https?:\/\/\S+/i);
-  return m ? m[0].replace(/[),;]+$/, '') : '';
+  const loc=unescape(ev.LOCATION||'');
+  const fromLoc=extractUrls(loc)[0];
+  if(fromLoc)return fromLoc.replace(/[),;]+$/,'');
+  const haystack=[ev.DESCRIPTION||'',ev.URL||'',...Object.values(ev).filter((_,i)=>Object.keys(ev)[i].startsWith('X-'))].map(unescape).join('\n');
+  const m=haystack.match(/https?:\/\/\S+/i);
+  return m?m[0].replace(/[),;]+$/,''):'';
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Instructor extraction from DESCRIPTION
-  
-   Brightspace typically writes:
-   "Intervenants : Prénom Nom, Prénom Nom"
-   or includes names at the beginning of the description.
+   Instructors
 ══════════════════════════════════════════════════════════════ */
 function getInstructors(ev) {
-  const desc = unescape(ev.DESCRIPTION || '');
-
-  // Pattern 1: explicit label
-  const explicit = desc.match(/(?:intervenant|professeur|enseignant|animateur|speaker)[s]?\s*[:\-]\s*([^\n]+)/i);
-  if (explicit) return explicit[1].trim();
-
-  // Pattern 2: ORGANIZER field (sometimes present in Brightspace ICS)
-  if (ev.ORGANIZER) {
-    const cn = ev.ORGANIZER.match(/CN=([^:;]+)/i);
-    if (cn) return cn[1].trim();
-  }
-
-  // Pattern 3: first non-URL line of description that looks like a name
-  const lines = desc.split('\n').map(s => s.trim()).filter(s =>
-    s.length > 3 &&
-    s.length < 80 &&
-    !s.startsWith('http') &&
-    !/^\d/.test(s) &&         // not starting with a number
-    !/[<>{}[\]@#]/.test(s)   // not HTML or code
-  );
-  // Return first line if it looks like a name (contains capital letters, no verbs pattern)
-  if (lines[0] && /[A-ZÀÉÈÊ]/.test(lines[0])) return lines[0];
-
+  const desc=unescape(ev.DESCRIPTION||'');
+  const ex=desc.match(/(?:intervenant|professeur|enseignant|animateur|speaker)[s]?\s*[:\-]\s*([^\n]+)/i);
+  if(ex)return ex[1].trim();
+  if(ev.ORGANIZER){const cn=ev.ORGANIZER.match(/CN=([^:;]+)/i);if(cn)return cn[1].trim();}
+  const lines=desc.split('\n').map(s=>s.trim()).filter(s=>s.length>3&&s.length<80&&!s.startsWith('http')&&!/^\d/.test(s)&&!/[<>{}[\]@#]/.test(s));
+  if(lines[0]&&/[A-ZÀÉÈÊ]/.test(lines[0]))return lines[0];
   return '';
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Event classification
+   Classification
 ══════════════════════════════════════════════════════════════ */
 function isDevoir(ev) {
-  const s = (ev.SUMMARY     || '').toLowerCase();
-  const d = (ev.DESCRIPTION || '').toLowerCase();
-  return s.includes('assessment')
-      || s.includes('co-construction')
-      || d.includes('assessment')
-      || d.includes('co-construction')
-      || s.endsWith('à échéance');
+  const s=(ev.SUMMARY||'').toLowerCase(),d=(ev.DESCRIPTION||'').toLowerCase();
+  return s.includes('assessment')||s.includes('co-construction')||d.includes('assessment')||d.includes('co-construction')||s.endsWith('à échéance');
 }
-
 function isSession(ev) {
-  const s = (ev.SUMMARY  || '').toLowerCase();
-  const l = (ev.LOCATION || '').toLowerCase();
-
-  if (s.includes('live session')    || s.includes('cours distanciel'))  return true;
-  if (l.includes('live session')    || l.includes('cours distanciel'))  return true;
-  if (l.includes('teams.microsoft') || l.includes('teams.live.com'))    return true;
-  if (l.includes('virtual-room.em-lyon.com'))                           return true;
-
-  // Title matches Brightspace structured session format: 2026_PGMC05_2026-03 ...
-  if (SESSION_TITLE_RE.test(ev.SUMMARY || ''))                          return true;
-
-  // Any field contains a virtual room URL
-  const allVals = Object.values(ev).join(' ').toLowerCase();
-  if (allVals.includes('virtual-room.em-lyon'))                         return true;
-
+  const s=(ev.SUMMARY||'').toLowerCase(),l=(ev.LOCATION||'').toLowerCase();
+  if(s.includes('live session')||s.includes('cours distanciel'))return true;
+  if(l.includes('live session')||l.includes('cours distanciel'))return true;
+  if(l.includes('teams.microsoft')||l.includes('teams.live.com'))return true;
+  if(l.includes('virtual-room.em-lyon.com'))return true;
+  if(SESSION_TITLE_RE.test(ev.SUMMARY||''))return true;
+  if(Object.values(ev).join(' ').toLowerCase().includes('virtual-room.em-lyon'))return true;
   return false;
 }
-
 function getType(ev) {
-  const s = (ev.SUMMARY||'').toLowerCase(), d = (ev.DESCRIPTION||'').toLowerCase();
-  return (s.includes('co-construction') || d.includes('co-construction')) ? 'collectif' : 'individuel';
+  const s=(ev.SUMMARY||'').toLowerCase(),d=(ev.DESCRIPTION||'').toLowerCase();
+  return(s.includes('co-construction')||d.includes('co-construction'))?'collectif':'individuel';
 }
-
-function cleanDevoirTitle(s) {
-  return s
-    .replace(/^(assessment|co-construction)\s*[:\-]?\s*/i, '')
-    .replace(/\s*à échéance\s*$/i, '')
-    .trim() || s;
-}
-
-function cleanSessionTitle(s) {
-  // Remove the "2026_PGMC05_2026-03" prefix if present
-  const m = s.match(SESSION_TITLE_RE);
-  if (m) return m[2].trim();
-  return s
-    .replace(/live session\s*[:\-]?\s*/i, '')
-    .replace(/cours distanciel\s*[:\-]?\s*/i, '')
-    .trim() || s;
-}
+function cleanDevoirTitle(s){return s.replace(/^(assessment|co-construction)\s*[:\-]?\s*/i,'').replace(/\s*à échéance\s*$/i,'').trim()||s;}
+function cleanSessionTitle(s){const m=s.match(SESSION_TITLE_RE);if(m)return m[2].trim();return s.replace(/live session\s*[:\-]?\s*/i,'').replace(/cours distanciel\s*[:\-]?\s*/i,'').trim()||s;}
 
 /* ══════════════════════════════════════════════════════════════
    Date helpers
 ══════════════════════════════════════════════════════════════ */
-function getDays(d) {
-  const n = new Date(); n.setHours(0,0,0,0);
-  return Math.ceil((d - n) / 86400000);
-}
-function fmtShort(d)  { return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }); }
-function fmtLong(d)   { return d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); }
-function fmtDay(d)    { return d.toLocaleDateString('fr-FR', { weekday:'short' }); }
-function fmtDayNum(d) { return d.toLocaleDateString('fr-FR', { day:'numeric', month:'short' }); }
-function fmtTime(d)   { return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }); }
+function getDays(d){const n=new Date();n.setHours(0,0,0,0);return Math.ceil((d-n)/86400000);}
+function fmtShort(d){return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+function fmtLong(d){return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
+function fmtDay(d){return d.toLocaleDateString('fr-FR',{weekday:'short'});}
+function fmtTime(d){return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function isoWeek(d){const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return 'S'+String(Math.round(((t-w)/86400000+1)/7)).padStart(2,'0')+' '+t.getFullYear();}
+function currentIsoWeek(){ return isoWeek(new Date()); }
 
-function urgColor(n) {
-  if (n < 0)   return 'var(--c-grey)';
-  if (n <= 3)  return 'var(--c-red)';
-  if (n <= 7)  return 'var(--c-orange)';
-  if (n <= 14) return '#5a9620';
-  return 'var(--c-green)';
-}
-function urgBg(n) {
-  if (n < 0)   return 'var(--bg-grey)';
-  if (n <= 3)  return 'var(--bg-red)';
-  if (n <= 7)  return 'var(--bg-orange)';
-  if (n <= 14) return '#edf6d8';
-  return 'var(--bg-green)';
-}
-function urgLabel(n) {
-  if (n < 0)   return `Il y a ${-n}j`;
-  if (n === 0) return "Aujourd'hui !";
-  if (n === 1) return "Demain !";
-  return `J−${n}`;
-}
+function urgColor(n){if(n<0)return'var(--c-grey)';if(n<=3)return'var(--c-red)';if(n<=7)return'var(--c-orange)';if(n<=14)return'#5a9620';return'var(--c-green)';}
+function urgBg(n)   {if(n<0)return'var(--bg-grey)';if(n<=3)return'var(--bg-red)';if(n<=7)return'var(--bg-orange)';if(n<=14)return'#edf6d8';return'var(--bg-green)';}
+function urgLabel(n){if(n<0)return`Il y a ${-n}j`;if(n===0)return"Aujourd'hui !";if(n===1)return"Demain !";return`J−${n}`;}
 
 /* ══════════════════════════════════════════════════════════════
-   Calendar export links
+   External calendar links
 ══════════════════════════════════════════════════════════════ */
-function gcUrl(ev) {
-  const t  = encodeURIComponent(ev.SUMMARY || '');
-  const ds = ev._date    ? ev._date.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z' : '';
-  const de = ev._dateEnd ? ev._dateEnd.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z' : ds;
-  const d  = encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0, 500));
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${ds}/${de}&details=${d}`;
+function gcUrl(ev){
+  const t=encodeURIComponent(ev.SUMMARY||'');
+  const ds=ev._date?ev._date.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z':'';
+  const de=ev._dateEnd?ev._dateEnd.toISOString().replace(/[-:]/g,'').slice(0,15)+'Z':ds;
+  return`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${ds}/${de}&details=${encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0,400))}`;
 }
-function outlookUrl(ev) {
-  const t  = encodeURIComponent(ev.SUMMARY || '');
-  const ds = ev._date    ? ev._date.toISOString() : '';
-  const de = ev._dateEnd ? ev._dateEnd.toISOString() : ds;
-  const d  = encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0, 500));
-  return `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${t}&startdt=${ds}&enddt=${de}&body=${d}`;
+function outlookUrl(ev){
+  const t=encodeURIComponent(ev.SUMMARY||'');
+  const ds=ev._date?ev._date.toISOString():'';
+  const de=ev._dateEnd?ev._dateEnd.toISOString():ds;
+  return`https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${t}&startdt=${ds}&enddt=${de}&body=${encodeURIComponent(cleanDesc(ev.DESCRIPTION).slice(0,400))}`;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Copy task to clipboard
+   Copy task
 ══════════════════════════════════════════════════════════════ */
 function copyTask(idx) {
-  const ev   = allDevoirs[idx];
-  const days = getDays(ev._date);
-  const lines = [
+  const ev=allDevoirs[idx];
+  const days=getDays(ev._date);
+  const lines=[
     `☐ ${ev._title}`,
     `Échéance : ${fmtLong(ev._date)}`,
-    `Type : ${ev._type === 'individuel' ? 'Individuel (Assessment)' : 'Collectif (Co-construction)'}`,
-    ev._courseCode ? `Code matière : ${ev._courseCode}` : null,
-    ev._courseName ? `Matière : ${ev._courseName}` : null,
-    ev._casierUrl  ? `Casier : ${ev._casierUrl}` : null,
-    ev._eventUrl   ? `Événement Brightspace : ${ev._eventUrl}` : null,
-    days >= 0 ? `Délai restant : J−${days}` : '✔ Rendu',
+    `Type : ${ev._type==='individuel'?'Individuel (Assessment)':'Collectif (Co-construction)'}`,
+    ev._courseCode?`Code matière : ${ev._courseCode}`:null,
+    ev._courseName?`Matière : ${ev._courseName}`:null,
+    ev._casierUrl?`Casier : ${ev._casierUrl}`:null,
+    ev._eventUrl?`Événement : ${ev._eventUrl}`:null,
+    days>=0?`Délai restant : J−${days}`:'✔ Rendu',
   ].filter(Boolean).join('\n');
-
   navigator.clipboard.writeText(lines)
-    .then(() => toast('✓ Tâche copiée — colle dans Google Tasks ou Microsoft To Do'))
-    .catch(() => {
-      const ta = document.createElement('textarea');
-      ta.value = lines; document.body.appendChild(ta); ta.select();
-      document.execCommand('copy'); document.body.removeChild(ta);
-      toast('✓ Copié !');
-    });
+    .then(()=>toast('✓ Tâche copiée — colle dans Google Tasks ou Microsoft To Do'))
+    .catch(()=>{const ta=document.createElement('textarea');ta.value=lines;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✓ Copié !');});
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Load & process calendar
+   Load & process
 ══════════════════════════════════════════════════════════════ */
-function getIcsUrl() {
-  return (document.getElementById('ics-url').value
-       || document.getElementById('ics-url-setup').value).trim();
+function getIcsUrl(){return(document.getElementById('ics-url').value||document.getElementById('ics-url-setup').value).trim();}
+function syncUrlFields(){
+  const a=document.getElementById('ics-url').value.trim();
+  const b=document.getElementById('ics-url-setup').value.trim();
+  if(a&&!b)document.getElementById('ics-url-setup').value=a;
+  if(b&&!a)document.getElementById('ics-url').value=b;
 }
-function syncUrlFields() {
-  const a = document.getElementById('ics-url').value.trim();
-  const b = document.getElementById('ics-url-setup').value.trim();
-  if (a && !b) document.getElementById('ics-url-setup').value = a;
-  if (b && !a) document.getElementById('ics-url').value = b;
-}
-function loadFromSetup() {
-  document.getElementById('ics-url').value = document.getElementById('ics-url-setup').value.trim();
-  loadCalendar();
-}
+function loadFromSetup(){document.getElementById('ics-url').value=document.getElementById('ics-url-setup').value.trim();loadCalendar();}
 
 async function loadCalendar() {
   syncUrlFields();
-  const url = getIcsUrl();
-  if (!url) { showError('Merci de renseigner l\'URL de ton calendrier ICS.'); return; }
-  try { localStorage.setItem(STORAGE_KEY, url); } catch(_) {}
+  const url=getIcsUrl();
+  if(!url){showError('Merci de renseigner l\'URL de ton calendrier ICS.');return;}
+  try{localStorage.setItem(STORAGE_KEY,url);}catch(_){}
   showLoading();
-
-  let txt = null;
-
-  // 1. Direct fetch (works locally or if CORS allowed)
-  try {
-    const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
-  } catch(_) {}
-
-  // 2. Proxy cascade (local PHP → proxies publics)
-  if (!txt) {
-    for (const proxyFn of CORS_PROXIES) {
-      try {
-        const { url: proxyUrl, isJson } = proxyFn(url);
-        const r = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
-        if (!r.ok) continue;
-        let body;
-        if (isJson) {
-          const d = await r.json();
-          body = d.contents || d.data || '';
-        } else {
-          body = await r.text();
-        }
-        if (body && body.includes('BEGIN:VCALENDAR')) { txt = body; break; }
-      } catch(_) {}
+  let txt=null;
+  // 1. Proxy local
+  try{const r=await fetch(`proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;}}catch(_){}
+  // 2. Direct
+  if(!txt){try{const r=await fetch(url,{signal:AbortSignal.timeout(5000)});if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;}}catch(_){}}
+  // 3. Public proxies
+  if(!txt){
+    for(const pFn of CORS_PROXIES){
+      try{
+        const p=pFn(url);
+        const r=await fetch(p.url,{signal:AbortSignal.timeout(12000)});
+        if(!r.ok)continue;
+        const ct=r.headers.get('content-type')||'';
+        const body=p.isJson||ct.includes('json')?((await r.json()).contents||''):await r.text();
+        if(body&&body.includes('BEGIN:VCALENDAR')){txt=body;break;}
+      }catch(_){}
     }
   }
-
-  if (!txt) {
-    showError('Impossible de charger automatiquement (CORS Brightspace). Télécharge le .ics depuis Brightspace et colle son contenu ci-dessous.');
-    return;
-  }
+  if(!txt){showError('Impossible de charger le calendrier automatiquement. Vérifie que proxy.php est bien uploadé sur le serveur, ou colle le contenu du .ics ci-dessous.');return;}
   processICS(txt);
 }
 
-function tryPaste(val) {
-  if (val.includes('BEGIN:VCALENDAR')) { hideError(); processICS(val); }
-}
+function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processICS(val);}}
 
 function processICS(txt) {
-  const all = parseICS(txt);
+  const all=parseICS(txt);
 
-  // ── Live sessions (process first to build code→name map) ───────
-  allSessions = all.filter(ev => isSession(ev) && !isDevoir(ev)).map(ev => {
-    const ci = parseCourseInfo(ev);
-    return {
-      ...ev,
-      _date:        parseDt(ev.DTSTART),
-      _dateEnd:     parseDt(ev.DTEND),
-      _title:       cleanSessionTitle(ev.SUMMARY || ''),
-      _courseCode:  ci.code,
-      _courseName:  ci.name,
-      _teamsUrl:    getMeetingUrl(ev),
-      _instructors: getInstructors(ev),
-    };
-  }).filter(e => e._date).sort((a,b) => a._date - b._date);
+  // Sessions first → build code map
+  allSessions=all.filter(ev=>isSession(ev)&&!isDevoir(ev)).map(ev=>{
+    const ci=parseCourseInfo(ev);
+    return{...ev,_date:parseDt(ev.DTSTART),_dateEnd:parseDt(ev.DTEND),_title:cleanSessionTitle(ev.SUMMARY||''),_courseCode:ci.code,_courseName:ci.name,_teamsUrl:getMeetingUrl(ev),_instructors:getInstructors(ev)};
+  }).filter(e=>e._date).sort((a,b)=>a._date-b._date);
 
-  // Build code → long name map from sessions (they carry the full name in the title)
-  const courseCodeMap = {};
-  allSessions.forEach(s => {
-    if (s._courseCode && s._courseName) courseCodeMap[s._courseCode] = s._courseName;
-  });
+  const courseCodeMap={};
+  allSessions.forEach(s=>{if(s._courseCode&&s._courseName)courseCodeMap[s._courseCode]=s._courseName;});
 
-  // ── Devoirs ────────────────────────────────────────────────────
-  allDevoirs = all.filter(isDevoir).map(ev => {
-    const ci     = parseCourseInfo(ev);
-    const bsUrls = parseBrightspaceUrls(ev);
+  // Devoirs
+  allDevoirs=all.filter(isDevoir).map(ev=>{
+    const ci=parseCourseInfo(ev);
+    const bsUrls=parseBrightspaceUrls(ev);
+    const loc=unescape(ev.LOCATION||'').trim();
+    const locIsName=loc&&!loc.startsWith('http')&&!loc.toLowerCase().includes('virtual-room')&&!loc.toLowerCase().includes('teams')&&loc.length>3;
+    let courseName=locIsName?loc:(ci.name||'');
+    const courseCode=ci.code;
+    if(!courseName&&courseCode&&courseCodeMap[courseCode])courseName=courseCodeMap[courseCode];
+    return{...ev,_date:parseDt(ev.DTSTART)||parseDt(ev.DTEND),_dateEnd:parseDt(ev.DTEND),_type:getType(ev),_title:cleanDevoirTitle(ev.SUMMARY||''),_courseCode:courseCode,_courseName:courseName,_casierUrl:bsUrls.casierUrl,_eventUrl:bsUrls.eventUrl};
+  }).filter(e=>e._date).sort((a,b)=>a._date-b._date);
 
-    // LOCATION is the primary source of the discipline name for devoirs
-    // (it's the course/module name set by the teacher, not a URL)
-    const loc = unescape(ev.LOCATION || '').trim();
-    const locIsName = loc
-      && !loc.startsWith('http')
-      && !loc.toLowerCase().includes('virtual-room')
-      && !loc.toLowerCase().includes('teams')
-      && loc.length > 3;
+  shownDevoirs=PAGE_SIZE;
+  shownSessions=PAGE_SIZE;
 
-    // Priority: LOCATION name  →  parseCourseInfo name  →  code-map lookup
-    let courseName = locIsName ? loc : (ci.name || '');
-    const courseCode = ci.code;
-    if (!courseName && courseCode && courseCodeMap[courseCode]) {
-      courseName = courseCodeMap[courseCode];
-    }
-
-    return {
-      ...ev,
-      _date:       parseDt(ev.DTSTART) || parseDt(ev.DTEND),
-      _dateEnd:    parseDt(ev.DTEND),
-      _type:       getType(ev),
-      _title:      cleanDevoirTitle(ev.SUMMARY || ''),
-      _courseCode: courseCode,
-      _courseName: courseName,
-      _casierUrl:  bsUrls.casierUrl,
-      _eventUrl:   bsUrls.eventUrl,
-    };
-  }).filter(e => e._date).sort((a,b) => a._date - b._date);
-
-  // ── Show dashboard ────────────────────────────────────────
   hideLoading();
-  document.getElementById('setup-card').style.display     = 'none';
-  document.getElementById('dashboard').style.display      = '';
-  document.getElementById('btn-export').style.display     = '';
-  document.getElementById('settings-panel').style.display = 'none';
+  document.getElementById('setup-card').style.display='none';
+  document.getElementById('dashboard').style.display='';
+  document.getElementById('btn-export').style.display='';
+  document.getElementById('settings-panel').style.display='none';
 
   updateBadges();
   renderStats();
   renderDevoirs();
   renderSessions();
-  toast(`✓ ${allDevoirs.length} devoir${allDevoirs.length > 1 ? 's' : ''} · ${allSessions.length} live session${allSessions.length > 1 ? 's' : ''}`);
+  renderProgression();
+  toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} sessions`);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Tab & filter
+   Tabs & filters
 ══════════════════════════════════════════════════════════════ */
 function switchTab(tab) {
-  currentTab = tab;
-  document.getElementById('pane-devoirs').style.display  = tab === 'devoirs'  ? '' : 'none';
-  document.getElementById('pane-sessions').style.display = tab === 'sessions' ? '' : 'none';
-  document.getElementById('tab-devoirs').classList.toggle('active',  tab === 'devoirs');
-  document.getElementById('tab-sessions').classList.toggle('active', tab === 'sessions');
-}
-function setFilter(btn, pane) {
-  btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (pane === 'devoirs')  { filterDevoirs  = btn.dataset.filter; renderDevoirs(); }
-  if (pane === 'sessions') { filterSessions = btn.dataset.filter; renderSessions(); }
-}
-
-function setDisciplineFilter(pane, key, btn) {
-  const container = document.getElementById(`disc-filter-${pane}`);
-  container.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  if (pane === 'devoirs')  { filterDiscDevoirs  = key; renderDevoirs(); }
-  if (pane === 'sessions') { filterDiscSessions = key; renderSessions(); }
-}
-
-// Build and inject discipline filter chips for a pane.
-// items = allDevoirs or allSessions, preFiltered by type/past but NOT by discipline.
-function renderDisciplineChips(pane, items) {
-  const container = document.getElementById(`disc-filter-${pane}`);
-  if (!container) return;
-
-  // Count occurrences per discipline (using _courseName as key)
-  const counts = {};
-  items.forEach(ev => {
-    const key = (ev._courseName || '').trim();
-    if (key) counts[key] = (counts[key] || 0) + 1;
+  currentTab=tab;
+  ['devoirs','sessions','prog'].forEach(t=>{
+    document.getElementById(`pane-${t}`).style.display=t===tab?'':'none';
+    const btn=document.getElementById(`tab-${t}`);
+    if(btn)btn.classList.toggle('active',t===tab);
   });
-
-  const disciplines = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-
-  // Hide the bar if 0 or 1 discipline (no point filtering)
-  if (disciplines.length <= 1) { container.style.display = 'none'; return; }
-
-  const activePaneFilter = pane === 'devoirs' ? filterDiscDevoirs : filterDiscSessions;
-  const total = items.length;
-
-  container.style.display = 'flex';
-  container.innerHTML = [
-    // "Toutes" chip
-    `<button class="chip${activePaneFilter === 'all' ? ' active' : ''}"
-       onclick="setDisciplineFilter('${pane}','all',this)">
-       <i class="ti ti-list"></i> Toutes
-       <span class="chip-count">${total}</span>
-     </button>`,
-    // One chip per discipline, sorted by count desc
-    ...disciplines.map(([name, count]) => {
-      const isActive = activePaneFilter === name;
-      // Truncate long names for display
-      const label = name.length > 32 ? name.slice(0, 30) + '…' : name;
-      // Escape for data attribute
-      const safe = name.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-      return `<button class="chip${isActive ? ' active' : ''}" title="${safe}"
-         onclick="setDisciplineFilter('${pane}','${safe}',this)">
-         ${label}<span class="chip-count">${count}</span>
-       </button>`;
+}
+function setFilter(btn,pane) {
+  btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(pane==='devoirs'){filterDevoirs=btn.dataset.filter;shownDevoirs=PAGE_SIZE;renderDevoirs();}
+  if(pane==='sessions'){filterSessions=btn.dataset.filter;shownSessions=PAGE_SIZE;renderSessions();}
+}
+function setDisciplineFilter(pane,key,btn) {
+  document.getElementById(`disc-filter-${pane}`).querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(pane==='devoirs'){filterDiscDevoirs=key;shownDevoirs=PAGE_SIZE;renderDevoirs();}
+  if(pane==='sessions'){filterDiscSessions=key;shownSessions=PAGE_SIZE;renderSessions();}
+}
+function renderDisciplineChips(pane,items) {
+  const container=document.getElementById(`disc-filter-${pane}`);
+  if(!container)return;
+  const counts={};
+  items.forEach(ev=>{const k=(ev._courseName||'').trim();if(k)counts[k]=(counts[k]||0)+1;});
+  const disciplines=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(disciplines.length<=1){container.style.display='none';return;}
+  const active=pane==='devoirs'?filterDiscDevoirs:filterDiscSessions;
+  container.style.display='flex';
+  container.innerHTML=[
+    `<button class="chip${active==='all'?' active':''}" onclick="setDisciplineFilter('${pane}','all',this)"><i class="ti ti-list"></i> Toutes<span class="chip-count">${items.length}</span></button>`,
+    ...disciplines.map(([name,count])=>{
+      const safe=name.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+      const label=name.length>30?name.slice(0,28)+'…':name;
+      return`<button class="chip${active===name?' active':''}" title="${safe}" onclick="setDisciplineFilter('${pane}','${safe}',this)">${label}<span class="chip-count">${count}</span></button>`;
     }),
   ].join('');
 }
-
 function updateBadges() {
-  document.getElementById('badge-devoirs').textContent         = allDevoirs.filter(d => getDays(d._date) >= 0).length;
-  document.getElementById('badge-sessions').textContent        = allSessions.filter(s => getDays(s._date) >= 0).length;
-  document.getElementById('past-count-devoirs').textContent    = allDevoirs.filter(d => getDays(d._date) < 0).length;
-  document.getElementById('past-count-sessions').textContent   = allSessions.filter(s => getDays(s._date) < 0).length;
+  document.getElementById('badge-devoirs').textContent=allDevoirs.filter(d=>getDays(d._date)>=0).length;
+  document.getElementById('badge-sessions').textContent=allSessions.filter(s=>getDays(s._date)>=0).length;
+  document.getElementById('past-count-devoirs').textContent=allDevoirs.filter(d=>getDays(d._date)<0).length;
+  document.getElementById('past-count-sessions').textContent=allSessions.filter(s=>getDays(s._date)<0).length;
 }
 
 /* ══════════════════════════════════════════════════════════════
    Stats
 ══════════════════════════════════════════════════════════════ */
 function renderStats() {
-  const fd     = allDevoirs.filter(d => getDays(d._date) >= 0);
-  const urgent = fd.filter(d => getDays(d._date) <= 7).length;
-  const indiv  = fd.filter(d => d._type === 'individuel').length;
-  const coll   = fd.filter(d => d._type === 'collectif').length;
-  const fs     = allSessions.filter(s => getDays(s._date) >= 0).length;
-
-  const items = [
-    { l:'Devoirs à venir', v:fd.length, sub:`${allDevoirs.filter(d=>getDays(d._date)<0).length} rendu(s)`,   c:'var(--c-blue)',   bg:'var(--bg-blue)',   i:'ti-file-text' },
-    { l:'Individuels',     v:indiv,     sub:'Assessments',                                                    c:'var(--c-indigo)', bg:'var(--bg-indigo)', i:'ti-user'      },
-    { l:'Collectifs',      v:coll,      sub:'Co-constructions',                                               c:'var(--c-green)',  bg:'var(--bg-green)',  i:'ti-users'     },
-    { l:'Urgents ≤7j',     v:urgent,    sub:urgent>0?'À traiter vite':'Rien d\'urgent',                      c:urgent>0?'var(--c-red)':'var(--c-green)', bg:urgent>0?'var(--bg-red)':'var(--bg-green)', i:'ti-alarm' },
-    { l:'Live Sessions',   v:fs,        sub:`${allSessions.filter(s=>getDays(s._date)<0).length} passée(s)`, c:'var(--c-teal)',   bg:'var(--bg-teal)',   i:'ti-video'     },
+  const fd=allDevoirs.filter(d=>getDays(d._date)>=0);
+  const urgent=fd.filter(d=>getDays(d._date)<=7).length;
+  const indiv=fd.filter(d=>d._type==='individuel').length;
+  const coll=fd.filter(d=>d._type==='collectif').length;
+  const rendus=allDevoirs.filter(d=>effectivelyRendu(d)).length;
+  const items=[
+    {l:'À venir',   v:fd.length,  sub:`${allDevoirs.filter(d=>getDays(d._date)<0).length} passé(s)`,c:'var(--c-blue)',  bg:'var(--bg-blue)',  i:'ti-calendar'},
+    {l:'Individuels',v:indiv,     sub:'Assessments',                                                  c:'var(--c-indigo)',bg:'var(--bg-indigo)',i:'ti-user'},
+    {l:'Collectifs', v:coll,      sub:'Co-constructions',                                             c:'var(--c-green)', bg:'var(--bg-green)', i:'ti-users'},
+    {l:'Urgents ≤7j',v:urgent,    sub:urgent>0?'À traiter':'Rien d\'urgent',                         c:urgent>0?'var(--c-red)':'var(--c-green)',bg:urgent>0?'var(--bg-red)':'var(--bg-green)',i:'ti-alarm'},
+    {l:'Rendus',     v:rendus,    sub:`sur ${allDevoirs.length} total`,                               c:'var(--c-teal)',  bg:'var(--bg-teal)',  i:'ti-circle-check'},
   ];
-
-  document.getElementById('stats-grid').innerHTML = items.map(({l,v,sub,c,bg,i}) => `
+  document.getElementById('stats-grid').innerHTML=items.map(({l,v,sub,c,bg,i})=>`
     <div class="stat" style="background:${bg};border-color:${c}22">
       <div class="s-label" style="color:${c}"><i class="ti ${i}"></i> ${l}</div>
       <div class="s-val" style="color:${c}">${v}</div>
@@ -1039,258 +861,277 @@ function renderStats() {
    Render devoirs
 ══════════════════════════════════════════════════════════════ */
 function renderDevoirs() {
-  const showPast = document.getElementById('show-past-devoirs').checked;
+  const showPast=document.getElementById('show-past-devoirs').checked;
+  const base=allDevoirs.filter(d=>filterDevoirs==='all'||d._type===filterDevoirs).filter(d=>showPast||getDays(d._date)>=0);
+  renderDisciplineChips('devoirs',base);
+  const filtered=base.filter(d=>filterDiscDevoirs==='all'||(d._courseName||'').trim()===filterDiscDevoirs);
+  const el=document.getElementById('devoirs-list');
 
-  // Base list (type + past filter only) — used for discipline chip counts
-  const base = allDevoirs
-    .filter(d => filterDevoirs === 'all' || d._type === filterDevoirs)
-    .filter(d => showPast || getDays(d._date) >= 0);
-
-  // Render discipline chips based on base list
-  renderDisciplineChips('devoirs', base);
-
-  // Apply discipline filter on top
-  const filtered = base.filter(d =>
-    filterDiscDevoirs === 'all' || (d._courseName || '').trim() === filterDiscDevoirs
-  );
-
-  const el = document.getElementById('devoirs-list');
-  if (!filtered.length) {
-    el.innerHTML = `<div class="state-box"><i class="ti ti-mood-happy big-icon"></i><p>Aucun devoir pour ce filtre.</p></div>`;
-    document.getElementById('footer-devoirs').textContent = '';
+  if(!filtered.length){
+    el.innerHTML=`<div class="state-box"><i class="ti ti-mood-happy big-icon"></i><p>Aucun devoir pour ce filtre.</p></div>`;
+    document.getElementById('footer-devoirs').textContent='';
     return;
   }
 
-  el.innerHTML = filtered.map((ev, i) => {
-    const idx    = allDevoirs.indexOf(ev);
-    const days   = getDays(ev._date);
-    const isPast = days < 0;
-    const uc = urgColor(days), ub = urgBg(days);
+  const visible=filtered.slice(0,shownDevoirs);
+  const remaining=filtered.length-visible.length;
 
-    // Pills
-    const typePill = ev._type === 'individuel'
-      ? `<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
-      : `<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
-    const pastPill = isPast
-      ? `<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Rendu</span>` : '';
+  el.innerHTML=visible.map((ev,i)=>{
+    const idx=allDevoirs.indexOf(ev);
+    const days=getDays(ev._date);
+    const isPast=days<0;
+    const rendu=effectivelyRendu(ev);           // auto (past) OR manual
+    const manualOnly=isRendu(ev.UID)&&!isPast;  // manually checked, not past
+    const uc=urgColor(days),ub=urgBg(days);
 
-    // Course block
-    const courseBlock = (ev._courseCode || ev._courseName) ? `
+    const typePill=ev._type==='individuel'
+      ?`<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
+      :`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
+
+    const courseBlock=(ev._courseCode||ev._courseName)?`
       <div class="course-block">
-        ${ev._courseCode ? `<span class="course-code">${ev._courseCode}</span>` : ''}
-        ${ev._courseName ? `<span class="course-name">${ev._courseName}</span>` : ''}
-      </div>` : '';
+        ${ev._courseCode?`<span class="course-code">${ev._courseCode}</span>`:''}
+        ${ev._courseName?`<span class="course-name">${ev._courseName}</span>`:''}
+      </div>`:'';
 
-    // Action buttons
-    const casierBtn = ev._casierUrl
-      ? `<a class="action-btn casier" href="${ev._casierUrl}" target="_blank" rel="noopener"
-            title="Déposer le devoir (casier Brightspace)">
-           <i class="ti ti-inbox-up"></i> Casier
-         </a>` : '';
+    const casierBtn=ev._casierUrl?`<a class="action-btn casier" href="${ev._casierUrl}" target="_blank" rel="noopener"><i class="ti ti-inbox-up"></i> Casier</a>`:'';
+    const eventBtn=ev._eventUrl?`<a class="action-btn bs-event" href="${ev._eventUrl}" target="_blank" rel="noopener"><i class="ti ti-school"></i> Afficher l'événement</a>`:'';
+    const bsBlock=(casierBtn||eventBtn)?`${casierBtn}${eventBtn}<div class="action-sep"></div>`:'';
 
-    const eventBtn = ev._eventUrl
-      ? `<a class="action-btn bs-event" href="${ev._eventUrl}" target="_blank" rel="noopener"
-            title="Afficher l'événement dans Brightspace">
-           <i class="ti ti-school"></i> Afficher l'événement
-         </a>` : '';
+    // Checkbox: disabled + italic label for auto-rendered (past) devoirs
+    const checkboxBlock = isPast
+      ? `<span class="rendu-check auto"><i class="ti ti-lock" style="font-size:10px"></i> Rendu automatiquement (date passée)</span>`
+      : `<label class="rendu-check" onclick="toggleRendu('${ev.UID||idx}',false)">
+           <input type="checkbox" ${manualOnly?'checked':''} onclick="event.stopPropagation();toggleRendu('${ev.UID||idx}',false)">
+           Marquer comme rendu
+         </label>`;
 
-    const bsBlock = (casierBtn || eventBtn) ? `
-      ${casierBtn}
-      ${eventBtn}
-      <div class="action-sep"></div>` : '';
-
-    return `
-    <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
+    return`
+    <div class="card-item ${rendu?'rendu':''}" style="animation-delay:${i*25}ms">
       <div class="countdown" style="background:${ub};color:${uc};border-color:${uc}4d">
         <div class="cd-label">${urgLabel(days)}</div>
         <div class="cd-date">${fmtShort(ev._date)}</div>
       </div>
-
       <div class="card-body">
-        <div class="tags">${typePill}${pastPill}</div>
+        <div class="tags">${typePill}${rendu?`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-check"></i> Rendu</span>`:''}</div>
         ${courseBlock}
         <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
-        <div class="card-meta">
-          <i class="ti ti-calendar-event" style="font-size:11px"></i>
-          <span>${fmtLong(ev._date)}</span>
-        </div>
+        <div class="card-meta"><i class="ti ti-calendar-event" style="font-size:11px"></i><span>${fmtLong(ev._date)}</span></div>
+        ${checkboxBlock}
       </div>
-
       <div class="card-actions">
         ${bsBlock}
-        <button class="action-btn" onclick="copyTask(${idx})" title="Copier pour Google Tasks / Microsoft To Do">
-          <i class="ti ti-clipboard-copy"></i> Copier tâche
-        </button>
-        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener">
-          <i class="ti ti-brand-google"></i> Google Cal.
-        </a>
-        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener">
-          <i class="ti ti-brand-office"></i> Outlook
-        </a>
+        <button class="action-btn" onclick="copyTask(${idx})"><i class="ti ti-clipboard-copy"></i> Copier tâche</button>
+        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
+        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
       </div>
     </div>`;
   }).join('');
 
-  document.getElementById('footer-devoirs').innerHTML =
-    `${allDevoirs.length} devoirs dans le calendrier &nbsp;·&nbsp; ` +
-    `<strong>Casier</strong> = déposer le rendu &nbsp;·&nbsp; ` +
-    `<strong>Afficher l'événement</strong> = page Brightspace de l'événement &nbsp;·&nbsp; ` +
-    `<strong>Copier tâche</strong> = coller dans Google Tasks / To Do`;
+  if(remaining>0){
+    el.innerHTML+=`<button class="show-more" onclick="shownDevoirs+=PAGE_SIZE;renderDevoirs()">
+      <i class="ti ti-chevrons-down"></i> Afficher ${Math.min(remaining,PAGE_SIZE)} de plus (${remaining} restants)
+    </button>`;}
+
+  document.getElementById('footer-devoirs').innerHTML=
+    `${filtered.length} devoirs · <strong>Casier</strong> = déposer le rendu · <strong>Copier tâche</strong> = coller dans Google Tasks / To Do`;
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Render live sessions
+   Render sessions
 ══════════════════════════════════════════════════════════════ */
 function renderSessions() {
-  const showPast = document.getElementById('show-past-sessions').checked;
+  const showPast=document.getElementById('show-past-sessions').checked;
+  const base=allSessions.filter(s=>showPast||getDays(s._date)>=0);
+  renderDisciplineChips('sessions',base);
+  const filtered=base.filter(s=>filterDiscSessions==='all'||(s._courseName||'').trim()===filterDiscSessions);
+  const el=document.getElementById('sessions-list');
 
-  // Base list (past filter only) — used for discipline chip counts
-  const base = allSessions.filter(s => showPast || getDays(s._date) >= 0);
+  if(!filtered.length){el.innerHTML=`<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune session à afficher.</p></div>`;return;}
 
-  // Render discipline chips based on base list
-  renderDisciplineChips('sessions', base);
+  const visible=filtered.slice(0,shownSessions);
+  const remaining=filtered.length-visible.length;
 
-  // Apply discipline filter on top
-  const filtered = base.filter(s =>
-    filterDiscSessions === 'all' || (s._courseName || '').trim() === filterDiscSessions
-  );
-
-  const el = document.getElementById('sessions-list');
-  if (!filtered.length) {
-    el.innerHTML = `<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune live session à venir.</p></div>`;
-    return;
-  }
-
-  el.innerHTML = filtered.map((ev, i) => {
-    const days    = getDays(ev._date);
-    const isPast  = days < 0;
-    const hasTime = ev._date && (ev._date.getHours() + ev._date.getMinutes() > 0);
-
-    const startStr = hasTime ? fmtTime(ev._date) : '–';
-    const endStr   = (hasTime && ev._dateEnd) ? fmtTime(ev._dateEnd) : '';
-    const timeStr  = endStr ? `${startStr} – ${endStr}` : startStr;
-    const duration = (hasTime && ev._dateEnd && ev._date)
-      ? Math.round((ev._dateEnd - ev._date) / 60000)
-      : 0;
-
-    // Course block
-    const courseBlock = (ev._courseCode || ev._courseName) ? `
-      <div class="course-block">
-        ${ev._courseCode ? `<span class="course-code">${ev._courseCode}</span>` : ''}
-        ${ev._courseName ? `<span class="course-name">${ev._courseName}</span>` : ''}
-      </div>` : '';
-
-    // Instructors
-    const instructorLine = ev._instructors
-      ? `<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`
-      : '';
-
-    // Join button (virtual room, Teams, Zoom…)
-    const joinBtn = ev._teamsUrl
-      ? `<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"
-            title="Rejoindre la session en ligne (${ev._teamsUrl})">
-           <i class="ti ti-video"></i> Rejoindre
-         </a>
-         <div class="action-sep"></div>` : '';
-
-    return `
+  el.innerHTML=visible.map((ev,i)=>{
+    const days=getDays(ev._date);
+    const isPast=days<0;
+    const hasTime=ev._date&&(ev._date.getHours()+ev._date.getMinutes()>0);
+    const startStr=hasTime?fmtTime(ev._date):'–';
+    const endStr=(hasTime&&ev._dateEnd)?fmtTime(ev._dateEnd):'';
+    const timeStr=endStr?`${startStr} – ${endStr}`:startStr;
+    const duration=(hasTime&&ev._dateEnd&&ev._date)?Math.round((ev._dateEnd-ev._date)/60000):0;
+    const courseBlock=(ev._courseCode||ev._courseName)?`<div class="course-block">${ev._courseCode?`<span class="course-code">${ev._courseCode}</span>`:''}${ev._courseName?`<span class="course-name">${ev._courseName}</span>`:''}</div>`:'';
+    const instructorLine=ev._instructors?`<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`:'';
+    const joinBtn=ev._teamsUrl?`<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener" title="${ev._teamsUrl}"><i class="ti ti-video"></i> Rejoindre</a><div class="action-sep"></div>`:'';
+    return`
     <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
       <div class="time-badge ${isPast?'past-ev':''}">
         <div class="tb-day">${fmtDay(ev._date)}</div>
         <div class="tb-date">${fmtShort(ev._date)}</div>
         <div class="tb-time">${startStr}</div>
       </div>
-
       <div class="card-body">
-        <div class="tags">
-          <span class="pill" style="background:var(--bg-teal);color:var(--c-teal)">
-            <i class="ti ti-video"></i> Live Session
-          </span>
-          ${isPast ? `<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>` : ''}
-        </div>
+        <div class="tags"><span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>${isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>`:''}</div>
         ${courseBlock}
         <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
-        <div class="card-meta">
-          <i class="ti ti-clock" style="font-size:11px"></i>
-          <span>${timeStr}</span>
-          ${duration ? `<span style="color:var(--text3)">·</span><span>${duration} min</span>` : ''}
-        </div>
+        <div class="card-meta"><i class="ti ti-clock" style="font-size:11px"></i><span>${timeStr}</span>${duration?`<span style="color:var(--text3)">·</span><span>${duration} min</span>`:''}</div>
         ${instructorLine}
       </div>
-
       <div class="card-actions">
         ${joinBtn}
-        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener">
-          <i class="ti ti-brand-google"></i> Google Cal.
-        </a>
-        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener">
-          <i class="ti ti-brand-office"></i> Outlook
-        </a>
+        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
+        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
       </div>
     </div>`;
   }).join('');
+
+  if(remaining>0){
+    el.innerHTML+=`<button class="show-more" onclick="shownSessions+=PAGE_SIZE;renderSessions()">
+      <i class="ti ti-chevrons-down"></i> Afficher ${Math.min(remaining,PAGE_SIZE)} de plus (${remaining} restants)
+    </button>`;}
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Render progression
+══════════════════════════════════════════════════════════════ */
+function renderProgression() {
+  const el=document.getElementById('prog-content');
+  if(!el)return;
+  if(!allDevoirs.length){el.innerHTML=`<div class="state-box"><i class="ti ti-chart-bar big-icon"></i><p>Charge le calendrier pour voir ta progression.</p></div>`;return;}
+
+  // ── Données par discipline ───────────────────────────────
+  const disciplines={};
+  allDevoirs.forEach(ev=>{
+    const key=ev._courseName||ev._courseCode||'Sans matière';
+    if(!disciplines[key])disciplines[key]={
+      code:ev._courseCode||'',name:ev._courseName||ev._courseCode||'Sans matière',
+      total:0,rendus:0,individuels:0,collectifs:0,upcoming:[],next:null
+    };
+    const d=disciplines[key];
+    d.total++;
+    if(effectivelyRendu(ev))d.rendus++;
+    if(ev._type==='individuel')d.individuels++;else d.collectifs++;
+    if(getDays(ev._date)>=0)d.upcoming.push(ev);
+    if(!d.next||ev._date<d.next)d.next=ev._date;
+  });
+
+  const discList=Object.values(disciplines).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+
+  const progCards=discList.map(d=>{
+    const pct=d.total>0?Math.round(d.rendus/d.total*100):0;
+    const barColor=pct===100?'var(--c-green)':pct>=50?'var(--c-blue)':'var(--c-orange)';
+    const nextDeadline=d.upcoming.length>0
+      ?`<div class="prog-deadline"><i class="ti ti-alarm" style="font-size:11px"></i>Prochaine : ${fmtShort(d.upcoming[0]._date)} · J−${getDays(d.upcoming[0]._date)}</div>`
+      :`<div class="prog-deadline" style="color:var(--c-green)"><i class="ti ti-circle-check" style="font-size:11px"></i>Tout rendu !</div>`;
+    // Type split pills
+    const typeSplit=`<div class="prog-type-row">
+      ${d.individuels?`<span class="prog-type-pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> ${d.individuels} individuel${d.individuels>1?'s':''}</span>`:''}
+      ${d.collectifs?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> ${d.collectifs} collectif${d.collectifs>1?'s':''}</span>`:''}
+    </div>`;
+    return`
+    <div class="prog-card">
+      <div class="pc-header">
+        <div class="pc-title">${d.name}</div>
+        ${d.code?`<span class="pc-code">${d.code}</span>`:''}
+      </div>
+      <div class="prog-bar-wrap">
+        <div class="prog-bar" style="width:${pct}%;background:${barColor}"></div>
+      </div>
+      <div class="prog-stats">
+        <span class="prog-stat" style="color:var(--c-green)"><i class="ti ti-check"></i>${d.rendus} rendu${d.rendus>1?'s':''}</span>
+        <span class="prog-stat" style="color:var(--c-orange)"><i class="ti ti-clock"></i>${d.upcoming.length} à venir</span>
+        <span class="prog-stat" style="color:var(--text3)">${d.total} total · ${pct}%</span>
+      </div>
+      ${typeSplit}
+      ${nextDeadline}
+    </div>`;
+  }).join('');
+
+  // ── Calendrier des échéances par semaine (8 semaines) ────
+  // Include ALL devoirs in window, not just upcoming — rendered ones are shown hatched
+  const inWindow=allDevoirs.filter(d=>getDays(d._date)>=-7&&getDays(d._date)<=56);
+  const byWeek={};
+  inWindow.forEach(ev=>{
+    const w=isoWeek(ev._date);
+    if(!byWeek[w])byWeek[w]={total:0,rendus:0,items:[]};
+    byWeek[w].total++;
+    if(effectivelyRendu(ev))byWeek[w].rendus++;
+    byWeek[w].items.push(ev);
+  });
+  const weeks=Object.entries(byWeek).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxW=Math.max(...weeks.map(([,v])=>v.total),1);
+  const thisWeek=currentIsoWeek();
+
+  const weekRows=weeks.length?weeks.map(([w,v])=>{
+    const isCurrent=w===thisWeek;
+    const pctTotal=Math.round(v.total/maxW*100);
+    const pctRendu=Math.round(v.rendus/v.total*100);
+    const solidW=Math.round(pctTotal*pctRendu/100);
+    const hatchW=pctTotal-solidW;
+    const barColor=v.total>=3?'var(--c-red)':v.total>=2?'var(--c-orange)':'var(--c-blue)';
+    // Tooltip content
+    const ttItems=v.items.map(ev=>{
+      const r=effectivelyRendu(ev);
+      const dot=r?'var(--c-green)':'var(--c-orange)';
+      return`<div class="tt-item"><span class="tt-dot" style="background:${dot}"></span><span>${ev._title}${ev._courseName?` · <em style="color:var(--text2)">${ev._courseName}</em>`:''} ${r?'✓':''}</span></div>`;
+    }).join('');
+    const label=isCurrent?`<strong>${w} ←</strong>`:w;
+    return`<div class="week-row ${isCurrent?'week-current':''}">
+      <span class="week-label">${label}</span>
+      <div class="week-bar-wrap">
+        <div class="week-bar-solid"  style="width:${solidW}%;background:${barColor}">${solidW>15&&v.rendus>0?v.rendus:''}</div>
+        <div class="week-bar-hatch"  style="width:${hatchW}%;background-color:${barColor};background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.18),rgba(0,0,0,.18) 3px,transparent 3px,transparent 7px);opacity:.6"></div>
+      </div>
+      <span class="week-count">${v.total}</span>
+      <div class="week-tooltip">
+        <strong>${w}${isCurrent?' (cette semaine)':''}</strong><br>${ttItems}
+        <div style="margin-top:6px;color:var(--text3);font-size:10px">
+          ● rendu &nbsp; ○ à rendre &nbsp; hachuré = à faire
+        </div>
+      </div>
+    </div>`;
+  }).join(''):`<p style="font-size:13px;color:var(--text2)">Aucune échéance dans les 8 prochaines semaines.</p>`;
+
+  el.innerHTML=`
+    <div class="prog-grid">${progCards}</div>
+    <div class="week-chart">
+      <h3><i class="ti ti-calendar-stats"></i> Charge par semaine · survole une barre pour voir les devoirs</h3>
+      ${weekRows}
+    </div>`;
 }
 
 /* ══════════════════════════════════════════════════════════════
    Export .ics
 ══════════════════════════════════════════════════════════════ */
 function exportICS() {
-  const showPast = document.getElementById('show-past-devoirs').checked;
-  const toExport = allDevoirs
-    .filter(d => filterDevoirs === 'all' || d._type === filterDevoirs)
-    .filter(d => showPast || getDays(d._date) >= 0);
-
-  const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//EMMGO Dashboard//FR','X-WR-CALNAME:Devoirs EMMGO'];
-  toExport.forEach(ev => {
-    lines.push('BEGIN:VEVENT');
-    ['DTSTART','DTEND','SUMMARY','DESCRIPTION','CATEGORIES','URL','LOCATION','UID'].forEach(k => {
-      if (ev[k]) lines.push(`${k}:${ev[k]}`);
-    });
-    lines.push('END:VEVENT');
-  });
+  const showPast=document.getElementById('show-past-devoirs').checked;
+  const toExport=allDevoirs.filter(d=>filterDevoirs==='all'||d._type===filterDevoirs).filter(d=>showPast||getDays(d._date)>=0);
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//EMMGO Dashboard//FR','X-WR-CALNAME:Devoirs EMMGO'];
+  toExport.forEach(ev=>{lines.push('BEGIN:VEVENT');['DTSTART','DTEND','SUMMARY','DESCRIPTION','CATEGORIES','URL','LOCATION','UID'].forEach(k=>{if(ev[k])lines.push(`${k}:${ev[k]}`);});lines.push('END:VEVENT');});
   lines.push('END:VCALENDAR');
-
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\r\n')], { type:'text/calendar;charset=utf-8' }));
-  a.download = 'devoirs-emmgo.ics';
-  a.click();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\r\n')],{type:'text/calendar;charset=utf-8'}));
+  a.download='devoirs-emmgo.ics';a.click();
   toast('↓ .ics téléchargé');
 }
 
 /* ══════════════════════════════════════════════════════════════
    UI helpers
 ══════════════════════════════════════════════════════════════ */
-function toggleSettings() {
-  const p = document.getElementById('settings-panel');
-  p.style.display = p.style.display === 'none' ? '' : 'none';
-}
-function showLoading() {
-  ['setup-card','err-box','paste-zone'].forEach(id => document.getElementById(id).style.display = 'none');
-  document.getElementById('loading-box').style.display = '';
-  document.getElementById('dashboard').style.display   = 'none';
-}
-function hideLoading() { document.getElementById('loading-box').style.display = 'none'; }
-function showError(msg) {
-  document.getElementById('loading-box').style.display    = 'none';
-  document.getElementById('settings-panel').style.display = '';
-  document.getElementById('err-box').style.display        = '';
-  document.getElementById('err-msg').textContent          = msg;
-  document.getElementById('paste-zone').style.display     = '';
-  if (allDevoirs.length === 0) document.getElementById('setup-card').style.display = '';
-}
-function hideError() { document.getElementById('err-box').style.display = 'none'; }
+function toggleSettings(){const p=document.getElementById('settings-panel');p.style.display=p.style.display==='none'?'':'none';}
+function showLoading(){['setup-card','err-box','paste-zone'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('loading-box').style.display='';document.getElementById('dashboard').style.display='none';}
+function hideLoading(){document.getElementById('loading-box').style.display='none';}
+function showError(msg){document.getElementById('loading-box').style.display='none';document.getElementById('settings-panel').style.display='';document.getElementById('err-box').style.display='';document.getElementById('err-msg').textContent=msg;document.getElementById('paste-zone').style.display='';if(allDevoirs.length===0)document.getElementById('setup-card').style.display='';}
+function hideError(){document.getElementById('err-box').style.display='none';}
 
 /* ══════════════════════════════════════════════════════════════
    Init
 ══════════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', () => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      document.getElementById('ics-url').value       = saved;
-      document.getElementById('ics-url-setup').value = saved;
-    }
-  } catch(_) {}
+window.addEventListener('DOMContentLoaded',()=>{
+  // Theme
+  try{const t=localStorage.getItem(THEME_KEY);if(t)applyTheme(t);else applyTheme('system');}catch(_){applyTheme('system');}
+  // ICS URL
+  try{const saved=localStorage.getItem(STORAGE_KEY);if(saved){document.getElementById('ics-url').value=saved;document.getElementById('ics-url-setup').value=saved;}}catch(_){}
   loadCalendar();
 });
 </script>
