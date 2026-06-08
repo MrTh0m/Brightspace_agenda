@@ -295,6 +295,35 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .state-box { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;color:var(--text2); }
 .state-box .big-icon { font-size:36px;display:block;margin-bottom:12px; }
 
+/* ── Mode badge ── */
+.mode-badge {
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;
+  border:1px solid var(--border);color:var(--text2);background:var(--bg2);white-space:nowrap;
+}
+.mode-badge.connected { background:var(--bg-green);color:var(--c-green);border-color:var(--c-green)44; }
+.mode-badge.share     { background:var(--bg-violet);color:var(--c-violet);border-color:var(--c-violet)44; }
+/* ── Login modal ── */
+.modal-overlay {
+  position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;
+  display:flex;align-items:center;justify-content:center;animation:fade-in .15s ease;
+}
+.modal-box {
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px 28px 24px;width:100%;max-width:360px;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);position:relative;
+}
+.modal-box h3    { font-size:17px;font-weight:700;margin-bottom:5px; }
+.modal-box .msub { font-size:13px;color:var(--text2);margin-bottom:20px; }
+.modal-box input { margin-bottom:10px; }
+.modal-close { position:absolute;top:14px;right:14px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:18px;line-height:1;padding:4px; }
+.modal-error { font-size:12px;color:var(--c-red);margin-top:6px;min-height:16px; }
+/* ── Share & auth UI ── */
+.share-box { background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:8px;font-size:11px;font-family:monospace;word-break:break-all;color:var(--c-violet);border:1px solid var(--border); }
+.read-only-banner { display:flex;align-items:center;gap:8px;background:var(--bg-violet);color:var(--c-violet);border:1px solid var(--c-violet)44;border-radius:8px;padding:8px 14px;font-size:13px;margin-bottom:16px; }
+.auth-section { border-top:1px solid var(--border);margin-top:14px;padding-top:14px; }
+.auth-section h4 { font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:5px; }
+
 /* ── Footer ── */
 .note { font-size:11px;color:var(--text3);text-align:center;margin-top:24px;line-height:1.8; }
 
@@ -321,11 +350,18 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   <div class="topbar">
     <div class="brand">
       <h1>📚 EMMGO · emlyon</h1>
-      <p>Devoirs &amp; Live Sessions · emlyon business school</p>
+      <p>Devoirs &amp; Live Sessions · emlyon business school
+        <span class="mode-badge" id="mode-badge" style="margin-left:6px;vertical-align:middle">
+          <i class="ti ti-user-circle"></i> Invité
+        </span>
+      </p>
     </div>
     <div class="btn-row">
       <button class="btn" id="btn-export" onclick="exportICS()" style="display:none">
         <i class="ti ti-file-download"></i> Export .ics
+      </button>
+      <button class="btn" id="btn-auth" onclick="Auth.showLogin()" title="Se connecter">
+        <i class="ti ti-login"></i>
       </button>
       <button class="btn" id="btn-theme" onclick="cycleTheme()" title="Changer le thème">
         <i class="ti ti-sun" id="theme-icon"></i>
@@ -334,6 +370,23 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       <button class="btn primary" onclick="loadCalendar()">
         <i class="ti ti-refresh"></i> Actualiser
       </button>
+    </div>
+  </div>
+
+  <!-- Login modal -->
+  <div id="login-modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-overlay">
+      <div class="modal-box">
+        <button class="modal-close" onclick="Auth.hideLogin()" title="Fermer"><i class="ti ti-x"></i></button>
+        <h3><i class="ti ti-lock"></i> Connexion</h3>
+        <p class="msub">Mode connecté — données persistantes côté serveur</p>
+        <input type="password" id="login-pwd" placeholder="Mot de passe"
+          onkeydown="if(event.key==='Enter')Auth.submitLogin()">
+        <button class="btn primary" style="width:100%;height:38px;justify-content:center" onclick="Auth.submitLogin()">
+          <i class="ti ti-login"></i> Se connecter
+        </button>
+        <p class="modal-error" id="login-error"></p>
+      </div>
     </div>
   </div>
 
@@ -360,6 +413,26 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         → ouvre avec un éditeur texte → Ctrl+A → colle ici.
       </div>
     </div>
+    <!-- Auth & share section (hidden in guest mode) -->
+    <div class="auth-section" id="auth-section" style="display:none">
+      <h4><i class="ti ti-shield-lock"></i> Mode connecté</h4>
+      <div id="share-section" style="display:none">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:6px">URL de partage en lecture seule :</p>
+        <div class="share-box" id="share-url-box"></div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" style="font-size:11px;height:28px" onclick="Auth.copyShareUrl()"><i class="ti ti-copy"></i> Copier</button>
+          <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenToken()"><i class="ti ti-refresh"></i> Nouveau lien</button>
+          <button class="btn" style="font-size:11px;height:28px" onclick="Auth.disableShare()"><i class="ti ti-link-off"></i> Désactiver</button>
+        </div>
+      </div>
+      <div id="share-disabled-section" style="display:none;margin-top:6px">
+        <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Partage désactivé.</p>
+        <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenToken()"><i class="ti ti-share"></i> Activer le partage</button>
+      </div>
+      <button class="btn" style="margin-top:10px;font-size:12px;height:30px;color:var(--c-red);border-color:var(--c-red)44" onclick="Auth.logout()">
+        <i class="ti ti-logout"></i> Se déconnecter
+      </button>
+    </div>
   </div>
 
   <!-- Setup card -->
@@ -385,7 +458,11 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
   <!-- Dashboard -->
   <div id="dashboard" style="display:none">
-
+    <!-- Read-only banner (share mode) -->
+    <div class="read-only-banner" id="ro-banner" style="display:none">
+      <i class="ti ti-eye"></i>
+      <span>Mode lecture seule — vue partagée, les modifications ne sont pas possibles.</span>
+    </div>
     <div class="stats" id="stats-grid"></div>
 
     <div class="tab-bar">
@@ -490,24 +567,246 @@ function cycleTheme() {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Rendu state (localStorage)
+   Auth & mode management
+══════════════════════════════════════════════════════════════ */
+const Auth = {
+  mode:       'guest',   // 'guest' | 'connected' | 'share'
+  readOnly:   false,
+  shareToken: null,
+  _cache:     null,      // rendu map cache for connected/share mode
+  _apiBase:   'api.php',
+
+  // ── Detect mode on startup ──────────────────────────────
+  async init() {
+    // Check URL for share token
+    const urlParams = new URLSearchParams(window.location.search);
+    const shareParam = urlParams.get('share');
+
+    try {
+      const r = await fetch(`${Auth._apiBase}?action=ping`, { signal: AbortSignal.timeout(3000) });
+      if (!r.ok) throw new Error('api unavailable');
+      const d = await r.json();
+      if (!d.configured) throw new Error('not configured');
+
+      // API available — check config
+      const cfg = await (await fetch(`${Auth._apiBase}?action=get_config`)).json();
+
+      if (shareParam) {
+        // Try share mode — load state before returning so renderDevoirs() sees it
+        try {
+          const sr = await fetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(shareParam)}`,
+                                 { signal: AbortSignal.timeout(8000) });
+          if (sr.ok) {
+            const sd = await sr.json();
+            if (sd.ok) {
+              Auth.mode       = 'share';
+              Auth.readOnly   = true;
+              Auth.shareToken = shareParam;
+              // Normalise: PHP may return an array [] for empty objects — force {}
+              const raw = sd.state?.rendus;
+              Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+              Auth._updateUI();
+              return;
+            }
+          }
+        } catch(_) {}
+        // Invalid or expired token → silent guest fallback
+      }
+
+      if (cfg.logged_in) {
+        await Auth._loadServerState();
+        Auth.mode     = 'connected';
+        Auth.readOnly = false;
+        Auth._updateUI();
+        Auth._showShareInfo(cfg);
+      } else {
+        // Not logged in but API available → show login button
+        Auth.mode = 'guest';
+        Auth._updateUI(true); // showLoginBtn=true
+      }
+    } catch(_) {
+      // api.php absent or unreachable → pure guest mode
+      Auth.mode     = 'guest';
+      Auth.readOnly = false;
+      Auth._updateUI();
+    }
+  },
+
+  async _loadServerState() {
+    const r = await fetch(`${Auth._apiBase}?action=get_state`);
+    if (!r.ok) return;
+    const d = await r.json();
+    Auth._cache = d.state?.rendus || {};
+  },
+
+  async _saveServerState() {
+    if (Auth.mode !== 'connected') return;
+    await fetch(Auth._apiBase, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache } }),
+    });
+  },
+
+  _updateUI(showLoginBtn = false) {
+    const badge  = document.getElementById('mode-badge');
+    const btnAuth = document.getElementById('btn-auth');
+    const authSection = document.getElementById('auth-section');
+    const roBanner = document.getElementById('ro-banner');
+
+    if (Auth.mode === 'connected') {
+      badge.className = 'mode-badge connected';
+      badge.innerHTML = '<i class="ti ti-shield-check"></i> Connecté';
+      if (btnAuth) { btnAuth.title='Se déconnecter'; btnAuth.innerHTML='<i class="ti ti-logout"></i>'; btnAuth.onclick=()=>Auth.logout(); }
+      if (authSection) authSection.style.display='';
+    } else if (Auth.mode === 'share') {
+      badge.className = 'mode-badge share';
+      badge.innerHTML = '<i class="ti ti-eye"></i> Lecture seule';
+      if (btnAuth) btnAuth.style.display='none';
+      // Hide settings button and panel — URL privée Brightspace non exposée
+      const btnSettings = document.querySelector('button[onclick="toggleSettings()"]');
+      if (btnSettings) btnSettings.style.display = 'none';
+      document.getElementById('settings-panel').style.display = 'none';
+      // Hide action buttons — no private URLs exposed in share mode
+      document.getElementById('btn-export').style.display = 'none';
+      if (roBanner) roBanner.style.display='flex';
+    } else {
+      badge.className = 'mode-badge';
+      badge.innerHTML = '<i class="ti ti-user-circle"></i> Invité';
+      if (btnAuth) {
+        btnAuth.style.display = showLoginBtn ? '' : 'none';
+        btnAuth.title = 'Se connecter';
+        btnAuth.innerHTML = '<i class="ti ti-login"></i>';
+        btnAuth.onclick = () => Auth.showLogin();
+      }
+    }
+  },
+
+  _showShareInfo(cfg) {
+    const sec = document.getElementById('auth-section');
+    if (!sec) return;
+    const shareDiv    = document.getElementById('share-section');
+    const noShareDiv  = document.getElementById('share-disabled-section');
+    const shareUrlBox = document.getElementById('share-url-box');
+    if (cfg.share_enabled && cfg.share_token) {
+      const url = `${location.origin}${location.pathname}?share=${cfg.share_token}`;
+      shareUrlBox.textContent = url;
+      Auth._shareUrl = url;
+      shareDiv.style.display   = '';
+      noShareDiv.style.display = 'none';
+    } else {
+      shareDiv.style.display   = 'none';
+      noShareDiv.style.display = '';
+    }
+  },
+
+  // ── Login modal ─────────────────────────────────────────
+  showLogin() {
+    document.getElementById('login-modal').style.display = '';
+    document.getElementById('login-error').textContent   = '';
+    document.getElementById('login-pwd').value           = '';
+    setTimeout(() => document.getElementById('login-pwd').focus(), 50);
+  },
+  hideLogin() { document.getElementById('login-modal').style.display = 'none'; },
+
+  async submitLogin() {
+    const pwd = document.getElementById('login-pwd').value;
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = '';
+    try {
+      const r = await fetch(Auth._apiBase, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ action: 'login', password: pwd }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        Auth.hideLogin();
+        await Auth._loadServerState();
+        Auth.mode     = 'connected';
+        Auth.readOnly = false;
+        Auth._updateUI();
+        // Refresh share info
+        const cfg = await (await fetch(`${Auth._apiBase}?action=get_config`)).json();
+        Auth._showShareInfo(cfg);
+        renderDevoirs(); renderProgression(); renderStats();
+        toast('✓ Connecté — données synchronisées');
+      } else {
+        errEl.textContent = d.error || 'Erreur de connexion';
+      }
+    } catch(_) {
+      errEl.textContent = 'Impossible de joindre le serveur';
+    }
+  },
+
+  async logout() {
+    await fetch(Auth._apiBase, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body:   JSON.stringify({ action: 'logout' }),
+    });
+    Auth.mode = 'guest'; Auth._cache = null;
+    Auth._updateUI();
+    const sec = document.getElementById('auth-section');
+    if (sec) sec.style.display = 'none';
+    renderDevoirs(); renderProgression(); renderStats();
+    toast('Déconnecté — mode invité');
+  },
+
+  async regenToken() {
+    if (!confirm('Régénérer l\'URL de partage ? L\'ancien lien sera immédiatement invalide.')) return;
+    const r = await fetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'regen_token'}),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      Auth._showShareInfo({ share_enabled: true, share_token: d.share_token });
+      toast('✓ Nouveau lien de partage généré');
+    }
+  },
+
+  async disableShare() {
+    if (!confirm('Désactiver le partage ? Le lien actuel sera invalide.')) return;
+    await fetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({action:'disable_share'}),
+    });
+    Auth._showShareInfo({ share_enabled: false });
+    toast('Partage désactivé');
+  },
+
+  copyShareUrl() {
+    if (Auth._shareUrl) {
+      navigator.clipboard.writeText(Auth._shareUrl).then(() => toast('✓ URL copiée'));
+    }
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   Rendu state (localStorage in guest mode, server in connected)
 ══════════════════════════════════════════════════════════════ */
 function getRenduMap() {
-  try { return JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { return {}; }
+  if (Auth.mode === 'guest') {
+    try { return JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { return {}; }
+  }
+  return Auth._cache || {};
 }
-function isRendu(uid)      { return !!getRenduMap()[uid]; }
-// A devoir is "effectively rendered" if manually checked OR if its date is past.
-// This survives cache loss: past devoirs are always considered rendered.
+function isRendu(uid) { return !!getRenduMap()[uid]; }
 function effectivelyRendu(ev) {
   return isRendu(ev.UID) || getDays(ev._date) < 0;
 }
 function setRendu(uid, val) {
   const m = getRenduMap();
   if (val) m[uid] = true; else delete m[uid];
-  try { localStorage.setItem(RENDU_KEY, JSON.stringify(m)); } catch(_) {}
+  if (Auth.mode === 'guest') {
+    try { localStorage.setItem(RENDU_KEY, JSON.stringify(m)); } catch(_) {}
+  } else {
+    Auth._cache = m;
+    Auth._saveServerState(); // async, fire-and-forget
+  }
 }
 function toggleRendu(uid, isPast) {
-  if (isPast) return; // past devoirs are auto-rendered, no manual toggle needed
+  if (isPast || Auth.readOnly) return;
   setRendu(uid, !isRendu(uid));
   renderDevoirs();
   renderProgression();
@@ -653,7 +952,11 @@ function cleanSessionTitle(s){const m=s.match(SESSION_TITLE_RE);if(m)return m[2]
 /* ══════════════════════════════════════════════════════════════
    Date helpers
 ══════════════════════════════════════════════════════════════ */
-function getDays(d){const n=new Date();n.setHours(0,0,0,0);return Math.ceil((d-n)/86400000);}
+function getDays(d) {
+  const target = new Date(d); target.setHours(0,0,0,0); // local midnight
+  const now    = new Date();  now.setHours(0,0,0,0);
+  return Math.round((target - now) / 86400000);
+}
 function fmtShort(d){return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
 function fmtLong(d){return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
 function fmtDay(d){return d.toLocaleDateString('fr-FR',{weekday:'short'});}
@@ -783,6 +1086,20 @@ function processICS(txt) {
   renderSessions();
   renderProgression();
   toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} sessions`);
+
+  // In share mode, refresh state from server once more in case of race condition
+  if (Auth.mode === 'share' && Auth.shareToken) {
+    fetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(Auth.shareToken)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(sd => {
+        if (!sd?.ok) return;
+        const raw = sd.state?.rendus;
+        Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+        renderDevoirs();
+        renderStats();
+        renderProgression();
+      }).catch(() => {});
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -837,17 +1154,22 @@ function updateBadges() {
    Stats
 ══════════════════════════════════════════════════════════════ */
 function renderStats() {
-  const fd=allDevoirs.filter(d=>getDays(d._date)>=0);
-  const urgent=fd.filter(d=>getDays(d._date)<=7).length;
-  const indiv=fd.filter(d=>d._type==='individuel').length;
-  const coll=fd.filter(d=>d._type==='collectif').length;
-  const rendus=allDevoirs.filter(d=>effectivelyRendu(d)).length;
+  const total    = allDevoirs.length;
+  const rendus   = allDevoirs.filter(d=>effectivelyRendu(d)).length;
+  // "À venir" = future AND not yet rendered
+  const fd       = allDevoirs.filter(d=>getDays(d._date)>=0&&!effectivelyRendu(d));
+  const urgent   = fd.filter(d=>getDays(d._date)<=7).length;
+  const indiv    = fd.filter(d=>d._type==='individuel').length;
+  const indivTot = allDevoirs.filter(d=>d._type==='individuel').length;
+  const coll     = fd.filter(d=>d._type==='collectif').length;
+  const collTot  = allDevoirs.filter(d=>d._type==='collectif').length;
+  const pct      = total>0?Math.round(rendus/total*100):0;
   const items=[
-    {l:'À venir',   v:fd.length,  sub:`${allDevoirs.filter(d=>getDays(d._date)<0).length} passé(s)`,c:'var(--c-blue)',  bg:'var(--bg-blue)',  i:'ti-calendar'},
-    {l:'Individuels',v:indiv,     sub:'Assessments',                                                  c:'var(--c-indigo)',bg:'var(--bg-indigo)',i:'ti-user'},
-    {l:'Collectifs', v:coll,      sub:'Co-constructions',                                             c:'var(--c-green)', bg:'var(--bg-green)', i:'ti-users'},
-    {l:'Urgents ≤7j',v:urgent,    sub:urgent>0?'À traiter':'Rien d\'urgent',                         c:urgent>0?'var(--c-red)':'var(--c-green)',bg:urgent>0?'var(--bg-red)':'var(--bg-green)',i:'ti-alarm'},
-    {l:'Rendus',     v:rendus,    sub:`sur ${allDevoirs.length} total`,                               c:'var(--c-teal)',  bg:'var(--bg-teal)',  i:'ti-circle-check'},
+    {l:'À venir',    v:fd.length, sub:`${rendus}/${total} rendus`,               c:'var(--c-blue)',  bg:'var(--bg-blue)',  i:'ti-calendar'},
+    {l:'Individuels',v:indiv,     sub:`${indiv} restants · ${indivTot} total`,    c:'var(--c-indigo)',bg:'var(--bg-indigo)',i:'ti-user'},
+    {l:'Collectifs', v:coll,      sub:`${coll} restants · ${collTot} total`,      c:'var(--c-green)', bg:'var(--bg-green)', i:'ti-users'},
+    {l:'Urgents ≤7j',v:urgent,    sub:urgent>0?'À traiter vite':'Rien d\'urgent', c:urgent>0?'var(--c-red)':'var(--c-green)',bg:urgent>0?'var(--bg-red)':'var(--bg-green)',i:'ti-alarm'},
+    {l:'Rendus',     v:rendus,    sub:`sur ${total} total · ${pct}%`,             c:'var(--c-teal)',  bg:'var(--bg-teal)',  i:'ti-circle-check'},
   ];
   document.getElementById('stats-grid').innerHTML=items.map(({l,v,sub,c,bg,i})=>`
     <div class="stat" style="background:${bg};border-color:${c}22">
@@ -898,8 +1220,9 @@ function renderDevoirs() {
     const eventBtn=ev._eventUrl?`<a class="action-btn bs-event" href="${ev._eventUrl}" target="_blank" rel="noopener"><i class="ti ti-school"></i> Afficher l'événement</a>`:'';
     const bsBlock=(casierBtn||eventBtn)?`${casierBtn}${eventBtn}<div class="action-sep"></div>`:'';
 
-    // Checkbox: disabled + italic label for auto-rendered (past) devoirs
-    const checkboxBlock = isPast
+    // Checkbox: hidden in read-only share mode, locked for auto-rendered past devoirs
+    const checkboxBlock = Auth.readOnly ? ''
+      : isPast
       ? `<span class="rendu-check auto"><i class="ti ti-lock" style="font-size:10px"></i> Rendu automatiquement (date passée)</span>`
       : `<label class="rendu-check" onclick="toggleRendu('${ev.UID||idx}',false)">
            <input type="checkbox" ${manualOnly?'checked':''} onclick="event.stopPropagation();toggleRendu('${ev.UID||idx}',false)">
@@ -920,10 +1243,12 @@ function renderDevoirs() {
         ${checkboxBlock}
       </div>
       <div class="card-actions">
+        ${Auth.readOnly ? '' : `
         ${bsBlock}
         <button class="action-btn" onclick="copyTask(${idx})"><i class="ti ti-clipboard-copy"></i> Copier tâche</button>
         <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
         <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
+        `}
       </div>
     </div>`;
   }).join('');
@@ -978,9 +1303,11 @@ function renderSessions() {
         ${instructorLine}
       </div>
       <div class="card-actions">
+        ${Auth.readOnly ? '' : `
         ${joinBtn}
         <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
         <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
+        `}
       </div>
     </div>`;
   }).join('');
@@ -1011,7 +1338,7 @@ function renderProgression() {
     d.total++;
     if(effectivelyRendu(ev))d.rendus++;
     if(ev._type==='individuel')d.individuels++;else d.collectifs++;
-    if(getDays(ev._date)>=0)d.upcoming.push(ev);
+    if(getDays(ev._date)>=0&&!effectivelyRendu(ev))d.upcoming.push(ev);
     if(!d.next||ev._date<d.next)d.next=ev._date;
   });
 
@@ -1118,7 +1445,11 @@ function exportICS() {
 /* ══════════════════════════════════════════════════════════════
    UI helpers
 ══════════════════════════════════════════════════════════════ */
-function toggleSettings(){const p=document.getElementById('settings-panel');p.style.display=p.style.display==='none'?'':'none';}
+function toggleSettings(){
+  if (Auth.readOnly) return; // URL privée non exposée en mode lecture seule
+  const p=document.getElementById('settings-panel');
+  p.style.display=p.style.display==='none'?'':'none';
+}
 function showLoading(){['setup-card','err-box','paste-zone'].forEach(id=>document.getElementById(id).style.display='none');document.getElementById('loading-box').style.display='';document.getElementById('dashboard').style.display='none';}
 function hideLoading(){document.getElementById('loading-box').style.display='none';}
 function showError(msg){document.getElementById('loading-box').style.display='none';document.getElementById('settings-panel').style.display='';document.getElementById('err-box').style.display='';document.getElementById('err-msg').textContent=msg;document.getElementById('paste-zone').style.display='';if(allDevoirs.length===0)document.getElementById('setup-card').style.display='';}
@@ -1127,11 +1458,13 @@ function hideError(){document.getElementById('err-box').style.display='none';}
 /* ══════════════════════════════════════════════════════════════
    Init
 ══════════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded',()=>{
+window.addEventListener('DOMContentLoaded', async () => {
   // Theme
-  try{const t=localStorage.getItem(THEME_KEY);if(t)applyTheme(t);else applyTheme('system');}catch(_){applyTheme('system');}
+  try { const t=localStorage.getItem(THEME_KEY); applyTheme(t||'system'); } catch(_) { applyTheme('system'); }
   // ICS URL
-  try{const saved=localStorage.getItem(STORAGE_KEY);if(saved){document.getElementById('ics-url').value=saved;document.getElementById('ics-url-setup').value=saved;}}catch(_){}
+  try { const saved=localStorage.getItem(STORAGE_KEY); if(saved){ document.getElementById('ics-url').value=saved; document.getElementById('ics-url-setup').value=saved; } } catch(_) {}
+  // Auth detection (guest / connected / share)
+  await Auth.init();
   loadCalendar();
 });
 </script>
