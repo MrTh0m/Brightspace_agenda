@@ -2,6 +2,17 @@
 /**
  * api.php — Backend EMMGO Dashboard
  */
+
+// ── Session persistante (30 jours) avec flags sécurisés ─────────
+$sessionLifetime = 30 * 24 * 3600; // 30 jours
+ini_set('session.gc_maxlifetime', $sessionLifetime);
+session_set_cookie_params([
+    'lifetime' => $sessionLifetime,
+    'path'     => '/',
+    'secure'   => true,   // HTTPS uniquement
+    'httponly' => true,   // Inaccessible au JS
+    'samesite' => 'Lax',  // Compatible PWA + reverse proxy
+]);
 session_name('emmgo_session');
 session_start();
 
@@ -93,7 +104,16 @@ switch ($action) {
         if (empty($pwd)) respond(['error'=>'Mot de passe manquant'], 400);
         if (!password_verify($pwd, $config['password_hash'])) { sleep(1); respond(['error'=>'Mot de passe incorrect'], 401); }
         $_SESSION['emmgo_auth'] = true;
+        $_SESSION['login_time'] = time();
         session_regenerate_id(true);
+        // Prolonger explicitement le cookie après régénération
+        setcookie(session_name(), session_id(), [
+            'expires'  => time() + $sessionLifetime,
+            'path'     => '/',
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
         respond(['ok'=>true, 'logged_in'=>true, 'ics_url'=>$config['ics_url']??'']);
 
     case 'logout':

@@ -1,0 +1,41 @@
+{
+  "name": "EMMGO Devoirs & Sessions",
+  "short_name": "EMMGO",
+  "description": "Suivi des devoirs et live sessions — emlyon business school",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf9f6",
+  "theme_color": "#1c1b18",
+  "lang": "fr",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Devoirs à venir",
+      "short_name": "Devoirs",
+      "url": "./index.html#devoirs",
+      "description": "Voir les devoirs à rendre"
+    },
+    {
+      "name": "Live Sessions",
+      "short_name": "Sessions",
+      "url": "./index.html#sessions",
+      "description": "Voir les prochaines live sessions"
+    }
+  ]
+}
