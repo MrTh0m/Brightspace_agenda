@@ -95,8 +95,10 @@ switch ($action) {
     case 'get_config':
         $data = ['ok'=>true, 'logged_in'=>isLoggedIn(), 'share_enabled'=>!empty($config['share_token']),
                  'share_token'=> isLoggedIn() ? ($config['share_token']??'') : null];
-        // Renvoyer l'URL ICS au compte connecté (pour pré-remplir le champ)
-        if (isLoggedIn()) $data['ics_url'] = $config['ics_url'] ?? '';
+        if (isLoggedIn()) {
+            $data['ics_url']        = $config['ics_url'] ?? '';
+            $data['dashboard_name'] = $config['dashboard_name'] ?? '';
+        }
         respond($data);
 
     case 'login':
@@ -114,7 +116,16 @@ switch ($action) {
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
-        respond(['ok'=>true, 'logged_in'=>true, 'ics_url'=>$config['ics_url']??'']);
+        respond(['ok'=>true, 'logged_in'=>true, 'ics_url'=>$config['ics_url']??'', 'dashboard_name'=>$config['dashboard_name']??'']);
+
+    // Sauvegarder le nom personnalisé du dashboard
+    case 'save_dashboard_name':
+        requireAuth();
+        $name = trim($input['name'] ?? '');
+        if (strlen($name) > 80) respond(['error'=>'Nom trop long (max 80 car.)'], 400);
+        $config['dashboard_name'] = $name;
+        writeJson(CONFIG_FILE, $config);
+        respond(['ok'=>true]);
 
     case 'logout':
         $_SESSION = []; session_destroy();
@@ -151,7 +162,8 @@ switch ($action) {
         $readOnly   = !isLoggedIn();
         if ($readOnly && !isValidShare($shareToken)) respond(['error'=>'Non autorisé'], 401);
         $state = readJson(STATE_FILE, ['rendus'=>new stdClass()]);
-        respond(['ok'=>true, 'state'=>$state, 'read_only'=>$readOnly]);
+        respond(['ok'=>true, 'state'=>$state, 'read_only'=>$readOnly,
+                 'dashboard_name'=>$config['dashboard_name']??'']);
 
     case 'set_state':
         requireAuth();

@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EMMGO · Devoirs & Sessions</title>
-<meta name="description" content="Suivi des devoirs et live sessions emlyon business school">
+<title id="page-title">Brightspace Agenda · Devoirs & Sessions</title>
+<meta name="description" content="Suivi des devoirs et live sessions — Brightspace by D2L">
 <meta name="theme-color" content="#1c1b18" id="meta-theme-color">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="EMMGO">
+<meta name="apple-mobile-web-app-title" id="apple-title" content="BS Agenda">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
@@ -302,7 +302,30 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .state-box { background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:3rem 2rem;text-align:center;color:var(--text2); }
 .state-box .big-icon { font-size:36px;display:block;margin-bottom:12px; }
 
-/* ── Offline banner ── */
+/* ── Prochaine live session chip ── */
+.next-session-chip {
+  display:none;align-items:center;gap:12px;
+  background:var(--bg-teal);color:var(--c-teal);
+  border:1px solid var(--c-teal)44;border-radius:12px;
+  padding:10px 16px;margin-bottom:16px;
+  cursor:pointer;transition:filter .15s;
+}
+.next-session-chip:hover { filter:brightness(.95); }
+.next-session-chip.visible { display:flex; }
+.nsc-icon { font-size:20px;flex-shrink:0; }
+.nsc-body { flex:1;min-width:0; }
+.nsc-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;opacity:.75;display:block; }
+.nsc-title { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block; }
+.nsc-meta  { font-size:11px;opacity:.8;margin-top:1px; }
+.nsc-right { display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0; }
+.nsc-when  { font-size:12px;font-weight:600;white-space:nowrap; }
+.nsc-badge { font-size:10px;font-weight:700;background:var(--c-teal);color:#fff;padding:2px 7px;border-radius:10px;white-space:nowrap; }
+.nsc-join  { height:28px;padding:0 12px;border-radius:7px;border:none;background:var(--c-teal);color:#fff;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;gap:5px;text-decoration:none;flex-shrink:0;white-space:nowrap; }
+.nsc-join:hover { opacity:.85; }
+@media(max-width:600px){
+  .nsc-right { display:none; }
+  .nsc-join  { display:none; }
+}
 .offline-banner {
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:900;
   background:#2a2932;color:#e8e6e0;
@@ -541,8 +564,8 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   <!-- Topbar -->
   <div class="topbar">
     <div class="brand">
-      <h1>📚 EMMGO · emlyon</h1>
-      <p>Devoirs &amp; Live Sessions · emlyon business school
+      <h1 id="brand-title">📚 Brightspace Agenda</h1>
+      <p id="brand-subtitle">Devoirs &amp; Live Sessions
         <span class="mode-badge" id="mode-badge" style="margin-left:6px;vertical-align:middle">
           <i class="ti ti-user-circle"></i> Invité
         </span>
@@ -614,6 +637,19 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
     <!-- Auth & share section (hidden in guest mode) -->
     <div class="auth-section" id="auth-section" style="display:none">
       <h4><i class="ti ti-shield-lock"></i> Mode connecté</h4>
+      <!-- Nom personnalisé du dashboard -->
+      <div style="margin-bottom:12px">
+        <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px">
+          <i class="ti ti-pencil" style="font-size:11px"></i> Nom du dashboard
+        </label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="dashboard-name-input" placeholder="ex. Master Management 2026"
+            style="flex:1;height:30px;font-size:12px" onkeydown="if(event.key==='Enter')Auth.saveDashboardName()">
+          <button class="btn" style="height:30px;font-size:11px" onclick="Auth.saveDashboardName()">
+            <i class="ti ti-check"></i>
+          </button>
+        </div>
+      </div>
       <div id="share-section" style="display:none">
         <p style="font-size:12px;color:var(--text2);margin-bottom:6px">URL de partage en lecture seule :</p>
         <div class="share-box" id="share-url-box"></div>
@@ -662,6 +698,23 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       <span>Mode lecture seule — vue partagée, les modifications ne sont pas possibles.</span>
     </div>
     <div class="stats" id="stats-grid"></div>
+
+    <!-- Prochaine live session -->
+    <div class="next-session-chip" id="next-session-chip" onclick="switchTab('sessions')">
+      <i class="ti ti-video nsc-icon"></i>
+      <div class="nsc-body">
+        <span class="nsc-label">Prochaine live session</span>
+        <span class="nsc-title" id="nsc-title">—</span>
+        <span class="nsc-meta" id="nsc-meta"></span>
+      </div>
+      <div class="nsc-right">
+        <span class="nsc-when" id="nsc-when"></span>
+        <span class="nsc-badge" id="nsc-badge"></span>
+      </div>
+      <a class="nsc-join" id="nsc-join" href="#" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <i class="ti ti-player-play"></i> Rejoindre
+      </a>
+    </div>
 
     <div class="tab-bar">
       <button class="tab active" id="tab-devoirs" onclick="switchTab('devoirs')">
@@ -715,6 +768,15 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Footer crédits -->
+<footer style="text-align:center;padding:24px 20px 16px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px">
+  <a href="https://github.com/MrTh0m/Brightspace_agenda" target="_blank" rel="noopener"
+     style="color:var(--text2);text-decoration:none;display:inline-flex;align-items:center;gap:5px">
+    <i class="ti ti-brand-github"></i> Brightspace Agenda
+  </a>
+  &nbsp;·&nbsp; Licence MIT &nbsp;·&nbsp; Compatible Brightspace by D2L
+</footer>
 
 <script>
 /* ══════════════════════════════════════════════════════════════
@@ -802,6 +864,11 @@ const Auth = {
               Auth.shareToken = shareParam;
               const raw = sd.state?.rendus;
               Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+              // Nom personnalisé défini par le propriétaire
+              if (sd.dashboard_name) {
+                AppMeta.customName = sd.dashboard_name;
+                updateBrand();
+              }
               Auth._updateUI();
               return;
             }
@@ -823,6 +890,13 @@ const Auth = {
         // Même comportement que post-login : masquer l'URL et afficher le lien de partage
         Auth._showShareInfo(cfg);
         if (cfg.ics_url) Auth._setIcsUrlFields(cfg.ics_url);
+        // Nom personnalisé
+        if (cfg.dashboard_name) {
+          AppMeta.customName = cfg.dashboard_name;
+          updateBrand();
+          const inp = document.getElementById('dashboard-name-input');
+          if (inp) inp.value = cfg.dashboard_name;
+        }
       } else {
         // Not logged in but API available → show login button
         Auth.mode = 'guest';
@@ -951,6 +1025,13 @@ const Auth = {
         }
         // Pré-remplir les champs avec une version masquée (token caché)
         Auth._setIcsUrlFields(serverIcsUrl);
+        // Nom personnalisé du dashboard
+        if (d.dashboard_name) {
+          AppMeta.customName = d.dashboard_name;
+          updateBrand();
+          const inp = document.getElementById('dashboard-name-input');
+          if (inp) inp.value = d.dashboard_name;
+        }
         renderDevoirs(); renderProgression(); renderStats();
         loadCalendar();
         toast('✓ Connecté — données synchronisées');
@@ -996,6 +1077,20 @@ const Auth = {
     });
     Auth._showShareInfo({ share_enabled: false });
     toast('Partage désactivé');
+  },
+
+  async saveDashboardName() {
+    const name = (document.getElementById('dashboard-name-input')?.value || '').trim();
+    const r = await fetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'save_dashboard_name', name }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      AppMeta.customName = name;
+      updateBrand();
+      toast('✓ Nom du dashboard sauvegardé');
+    }
   },
 
   copyShareUrl() {
@@ -1085,6 +1180,61 @@ function toggleRendu(uid, isPast) {
   renderProgression();
   renderStats();
   toast(isRendu(uid) ? '✓ Marqué comme rendu' : 'Marqué comme non rendu');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Métadonnées dynamiques du calendrier & du dashboard
+══════════════════════════════════════════════════════════════ */
+const AppMeta = {
+  calName:     '',   // X-WR-CALNAME du fichier ICS
+  institution: '',   // sous-domaine de l'URL Brightspace (ex. "EMLYON")
+  customName:  '',   // nom personnalisé saisi en mode connecté
+};
+
+// Parse les champs au niveau VCALENDAR (hors VEVENT)
+function parseCalMeta(txt) {
+  const meta = {};
+  const lines = unfold(txt);
+  let depth = 0;
+  for (const l of lines) {
+    if (l.startsWith('BEGIN:')) { depth++; continue; }
+    if (l.startsWith('END:'))   { depth--; continue; }
+    if (depth === 1) { // niveau VCALENDAR uniquement
+      const ci = l.indexOf(':');
+      if (ci > 0) meta[l.slice(0,ci).split(';')[0].toUpperCase()] = l.slice(ci+1);
+    }
+  }
+  return meta;
+}
+
+// Extrait le sous-domaine Brightspace depuis l'URL ICS
+function institutionFromUrl(url) {
+  if (!url) return '';
+  try {
+    const host = new URL(url).hostname; // "emlyon.brightspace.com"
+    if (host.includes('brightspace')) {
+      const sub = host.split('.')[0];   // "emlyon"
+      return sub.charAt(0).toUpperCase() + sub.slice(1); // "Emlyon"
+    }
+  } catch(_) {}
+  return '';
+}
+
+// Met à jour le titre, le sous-titre et les méta du document
+function updateBrand() {
+  const name     = AppMeta.customName || AppMeta.calName || AppMeta.institution || 'Brightspace Agenda';
+  const subtitle = [AppMeta.institution, 'Devoirs & Sessions'].filter(Boolean).join(' · ');
+
+  const h1 = document.getElementById('brand-title');
+  const sub = document.getElementById('brand-subtitle');
+  if (h1) h1.childNodes[0].textContent = `📚 ${name}`;
+  if (sub) sub.childNodes[0].textContent = subtitle + ' ';
+
+  const title = document.getElementById('page-title');
+  if (title) title.textContent = `${name} · Devoirs & Sessions`;
+
+  const appleTitle = document.getElementById('apple-title');
+  if (appleTitle) appleTitle.setAttribute('content', name.slice(0, 15));
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1358,6 +1508,12 @@ function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processIC
 function processICS(txt) {
   const all=parseICS(txt);
 
+  // Métadonnées du calendrier (X-WR-CALNAME, etc.)
+  const calMeta=parseCalMeta(txt);
+  if(calMeta['X-WR-CALNAME'])AppMeta.calName=unescape(calMeta['X-WR-CALNAME']).trim();
+  AppMeta.institution=institutionFromUrl(getIcsUrl());
+  updateBrand();
+
   // Sessions first → build code map
   allSessions=all.filter(ev=>isSession(ev)&&!isDevoir(ev)).map(ev=>{
     const ci=parseCourseInfo(ev);
@@ -1391,6 +1547,7 @@ function processICS(txt) {
 
   updateBadges();
   renderStats();
+  renderNextSessionChip();
   renderDevoirs();
   renderSessions();
   renderProgression();
@@ -1405,6 +1562,10 @@ function processICS(txt) {
         if (!sd?.ok) return;
         const raw = sd.state?.rendus;
         Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+        if (sd.dashboard_name && !AppMeta.customName) {
+          AppMeta.customName = sd.dashboard_name;
+          updateBrand();
+        }
         renderDevoirs();
         renderStats();
         renderProgression();
@@ -1458,6 +1619,53 @@ function updateBadges() {
   document.getElementById('badge-sessions').textContent=allSessions.filter(s=>getDays(s._date)>=0).length;
   document.getElementById('past-count-devoirs').textContent=allDevoirs.filter(d=>getDays(d._date)<0).length;
   document.getElementById('past-count-sessions').textContent=allSessions.filter(s=>getDays(s._date)<0).length;
+}
+
+function renderNextSessionChip() {
+  const chip = document.getElementById('next-session-chip');
+  if (!chip) return;
+
+  // Trouver la prochaine session (future, triée par date)
+  const next = allSessions.filter(s => getDays(s._date) >= 0).sort((a,b) => a._date - b._date)[0];
+
+  if (!next) { chip.classList.remove('visible'); return; }
+
+  const days  = getDays(next._date);
+  const hasTime = next._date && (next._date.getHours() + next._date.getMinutes() > 0);
+  const timeStr = hasTime ? fmtTime(next._date) : '';
+  const endStr  = (hasTime && next._dateEnd) ? ` – ${fmtTime(next._dateEnd)}` : '';
+
+  // Label de timing
+  const whenLabel = days === 0
+    ? `Aujourd'hui${timeStr ? ' à ' + timeStr : ''}`
+    : days === 1
+    ? `Demain${timeStr ? ' à ' + timeStr : ''}`
+    : `${fmtDay(next._date)} ${fmtShort(next._date)}${timeStr ? ' à ' + timeStr : ''}`;
+
+  const badge = days === 0 ? "Aujourd'hui !" : days === 1 ? 'Demain !' : `J−${days}`;
+
+  document.getElementById('nsc-title').textContent = next._title || next._courseName || '—';
+  document.getElementById('nsc-meta').textContent  = [next._courseName && next._courseCode ? next._courseCode : '', next._instructors].filter(Boolean).join(' · ') || (next._courseName || '');
+  document.getElementById('nsc-when').textContent  = whenLabel + endStr;
+  document.getElementById('nsc-badge').textContent = badge;
+
+  const joinBtn = document.getElementById('nsc-join');
+  if (next._teamsUrl && !Auth.readOnly) {
+    joinBtn.href = next._teamsUrl;
+    joinBtn.style.display = '';
+  } else {
+    joinBtn.style.display = 'none';
+  }
+
+  // Couleur urgente si aujourd'hui ou demain
+  chip.style.background = days <= 1 ? 'var(--bg-orange)' : 'var(--bg-teal)';
+  chip.style.color      = days <= 1 ? 'var(--c-orange)' : 'var(--c-teal)';
+  chip.style.borderColor= days <= 1 ? 'var(--c-orange)44' : 'var(--c-teal)44';
+  const joinStyle = days <= 1 ? 'var(--c-orange)' : 'var(--c-teal)';
+  joinBtn.style.background = joinStyle;
+  document.getElementById('nsc-badge').style.background = joinStyle;
+
+  chip.classList.add('visible');
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1934,7 +2142,8 @@ function renderProgression() {
 function exportICS() {
   const showPast=document.getElementById('show-past-devoirs').checked;
   const toExport=allDevoirs.filter(d=>filterDevoirs==='all'||d._type===filterDevoirs).filter(d=>showPast||getDays(d._date)>=0);
-  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//EMMGO Dashboard//FR','X-WR-CALNAME:Devoirs EMMGO'];
+  const expName = AppMeta.customName || AppMeta.calName || 'Brightspace Agenda';
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Brightspace Agenda//FR',`X-WR-CALNAME:${expName} — Devoirs`];
   toExport.forEach(ev=>{lines.push('BEGIN:VEVENT');['DTSTART','DTEND','SUMMARY','DESCRIPTION','CATEGORIES','URL','LOCATION','UID'].forEach(k=>{if(ev[k])lines.push(`${k}:${ev[k]}`);});lines.push('END:VEVENT');});
   lines.push('END:VCALENDAR');
   const a=document.createElement('a');
@@ -2081,7 +2290,7 @@ window.addEventListener('beforeinstallprompt', e => PWA.captureInstallPrompt(e))
 window.addEventListener('appinstalled', () => {
   const btn = document.getElementById('btn-install');
   if (btn) btn.classList.remove('visible');
-  toast('✓ EMMGO installée sur cet appareil');
+  toast('✓ App installée sur cet appareil');
 });
 
 // Démarrer le SW au chargement

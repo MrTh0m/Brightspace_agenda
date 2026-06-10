@@ -1,7 +1,7 @@
 {
-  "name": "EMMGO Devoirs & Sessions",
-  "short_name": "EMMGO",
-  "description": "Suivi des devoirs et live sessions — emlyon business school",
+  "name": "Brightspace Agenda",
+  "short_name": "BS Agenda",
+  "description": "Suivi des devoirs et sessions — compatible Brightspace by D2L",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
@@ -11,18 +11,8 @@
   "lang": "fr",
   "categories": ["education", "productivity"],
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "shortcuts": [
     {

@@ -1,7 +1,10 @@
-# 📚 EMMGO Dashboard — Devoirs & Live Sessions
+# 📚 Brightspace Agenda — Devoirs & Live Sessions
 
-Suivi des devoirs et live sessions emlyon business school.
-Un fichier HTML + un backend PHP léger, hébergeable sur ton propre serveur ou en statique.
+Suivi des devoirs et live sessions pour tout établissement utilisant **Brightspace by D2L**.
+Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveur ou en statique.
+
+🔗 **[github.com/MrTh0m/Brightspace_agenda](https://github.com/MrTh0m/Brightspace_agenda)**
+📄 **Licence MIT** — libre d'utilisation, modification et redistribution.
 
 ---
 
@@ -14,6 +17,10 @@ Un fichier HTML + un backend PHP léger, hébergeable sur ton propre serveur ou 
 | `api.php` | Backend du mode connecté (auth, état rendus, URL ICS, partage) |
 | `setup.php` | Configuration initiale — mot de passe, token de partage |
 | `test-proxy.php` | Diagnostic réseau/PHP — **à supprimer après usage** |
+| `manifest.json` | Manifest PWA — installation sur Android/iOS/Desktop |
+| `sw.js` | Service Worker — cache offline |
+| `icon-192.png` / `icon-512.png` | Icônes PWA |
+| `apple-touch-icon.png` | Icône iOS |
 | `data/` | Dossier créé automatiquement — `config.json`, `state.json` |
 
 ---
@@ -21,129 +28,114 @@ Un fichier HTML + un backend PHP léger, hébergeable sur ton propre serveur ou 
 ## 🔐 Modes de fonctionnement
 
 ### Mode invité (aucune configuration requise)
-- ICS URL stockée dans le `localStorage` du navigateur
-- État "rendu" stocké dans le `localStorage`
-- Utilise `proxy.php` pour récupérer le calendrier Brightspace
-- Si `proxy.php` absent ou inaccessible : cascade vers des proxies publics
+- ICS URL et état "rendu" stockés dans le `localStorage` du navigateur
+- Utilise `proxy.php` pour récupérer le calendrier Brightspace (ou proxies publics en cascade)
 
 ### Mode connecté (1 compte, persistance serveur)
 - Login par mot de passe (bcrypt PHP)
-- URL ICS Brightspace stockée dans `data/config.json` (jamais exposée au navigateur)
-- État "rendu" stocké dans `data/state.json`
-- L'ICS est fetché côté serveur via `api.php?action=fetch_ics` (token Brightspace invisible)
-- Synchronisé sur tous les appareils/navigateurs
+- URL ICS Brightspace stockée dans `data/config.json` — jamais exposée au navigateur
+- État "rendu" stocké dans `data/state.json`, synchronisé sur tous les appareils
+- **Nom personnalisé** du dashboard (ex. "Master Management 2026") configurable dans les paramètres
+- L'ICS est fetché côté serveur via `api.php?action=fetch_ics`
 
 ### Mode lecture seule — lien de partage
 - URL : `https://ton-domaine/index.html?share=TOKEN`
 - Accès en lecture seule, sans connexion
-- Toutes les actions sont masquées (pas de cases à cocher, pas de boutons, pas d'URL visible)
-- Lien invalide ou expiré → page d'erreur explicite avec bouton "Aller à l'accueil"
-- Token désactivable ou régénérable depuis les paramètres
-- **Le bouton "Installer l'app" est masqué** en mode lecture seule : le manifest PWA utilise `start_url: ./index.html` sans le token — l'app installée s'ouvrirait en mode invité. Pour accéder rapidement au lien de partage, utiliser un **bookmark** plutôt que l'installation PWA.
+- Toutes les actions masquées (URL privée Brightspace jamais exposée)
+- Lien invalide → page d'erreur explicite
+- Le bouton "Installer l'app" est masqué en mode share (le `start_url` du manifest ne contient pas le token — utiliser un bookmark à la place)
 
 ---
 
 ## 🚀 Installation sur serveur auto-hébergé
 
-### 1. Prérequis PHP
-
-Le backend nécessite l'extension cURL et OpenSSL. Vérifie avec `test-proxy.php`, puis installe si absent :
+### Prérequis PHP
 
 ```bash
 sudo apt install php8.2-curl
-sudo systemctl restart apache2   # ou nginx / php8.2-fpm
+sudo systemctl restart apache2
 ```
 
-### 2. Upload des fichiers
+Vérifie avec `test-proxy.php`, puis supprime ce fichier.
 
-Copie dans le dossier servi par Apache/Nginx :
-```
-index.html  proxy.php  api.php  setup.php
-```
+### Déploiement
 
-### 3. Configuration initiale
+1. Upload dans le dossier servi par Apache/Nginx :
+   `index.html`, `proxy.php`, `api.php`, `setup.php`, `manifest.json`, `sw.js`, `icon-*.png`, `apple-touch-icon.png`
 
-Visite `https://ton-domaine/setup.php` :
-- Définis un mot de passe (min. 6 caractères)
-- Le dossier `data/` est créé automatiquement avec `.htaccess` bloquant l'accès direct
-- Un token de partage est généré automatiquement
+2. Visite `https://ton-domaine/setup.php` → définis ton mot de passe
 
-### 4. Premier login
+3. Le dossier `data/` est créé automatiquement avec `.htaccess` bloquant l'accès direct
 
-1. Ouvre `index.html`
-2. Clique sur l'icône 🔑 → entre ton mot de passe
-3. Saisis l'URL ICS Brightspace dans les paramètres → **Charger**
-4. L'URL est sauvegardée côté serveur ; sur tout nouveau navigateur elle est chargée automatiquement
-
-### 5. Sécuriser setup.php
-
-```bash
-rm setup.php
-# ou dans .htaccess :
-```
+4. Supprime `setup.php` après configuration :
 ```apache
 <Files "setup.php">
   Require all denied
 </Files>
 ```
 
+### Mises à jour
+
+À chaque modification de `index.html`, incrémenter `SHELL_VER` dans `sw.js` (ex. `v4` → `v5`) pour invalider le cache PWA chez tous les utilisateurs.
+
+---
+
+## 📱 PWA — Installation en app
+
+Fonctionne sur Android, iOS et Chrome Desktop.
+
+- **Android** : Chrome → ⋮ → "Ajouter à l'écran d'accueil" ou bouton **↓ Installer l'app** dans le header
+- **iOS** : Safari → bouton partage → "Sur l'écran d'accueil"
+- **Desktop** : Chrome → icône d'installation dans la barre d'adresse
+
+Mode offline : le Service Worker cache le dernier ICS et l'état des rendus. Une bannière apparaît si le réseau est indisponible.
+
 ---
 
 ## ☁️ Hébergement statique (GitHub Pages / Netlify)
 
-Sans backend PHP, seul le mode invité est disponible.
-Le dashboard tente automatiquement plusieurs proxies CORS en cascade :
+Sans backend PHP, seul le **mode invité** est disponible.
+Proxies CORS publics utilisés en cascade (corsproxy.io, allorigins.win, codetabs.com).
 
-1. `proxy.php` (local — échoue si absent)
-2. `corsproxy.io`
-3. `allorigins.win`
-4. `codetabs.com`
-5. Paste manuelle du fichier `.ics`
-
-### GitHub Pages
-1. Crée un dépôt GitHub (**privé** recommandé — l'URL ICS contient un token personnel)
-2. Upload `index.html` à la racine
-3. **Settings → Pages → Branch: main → Save**
-4. Accessible sur `https://pseudo.github.io/nom-du-repo`
-
-### Netlify
-1. [netlify.com](https://netlify.com) → *Add new site → Deploy manually*
-2. Glisse-dépose `index.html`
+```
+Dépôt GitHub privé → Settings → Pages → Branch: main
+```
 
 ---
 
 ## ✨ Fonctionnalités
 
+### Interface
+- **Titre dynamique** : nom du calendrier (`X-WR-CALNAME`), institution extraite du sous-domaine Brightspace, ou nom personnalisé en mode connecté
+- **Chip "Prochaine live session"** : affiche la prochaine session avec compte à rebours, heure et bouton Rejoindre. Orange si aujourd'hui ou demain.
+- Thème clair / sombre / système (mémorisé)
+- Design responsive — mobile, tablette, desktop
+
 ### Devoirs
-- Détection automatique via mots-clés : `Assessment`, `Co-construction`, `à échéance`
+- Détection automatique : `Assessment`, `Co-construction`, `à échéance`
 - Compte à rebours coloré : rouge ≤ 3j · orange ≤ 7j · vert ≥ 15j (fuseau Europe/Paris)
-- Devoirs passés automatiquement marqués comme rendus (sans cache)
-- Case "Marquer comme rendu" pour les devoirs à venir (persistante)
-- Boutons **Casier** (déposer le rendu) et **Afficher l'événement** (page Brightspace)
+- Devoirs passés = rendus automatiquement (sans cache)
+- Case "Marquer comme rendu" persistante (localStorage ou serveur)
+- Filtres par type (individuel / collectif) et par discipline avec compteurs
+- Boutons **Casier** et **Afficher l'événement** (liens Brightspace)
+- Pagination : 5 éléments par défaut
 
 ### Live Sessions
-- Détection via : `Cours distanciel`, `Live Session`, URL `virtual-room.em-lyon.com` dans LOCATION
-- Extraction du code matière et du nom long depuis le titre (`2026_PGMC05_2026-03 Nom matière`)
-- Bouton **Rejoindre** pointant vers l'URL de la salle virtuelle (champ LOCATION)
-- Intervenants extraits du champ DESCRIPTION
-
-### Filtres & navigation
-- Filtres par type (individuel / collectif) et par discipline avec compteurs
-- Affichage des passés on/off
-- Pagination : 5 éléments par défaut, "Afficher X de plus" en bas
+- Détection : `Cours distanciel`, `Live Session`, URL `virtual-room.em-lyon.com` dans LOCATION
+- Extraction code matière + nom long depuis le titre (`2026_PGMC05_...`) ou parenthèse finale du LOCATION
+- Bouton **Rejoindre** (salle virtuelle)
+- Label "Aujourd'hui" avec badge orange sur la session du jour
 
 ### Onglet Progression
-- Carte par matière : barre de progression, rendus/total, répartition individuel/collectif
-- Histogramme hebdomadaire (8 semaines) avec segment plein (rendus) et hachuré (à rendre)
-- Semaine courante mise en évidence
-- Tooltip au survol : liste des devoirs de la semaine avec statut
+- Cartes par matière : barre de progression, rendus/total, répartition individuel/collectif
+- Histogramme hebdomadaire avec segment hachuré (à rendre) vs plein (rendu)
+- Semaine courante surlignée · tooltip au survol avec liste des devoirs
+- **Gantt** : durées des cours sur la timeline, lignes de charge quotidienne, ligne "Aujourd'hui"
 
-### Interface
-- Thème clair / sombre / système (bouton ☀/🌙, mémorisé)
-- Export `.ics` filtré importable dans Google Calendar ou Outlook
+### Export & intégrations
+- Export `.ics` filtré (importable dans Google Calendar, Outlook, Apple Calendar)
 - Boutons Google Cal. et Outlook (crée un événement à la date d'échéance)
-- Bouton "Copier tâche" → presse-papiers → coller dans Google Tasks / Microsoft To Do
-- Tout masqué en mode lecture seule (aucune URL, aucune action)
+- Bouton "Copier tâche" → presse-papiers → Google Tasks / Microsoft To Do
 
 ---
 
@@ -152,9 +144,23 @@ Le dashboard tente automatiquement plusieurs proxies CORS en cascade :
 | Élément | Protection |
 |---|---|
 | Token ICS Brightspace | Jamais exposé au navigateur en mode connecté/share |
-| Mot de passe | Stocké avec `password_hash()` PHP (bcrypt) |
-| Dossier `data/` | `.htaccess` interdisant l'accès direct |
-| Token de partage | 32 caractères aléatoires, révocable depuis les paramètres |
-| Lien de partage invalide | Page d'erreur explicite, pas de fallback silencieux |
-| Anti-brute-force | Délai de 1s sur mot de passe incorrect |
-| SSRF | Seuls les domaines `emlyon.brightspace.com` et `em-lyon.com` sont autorisés |
+| Mot de passe | `password_hash()` PHP (bcrypt) |
+| Dossier `data/` | `.htaccess` Deny all |
+| Token de partage | 32 caractères aléatoires, révocable |
+| Lien invalide | Page d'erreur explicite (pas de fallback silencieux) |
+| Anti-brute-force | Délai 1s sur mot de passe incorrect |
+| SSRF | Seuls `brightspace.com` et `em-lyon.com` autorisés dans le proxy |
+
+---
+
+## 📄 Licence
+
+MIT License — voir [LICENSE](LICENSE)
+
+```
+Copyright (c) 2025 MrTh0m
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software... (MIT standard)
+```
+
+Compatible avec tout établissement utilisant Brightspace by D2L, quelle que soit la promotion ou le cursus.
