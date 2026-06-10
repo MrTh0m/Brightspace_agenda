@@ -873,6 +873,10 @@ const Auth = {
       document.getElementById('settings-panel').style.display = 'none';
       // Hide action buttons — no private URLs exposed in share mode
       document.getElementById('btn-export').style.display = 'none';
+      // Masquer le bouton install : le start_url du manifest ne contient pas le token
+      // → l'app installée depuis un lien de partage s'ouvrirait en mode invité
+      const btnInstall = document.getElementById('btn-install');
+      if (btnInstall) btnInstall.classList.remove('visible');
       if (roBanner) roBanner.style.display='flex';
     } else {
       badge.className = 'mode-badge';

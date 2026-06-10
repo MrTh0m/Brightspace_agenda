@@ -39,6 +39,7 @@ Un fichier HTML + un backend PHP léger, hébergeable sur ton propre serveur ou 
 - Toutes les actions sont masquées (pas de cases à cocher, pas de boutons, pas d'URL visible)
 - Lien invalide ou expiré → page d'erreur explicite avec bouton "Aller à l'accueil"
 - Token désactivable ou régénérable depuis les paramètres
+- **Le bouton "Installer l'app" est masqué** en mode lecture seule : le manifest PWA utilise `start_url: ./index.html` sans le token — l'app installée s'ouvrirait en mode invité. Pour accéder rapidement au lien de partage, utiliser un **bookmark** plutôt que l'installation PWA.
 
 ---
 
