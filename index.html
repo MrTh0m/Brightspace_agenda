@@ -1026,22 +1026,34 @@ const Notif = {
   _startTimer() { this._stopTimer(); this._timer = setInterval(()=>this.check(), 60000); },
   _stopTimer()  { if (this._timer) clearInterval(this._timer); this._timer = null; },
 
+  // Affiche une notification via le Service Worker (requis sur PWA Android installée)
+  // avec repli sur le constructeur Notification (desktop / onglet navigateur)
+  async _show(title, opts) {
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) { await reg.showNotification(title, opts); return; }
+      }
+    } catch(_) {}
+    try { new Notification(title, opts); } catch(_) {}
+  },
+
   _saveSent() { try { localStorage.setItem(NOTIF_SENT_KEY, JSON.stringify(this.sent)); } catch(_) {} },
 
   _notify(id, title, body) {
     if (this.sent[id]) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    try { new Notification(title, { body, tag:id, icon:'icon-192.png', badge:'icon-192.png' }); } catch(_) {}
+    this._show(title, { body, tag:id, icon:'icon-192.png', badge:'icon-192.png' });
     this.sent[id] = Date.now();
     this._saveSent();
   },
 
-  test() {
+  async test() {
     if (!('Notification' in window) || Notification.permission !== 'granted') {
       toast('⚠ Active d\'abord les notifications');
       return;
     }
-    try { new Notification('Brightspace Agenda', { body:'Notification de test ✓', icon:'icon-192.png' }); } catch(_) {}
+    await this._show('Brightspace Agenda', { body:'Notification de test ✓', icon:'icon-192.png', badge:'icon-192.png', tag:'test-'+Date.now() });
   },
 
   // Vérification périodique — n'envoie chaque notification qu'une seule fois (anti-spam via this.sent)
@@ -2906,7 +2918,6 @@ function renderProgression() {
    UI helpers
 ══════════════════════════════════════════════════════════════ */
 function toggleSettings(){
-  if (Auth.readOnly) return;
   const p=document.getElementById('settings-panel');
   p.style.display=p.style.display==='none'?'':'none';
   // En mode connecté, afficher le bouton crayon pour modifier l'URL

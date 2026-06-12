@@ -6,7 +6,7 @@
  *   - API (api.php, proxy.php) : réseau d'abord, cache en secours
  */
 
-const SHELL_VER = 'emmgo-shell-v4';
+const SHELL_VER = 'emmgo-shell-v5';
 const DATA_VER  = 'emmgo-data-v4';
 const ALL_CACHES = [SHELL_VER, DATA_VER];
 
@@ -141,4 +141,16 @@ self.addEventListener('message', event => {
       event.source?.postMessage({ type: 'DATA_CACHE_CLEARED' })
     );
   }
+});
+
+// ── Clic sur une notification : focus l'app si déjà ouverte, sinon ouvre-la ──
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientsArr => {
+      const existing = clientsArr.find(c => 'focus' in c);
+      if (existing) return existing.focus();
+      return self.clients.openWindow('./');
+    })
+  );
 });
