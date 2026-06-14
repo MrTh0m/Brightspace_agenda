@@ -61,10 +61,63 @@ body { font-family:var(--font);background:var(--bg);color:var(--text);min-height
 .page { max-width:940px;margin:0 auto;padding:28px 20px 60px; }
 
 /* ── Topbar ── */
-.topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:28px; }
-.brand h1 { font-size:20px;font-weight:700;letter-spacing:-.3px; }
-.brand p  { font-size:12px;color:var(--text2);margin-top:3px; }
+.topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:28px;
+  position:sticky;top:0;z-index:200;background:var(--bg);
+  padding:16px 20px 14px;margin-left:-20px;margin-right:-20px;
+  border-bottom:1px solid transparent;
+  transition:padding .2s, border-color .2s, box-shadow .2s;
+}
+.topbar.compact {
+  padding:8px 20px;margin-bottom:0;
+  border-color:var(--border);
+  box-shadow:0 2px 12px rgba(0,0,0,.06);
+}
+.topbar.compact .install-btn { display:none !important; }
+.brand-row { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+.brand h1 { font-size:20px;font-weight:700;letter-spacing:-.3px;transition:font-size .2s; }
+.brand p  { font-size:12px;color:var(--text2);margin-top:3px;transition:opacity .2s; }
 .btn-row  { display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+.topbar.compact .brand p  { display:none; }
+.topbar.compact .brand h1 { font-size:15px; }
+
+/* ── Tab bar sticky (sous le topbar compact) ── */
+.tab-sticky-wrap { position:sticky;top:0;z-index:199;background:var(--bg);transition:top .2s; }
+
+/* ── Filtres sticky (restent visibles au scroll) ── */
+.filters-sticky {
+  position: sticky;
+  top: var(--filter-top, 120px);
+  z-index: 150;
+  background: var(--bg);
+  margin-left: -20px;
+  margin-right: -20px;
+  padding: 6px 20px;
+  border-bottom: 0.5px solid var(--border);
+}
+/* Deuxième ligne : filtres discipline, empilés sous les filtres principaux */
+.disc-filters {
+  position: sticky;
+  top: var(--disc-filter-top, 165px);
+  z-index: 149;
+  background: var(--bg);
+  margin-left: -20px;
+  margin-right: -20px;
+  padding: 4px 20px;
+  border-bottom: 0.5px solid var(--border);
+}
+@media(max-width:600px){
+  .filters-sticky,.disc-filters { margin-left: -16px; margin-right: -16px; padding: 5px 16px; }
+}
+#btn-top {
+  position:fixed;bottom:24px;right:20px;z-index:500;
+  width:44px;height:44px;border-radius:50%;
+  background:var(--text);color:var(--bg);border:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  cursor:pointer;font-size:18px;
+  display:none;align-items:center;justify-content:center;
+  transition:opacity .2s, transform .2s;
+}
+#btn-top:hover { opacity:.85; transform:translateY(-2px); }
 
 /* ── Buttons ── */
 .btn {
@@ -144,7 +197,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   margin-bottom:-2px;display:flex;align-items:center;gap:7px;transition:color .15s;
 }
 .tab:hover { color:var(--text); }
-.tab.active { color:var(--text);border-bottom-color:var(--text); }
+.tab.active { color:var(--text);font-weight:700;border-bottom-color:transparent;box-shadow:inset 0 -3px 0 var(--text); }
 .tab .badge {
   display:inline-flex;align-items:center;justify-content:center;
   min-width:18px;height:18px;padding:0 5px;
@@ -326,8 +379,11 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .nsc-join  { height:28px;padding:0 12px;border-radius:7px;border:none;background:var(--c-teal);color:#fff;font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;display:flex;align-items:center;gap:5px;text-decoration:none;flex-shrink:0;white-space:nowrap; }
 .nsc-join:hover { opacity:.85; }
 @media(max-width:600px){
-  .nsc-right { display:none; }
-  .nsc-join  { display:none; }
+  .next-session-chip { flex-wrap:wrap;gap:8px; }
+  .nsc-body { flex:1 1 70%; }
+  .nsc-right { flex-shrink:0;align-items:flex-end; }
+  .nsc-join  { height:26px;padding:0 10px;font-size:10px; }
+  .nsc-icon  { display:none; }
 }
 /* ── Onglet Groupe de travail ── */
 .group-section{margin-bottom:24px}.group-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.group-section-title{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;margin:0}.group-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start}.group-time-badge{border-radius:8px;padding:8px 10px;text-align:center;min-width:58px;flex-shrink:0;background:var(--bg-green);color:var(--c-green);border:1px solid var(--c-green)33}.group-time-badge.subgroup{background:var(--bg-orange);color:var(--c-orange);border-color:var(--c-orange)33}.group-time-badge.past{background:var(--bg-grey);color:var(--c-grey);border-color:transparent}.gtb-day{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px}.gtb-date{font-size:13px;font-weight:700;margin:2px 0}.gtb-time{font-size:9px;opacity:.8}.group-card-body{flex:1;min-width:0}.group-card-title{font-size:14px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.group-card-meta{font-size:11px;color:var(--text2)}.group-tag-btn{font-size:10px;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);margin-top:5px;display:inline-flex;align-items:center;gap:4px}.group-tag-btn:hover{border-color:var(--c-blue);color:var(--c-blue)}.group-tag-btn.tagged{border-style:solid;background:var(--bg-violet);color:var(--c-violet);border-color:var(--c-violet)44}.tag-form{margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:8px;display:none}.tag-form.open{display:block}.tag-form select{width:100%;height:30px;margin-bottom:6px;padding:0 8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--font);cursor:pointer}.tag-form-actions{display:flex;gap:6px}.view-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}.view-toggle button{height:28px;padding:0 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-family:var(--font);display:flex;align-items:center;gap:4px}.view-toggle button.active{background:var(--text);color:var(--bg)}.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}.week-nav-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}.week-nav-btn:hover{background:var(--bg2)}.week-nav-label{font-size:13px;font-weight:600;flex:1;text-align:center}.week-grid{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.week-grid-header,.week-grid-body{display:grid;grid-template-columns:38px repeat(7,1fr)}.week-grid-header{background:var(--bg2);border-bottom:1px solid var(--border)}.wgh-cell{padding:5px 2px;text-align:center;font-size:10px;font-weight:600;color:var(--text2)}.wgh-cell.today{color:var(--c-blue)}.wg-time{border-right:1px solid var(--border);border-bottom:0.5px solid var(--border);padding:3px 4px;font-size:9px;color:var(--text3);text-align:right;display:flex;align-items:flex-start;justify-content:flex-end}.wg-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:28px;padding:2px;display:flex;flex-direction:column;gap:1px}.wg-event{border-radius:3px;padding:1px 4px;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}.wg-live{background:var(--bg-teal);color:var(--c-teal)}.wg-group{background:var(--bg-green);color:var(--c-green)}.wg-overlap{background:var(--bg-orange);color:var(--c-orange)}.group-subject-table{width:100%;border-collapse:collapse;font-size:12px}.group-subject-table th{font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg2)}.group-subject-table td{padding:7px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle}.group-subject-table tr:last-child td{border-bottom:none}.gs-dots{display:flex;gap:3px}.gs-dot{width:7px;height:7px;border-radius:50%}.private-url-section{border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:none}.private-url-section.visible{display:block}
@@ -471,8 +527,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   .page { padding: 14px 12px 48px; }
 
   /* ── Topbar ── */
-  .topbar   { gap: 10px; margin-bottom: 18px; }
+  .topbar   { gap: 10px; padding: 12px 16px 10px; margin-left:-16px; margin-right:-16px; }
+  .topbar.compact { padding: 6px 16px; }
   .brand h1 { font-size: 16px; }
+  .topbar.compact .brand h1 { font-size: 14px; }
   .brand p  { font-size: 11px; }
   .btn-row  { gap: 5px; }
   .btn      { height: 32px; padding: 0 10px; font-size: 12px; gap: 4px; }
@@ -504,6 +562,11 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
   /* ── Cards : disposition verticale ── */
   .card-item  { flex-direction: column; gap: 8px; padding: 12px; }
+  /* Group cards : même comportement responsive que card-item */
+  .group-card { flex-wrap: wrap; gap: 8px; padding: 12px; }
+  .group-card-body { min-width: 0; width: 100%; }
+  .group-card .card-actions { flex-direction: row; flex-wrap: wrap; min-width: unset; gap: 5px; width: 100%; }
+  .group-card-title { white-space: normal; overflow: visible; text-overflow: unset; font-size: 13px; }
 
   /* Countdown : bannière horizontale */
   .countdown  {
@@ -585,12 +648,13 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   <!-- Topbar -->
   <div class="topbar">
     <div class="brand">
-      <h1 id="brand-title">📚 Brightspace Agenda</h1>
-      <p id="brand-subtitle">Devoirs &amp; Live Sessions
-        <span class="mode-badge" id="mode-badge" style="margin-left:6px;vertical-align:middle">
+      <div class="brand-row">
+        <h1 id="brand-title">📚 Brightspace Agenda</h1>
+        <span class="mode-badge" id="mode-badge" style="margin-left:4px;vertical-align:middle">
           <i class="ti ti-user-circle"></i> Invité
         </span>
-      </p>
+      </div>
+      <p id="brand-subtitle">Devoirs &amp; Live Sessions</p>
     </div>
     <div class="btn-row">
       <button class="install-btn" id="btn-install" onclick="PWA.install()">
@@ -641,13 +705,14 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         </div>
 
         <div style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--text2)">
-          <div style="font-weight:600;color:var(--text);margin-bottom:4px"><i class="ti ti-sparkles" style="font-size:12px"></i> Notes de version</div>
+          <div style="font-weight:600;color:var(--text);margin-bottom:4px"><i class="ti ti-sparkles" style="font-size:12px"></i> Ce que fait cette app</div>
           <ul style="margin:0;padding-left:18px;line-height:1.6">
-            <li>Onglet <strong>Groupes</strong> : ateliers, sous-groupes, vue semaine, attribution matière/devoir</li>
-            <li>Notifications navigateur (devoirs, ateliers, programme du jour)</li>
-            <li>Chip "Prochain événement" avec compte à rebours</li>
-            <li>Filtres Passés / Rendus / Masqués</li>
-            <li>Mode invité, connecté et lien de partage (lecture seule)</li>
+            <li><strong>Devoirs</strong> : suivi des rendus, filtres, compte à rebours, liens Casier/Google/Outlook</li>
+            <li><strong>Live Sessions</strong> : calendrier des cours, bouton Rejoindre, sous-groupes</li>
+            <li><strong>Groupes</strong> : ateliers depuis ton agenda privé, attribution matière/devoir, vue semaine, sous-groupes manuels ou auto-détectés</li>
+            <li><strong>Progression</strong> : barre de progression par matière, histogramme hebdo, Gantt</li>
+            <li><strong>Notifications</strong> : devoirs approchants, ateliers non planifiés, programme du jour, événement imminent</li>
+            <li>Mode invité · Mode connecté · Lien de partage (lecture seule) · PWA installable</li>
           </ul>
         </div>
 
@@ -850,6 +915,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       </a>
     </div>
 
+    <div class="tab-sticky-wrap" id="tab-sticky">
     <div class="tab-bar">
       <button class="tab active" id="tab-devoirs" onclick="switchTab('devoirs')">
         <i class="ti ti-file-text"></i> Devoirs
@@ -866,21 +932,23 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       <button class="tab" id="tab-prog" onclick="switchTab('prog')">
         <i class="ti ti-chart-bar"></i> Progression
       </button>
-    </div>
+    </div><!-- /tab-bar -->
+    </div><!-- /tab-sticky-wrap -->
 
-    <!-- Devoirs pane -->
+    <!-- Swipe container — toutes les panes sont dedans pour la détection de geste -->
+    <div id="swipe-container">
     <div id="pane-devoirs">
-      <div class="filters">
+      <div class="filters filters-sticky">
         <button class="chip active" data-filter="all"        onclick="setFilter(this,'devoirs')"><i class="ti ti-list"></i> Tous</button>
         <button class="chip"        data-filter="individuel" onclick="setFilter(this,'devoirs')"><i class="ti ti-user"></i> Individuel</button>
         <button class="chip"        data-filter="collectif"  onclick="setFilter(this,'devoirs')"><i class="ti ti-users"></i> Collectif</button>
         <div class="filter-toggles">
           <label class="past-label">
-            <input type="checkbox" id="show-past-devoirs" onchange="resetPaginationAndRender('devoirs')">
+            <input type="checkbox" id="show-past-devoirs" onchange="saveFilterPrefs();resetPaginationAndRender('devoirs')">
             Passés (<span id="past-count-devoirs">0</span>)
           </label>
           <label class="past-label">
-            <input type="checkbox" id="show-rendus-devoirs" checked onchange="resetPaginationAndRender('devoirs')">
+            <input type="checkbox" id="show-rendus-devoirs" checked onchange="saveFilterPrefs();resetPaginationAndRender('devoirs')">
             Rendus
           </label>
         </div>
@@ -892,11 +960,13 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
     <!-- Sessions pane -->
     <div id="pane-sessions" style="display:none">
-      <div class="filters">
-        <button class="chip active" data-filter="all" onclick="setFilter(this,'sessions')"><i class="ti ti-list"></i> Toutes</button>
+      <div class="filters filters-sticky">
+        <button class="chip active" data-filter="all"      onclick="setFilter(this,'sessions')"><i class="ti ti-list"></i> Toutes</button>
+        <button class="chip"        data-filter="session"   onclick="setFilter(this,'sessions')"><i class="ti ti-video"></i> Live Sessions</button>
+        <button class="chip"        id="chip-subgroup"      data-filter="subgroup" onclick="setFilter(this,'sessions')" style="display:none"><i class="ti ti-git-branch"></i> Sous-groupes</button>
         <div class="filter-toggles">
           <label class="past-label">
-            <input type="checkbox" id="show-past-sessions" onchange="resetPaginationAndRender('sessions')">
+            <input type="checkbox" id="show-past-sessions" onchange="saveFilterPrefs();resetPaginationAndRender('sessions')">
             Passées (<span id="past-count-sessions">0</span>)
           </label>
         </div>
@@ -940,28 +1010,42 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
           <div id="group-by-subject"></div>
         </div>
         <div class="group-section">
-          <div class="group-section-header">
-            <h3 class="group-section-title"><i class="ti ti-calendar-event"></i> Ateliers</h3>
-            <div style="display:flex;align-items:center;gap:12px">
-              <label class="past-label" style="font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="show-past-groupe" onchange="resetPaginationAndRender('group')" style="cursor:pointer;accent-color:var(--c-blue)">
-                Passés
-              </label>
-              <label class="past-label" style="font-size:12px;color:var(--text2);cursor:pointer;display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="show-hidden-groupe" onchange="resetPaginationAndRender('group')" style="cursor:pointer;accent-color:var(--c-blue)">
-                Masqués
-              </label>
+          <div class="group-section-header filters-sticky" style="padding-top:8px;padding-bottom:8px;flex-direction:column;align-items:stretch;gap:8px">
+            <div style="display:flex;align-items:center;margin-bottom:2px">
+              <h3 class="group-section-title"><i class="ti ti-calendar-event"></i> Ateliers</h3>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <button class="chip active" id="grp-filter-all"      onclick="setGroupTypeFilter(this,'all')">      <i class="ti ti-list"></i> Tous</button>
+              <button class="chip"        id="grp-filter-unlinked" onclick="setGroupTypeFilter(this,'unlinked')"> <i class="ti ti-unlink"></i> Non lié</button>
+              <div class="filter-toggles" style="margin-left:auto">
+                <label class="past-label">
+                  <input type="checkbox" id="show-past-groupe" onchange="saveFilterPrefs();resetPaginationAndRender('group')" style="cursor:pointer;accent-color:var(--c-blue)">
+                  Passés
+                </label>
+                <label class="past-label">
+                  <input type="checkbox" id="show-hidden-groupe" onchange="saveFilterPrefs();resetPaginationAndRender('group')" style="cursor:pointer;accent-color:var(--c-blue)">
+                  Masqués
+                </label>
+              </div>
             </div>
           </div>
+          <div class="filters disc-filters" id="disc-filter-groupe" style="display:none"></div>
           <div id="group-list"></div>
         </div>
       </div>
-    </div>
+    </div><!-- /pane-groupe -->
+
+    </div><!-- /swipe-container -->
 
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Bouton retour en haut -->
+<button id="btn-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Retour en haut">
+  <i class="ti ti-arrow-up"></i>
+</button>
 
 <!-- Footer crédits -->
 <footer style="text-align:center;padding:24px 20px 16px;font-size:11px;color:var(--text3);border-top:1px solid var(--border);margin-top:20px">
@@ -983,7 +1067,32 @@ const THEME_KEY        = 'emmgo_theme';
 const PRIVATE_ICS_KEY  = 'emmgo_private_ics_url_v1';
 const NOTIF_KEY        = 'emmgo_notif_settings_v1';
 const NOTIF_SENT_KEY   = 'emmgo_notif_sent_v1';
+const FILTER_PREFS_KEY = 'emmgo_filter_prefs_v1';
 const PAGE_SIZE        = 5;
+
+// Persistance des checkboxes de filtres (Passés / Rendus / Masqués)
+function saveFilterPrefs(){
+  const g=id=>document.getElementById(id);
+  const prefs={
+    past_devoirs:  g('show-past-devoirs')?.checked  ?? false,
+    rendus_devoirs:g('show-rendus-devoirs')?.checked ?? true,
+    past_sessions: g('show-past-sessions')?.checked  ?? false,
+    past_groupe:   g('show-past-groupe')?.checked    ?? false,
+    hidden_groupe: g('show-hidden-groupe')?.checked   ?? false,
+  };
+  try{localStorage.setItem(FILTER_PREFS_KEY,JSON.stringify(prefs));}catch(_){}
+}
+function loadFilterPrefs(){
+  try{
+    const p=JSON.parse(localStorage.getItem(FILTER_PREFS_KEY)||'{}');
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.checked=val;};
+    set('show-past-devoirs',  p.past_devoirs  ?? false);
+    set('show-rendus-devoirs',p.rendus_devoirs ?? true);
+    set('show-past-sessions', p.past_sessions  ?? false);
+    set('show-past-groupe',   p.past_groupe    ?? false);
+    set('show-hidden-groupe', p.hidden_groupe  ?? false);
+  }catch(_){}
+}
 
 // ── État onglet Groupe ──────────────────────────────────────────
 let allGroupEvents  = [];   // Événements du calendrier privé
@@ -1178,6 +1287,8 @@ let filterDevoirs  = 'all';
 let filterSessions = 'all';
 let filterDiscDevoirs  = 'all';
 let filterDiscSessions = 'all';
+let filterGroupType    = 'all';   // 'all' | 'unlinked'
+let filterGroupDisc    = 'all';   // 'all' | subject name
 let shownDevoirs   = PAGE_SIZE;
 let shownSessions  = PAGE_SIZE;
 let shownGroup     = PAGE_SIZE;
@@ -2055,7 +2166,115 @@ function switchTab(tab) {
     const btn=document.getElementById(`tab-${t}`);
     if(btn)btn.classList.toggle('active',t===tab);
   });
+  const activeBtn=document.getElementById(`tab-${tab}`);
+  if(activeBtn)activeBtn.scrollIntoView({behavior:'instant',block:'nearest',inline:'center'});
+
+  requestAnimationFrame(()=>{
+    const tabSticky=document.getElementById('tab-sticky');
+    const topbar=document.querySelector('.topbar');
+    if(!tabSticky)return;
+    // Mesure la hauteur du topbar en mode compact (force temporairement la classe)
+    let compactH=48;
+    if(topbar){
+      const wasCompact=topbar.classList.contains('compact');
+      topbar.classList.add('compact');
+      compactH=topbar.getBoundingClientRect().height;
+      if(!wasCompact)topbar.classList.remove('compact');
+    }
+    // Scroll pour que le tab-bar soit exactement sous le topbar compact
+    const target=tabSticky.offsetTop-compactH;
+    window.scrollTo({top:Math.max(0,target),behavior:'instant'});
+    updateStickyOffsets();
+  });
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Scroll : topbar compact + bouton retour en haut
+══════════════════════════════════════════════════════════════ */
+(function initScroll(){
+  const COMPACT_AT = 80;
+  let ticking = false;
+
+  function updateStickyOffsets(){
+    const topbar    = document.querySelector('.topbar');
+    const tabSticky = document.getElementById('tab-sticky');
+    if (!topbar || !tabSticky) return;
+    const topH = topbar.getBoundingClientRect().height;
+    const tabH = tabSticky.getBoundingClientRect().height;
+    const filterTop = topH + tabH;
+    document.documentElement.style.setProperty('--filter-top', filterTop + 'px');
+    tabSticky.style.top = topH + 'px';
+
+    // Ligne 2 : discipline chips empilés sous la ligne 1
+    const activePane = document.getElementById(`pane-${currentTab}`);
+    const mainFilter = activePane?.querySelector('.filters-sticky');
+    const mainH = mainFilter ? mainFilter.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty('--disc-filter-top', (filterTop + mainH) + 'px');
+  }
+
+  function onScroll(){
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(()=>{
+      const y=window.scrollY;
+      const topbar=document.querySelector('.topbar');
+      const btnTop=document.getElementById('btn-top');
+      topbar?.classList.toggle('compact', y > COMPACT_AT);
+      updateStickyOffsets();
+      if(btnTop) btnTop.style.display = y > 300 ? 'flex' : 'none';
+      ticking=false;
+    });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  // Initialiser les offsets une fois le DOM chargé
+  document.addEventListener('DOMContentLoaded', updateStickyOffsets);
+})();
+
+/* ══════════════════════════════════════════════════════════════
+   Swipe horizontal pour changer d'onglet (mobile)
+   Seuil 90 px, durée < 350 ms, angle < 35° (ratio dy/dx < 0.35)
+   Ignoré si le touchstart est dans un conteneur à défilement horizontal
+══════════════════════════════════════════════════════════════ */
+(function initSwipe(){
+  let sx=0,sy=0,st=0,skip=false;
+
+  function inHScroll(el){
+    while(el&&el!==document.body){
+      const s=getComputedStyle(el);
+      if((s.overflowX==='auto'||s.overflowX==='scroll')&&el.scrollWidth>el.clientWidth+4)return true;
+      el=el.parentElement;
+    }
+    return false;
+  }
+
+  function visibleTabs(){
+    return ['devoirs','sessions','groupe','prog']
+      .filter(t=>{const b=document.getElementById(`tab-${t}`);return b&&b.style.display!=='none';});
+  }
+
+  function onStart(e){
+    const t=e.touches?.[0]||e;
+    sx=t.clientX;sy=t.clientY;st=Date.now();
+    skip=inHScroll(e.target);
+  }
+
+  function onEnd(e){
+    if(skip)return;
+    const t=e.changedTouches?.[0]||e;
+    const dx=t.clientX-sx, dy=t.clientY-sy, dt=Date.now()-st;
+    if(dt>350||Math.abs(dx)<90||Math.abs(dy)/Math.abs(dx)>0.35)return;
+    const tabs=visibleTabs(), idx=tabs.indexOf(currentTab);
+    if(dx<0&&idx<tabs.length-1)switchTab(tabs[idx+1]);
+    if(dx>0&&idx>0)            switchTab(tabs[idx-1]);
+  }
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    const el=document.getElementById('swipe-container');
+    if(!el)return;
+    el.addEventListener('touchstart',onStart,{passive:true});
+    el.addEventListener('touchend',  onEnd,  {passive:true});
+  });
+})();
 function setFilter(btn,pane) {
   btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -2081,7 +2300,7 @@ function renderDisciplineChips(pane,items) {
   const counts={};
   items.forEach(ev=>{const k=(ev._courseName||'').trim();if(k)counts[k]=(counts[k]||0)+1;});
   const disciplines=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  if(disciplines.length<=1){container.style.display='none';return;}
+  if(disciplines.length===0){container.style.display='none';return;}
   const active=pane==='devoirs'?filterDiscDevoirs:filterDiscSessions;
   container.style.display='flex';
   container.innerHTML=[
@@ -2159,19 +2378,37 @@ async function fetchPrivateIcsGuest(url){
 
 function processGroupICS(txt){
   const all=parseICS(txt);
-  allGroupEvents=all.map(ev=>({...ev,_date:parseDt(ev.DTSTART),_dateEnd:parseDt(ev.DTEND),_title:unescape(ev.SUMMARY||'').trim(),_uid:ev.UID||`grp-${Math.random().toString(36).slice(2)}`})).filter(e=>e._date).sort((a,b)=>a._date-b._date);
+  allGroupEvents=all.map(ev=>({...ev,
+    _date:parseDt(ev.DTSTART),_dateEnd:parseDt(ev.DTEND),
+    _title:unescape(ev.SUMMARY||'').trim(),
+    _uid:ev.UID||`grp-${Math.random().toString(36).slice(2)}`,
+    _teamsUrl:getMeetingUrl(ev),  // lien de réunion Teams/Virtual-room si présent
+  })).filter(e=>e._date).sort((a,b)=>a._date-b._date);
   shownGroup=PAGE_SIZE;
   updateGroupBadge();renderGroupTab();
   renderDevoirs();   // rafraîchir les cartes devoir pour afficher les liens ateliers
   renderProgression(); // rafraîchir les cartes progression (option A)
+  renderSessions();  // les sous-groupes peuvent apparaître dans l'onglet Live Sessions
   renderNextSessionChip(); // le prochain événement peut être un atelier
   Notif.check();
   toast(`✓ ${allGroupEvents.length} événements groupe chargés`);
 }
 
+// Détecte si un événement groupe est un sous-groupe d'une live session.
+// Priorité : désignation manuelle via tag.devoirUid === '__subgroup__'
+// Règle d'override : si auto-détecté MAIS lié à un vrai devoir → traiter comme atelier
 function detectSubgroup(ev){
   if(!ev._date)return null;
-  return allSessions.find(s=>s._date&&Math.abs(ev._date-s._date)/60000<30)||null;
+  const tag=getGroupTag(ev._uid);
+  // 1. Désignation manuelle explicite comme sous-groupe
+  if(tag?.devoirUid==='__subgroup__')
+    return {_manual:true, _courseName:tag.subjectName||tag.subject||'', _courseCode:tag.subject||''};
+  // 2. Auto-détection par chevauchement temporel (±30 min)
+  const autoMatch=allSessions.find(s=>s._date&&Math.abs(ev._date-s._date)/60000<30)||null;
+  if(!autoMatch)return null;
+  // 3. Auto-détecté MAIS utilisateur a lié un vrai devoir → c'est un atelier
+  if(tag?.subject&&tag?.devoirUid&&tag.devoirUid!=='__subgroup__')return null;
+  return autoMatch;
 }
 
 function getGroupTag(uid){return groupTagsCache[uid]||null;}
@@ -2220,19 +2457,69 @@ function renderGroupTab(){
 }
 
 /* Section 1 : Liste */
+function setGroupTypeFilter(btn, type){
+  document.querySelectorAll('#grp-filter-all,#grp-filter-unlinked').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterGroupType=type;
+  filterGroupDisc='all'; // reset disc filter
+  shownGroup=PAGE_SIZE;
+  renderGroupList();
+}
+function setGroupDiscFilter(name, btn){
+  document.getElementById('disc-filter-groupe')?.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterGroupDisc=name;
+  shownGroup=PAGE_SIZE;
+  renderGroupList();
+}
+function renderGroupDisciplineChips(items){
+  const container=document.getElementById('disc-filter-groupe');
+  if(!container)return;
+  const counts={};
+  items.forEach(ev=>{
+    const t=getGroupTag(ev._uid);
+    if(t?.subjectName&&!t.ignored)counts[t.subjectName]=(counts[t.subjectName]||0)+1;
+  });
+  const disciplines=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  if(disciplines.length===0){container.style.display='none';return;}
+  container.style.display='flex';
+  const total=items.length;
+  container.innerHTML=`<button class="chip${filterGroupDisc==='all'?' active':''}" onclick="setGroupDiscFilter('all',this)"><i class="ti ti-list"></i> Toutes<span class="chip-count">${total}</span></button>`+
+    disciplines.map(([name,count])=>{
+      const safe=name.replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+      const label=name.length>30?name.slice(0,28)+'…':name;
+      return`<button class="chip${filterGroupDisc===name?' active':''}" onclick="setGroupDiscFilter('${safe}',this)">${label}<span class="chip-count">${count}</span></button>`;
+    }).join('');
+  requestAnimationFrame(()=>updateStickyOffsets());
+}
+
 function renderGroupList(){
   const el=document.getElementById('group-list');if(!el)return;
   const showPast=document.getElementById('show-past-groupe')?.checked;
   const showHidden=document.getElementById('show-hidden-groupe')?.checked;
   let all=allGroupEvents.filter(e=>showPast||getDays(e._date)>=0);
   if(!showHidden) all=all.filter(e=>!isIgnored(e._uid));
+
+  // Filtre type
+  if(filterGroupType==='unlinked') all=all.filter(e=>{
+    const t=getGroupTag(e._uid);
+    return !t||(!t.subject&&!t.ignored);
+  });
+
+  renderGroupDisciplineChips(all);
+
+  // Filtre discipline
+  if(filterGroupDisc!=='all') all=all.filter(e=>{
+    const t=getGroupTag(e._uid);
+    return t?.subjectName===filterGroupDisc||t?.subject===filterGroupDisc;
+  });
+
   if(!all.length){el.innerHTML='<div class="state-box"><p>Aucun événement à afficher.</p></div>';return;}
 
   const visible=all.slice(0,shownGroup);
   const remaining=all.length-visible.length;
 
-  // Construire la liste de sujets depuis les sessions (source la plus fiable pour les codes)
-  // + devoirs en complément, dédupliqués par code
+  // Construire la liste de sujets pour le formulaire d'attribution
   const subjectMap={};
   allSessions.forEach(s=>{if(s._courseCode&&!subjectMap[s._courseCode])subjectMap[s._courseCode]=s._courseName||s._courseCode;});
   allDevoirs.forEach(d=>{
@@ -2241,92 +2528,95 @@ function renderGroupList(){
   });
   const subjects=Object.entries(subjectMap).sort((a,b)=>a[0].localeCompare(b[0]));
 
-  el.innerHTML=visible.map(ev=>{
+  el.innerHTML=visible.map((ev,i)=>{
     const ignored=isIgnored(ev._uid);
+    const sub=detectSubgroup(ev);
+    const tag=getGroupTag(ev._uid);
     const isPast=getDays(ev._date)<0;
+    const days=getDays(ev._date);
     const hasTime=ev._date&&(ev._date.getHours()+ev._date.getMinutes()>0);
-    const timeStr=hasTime?fmtTime(ev._date):'–';const endStr=(hasTime&&ev._dateEnd)?` – ${fmtTime(ev._dateEnd)}`:'';
+    const timeStr=hasTime?fmtTime(ev._date):'–';
+    const endStr=(hasTime&&ev._dateEnd)?` – ${fmtTime(ev._dateEnd)}`:'';
     const dur=ev._dateEnd&&hasTime?` · ${Math.round((ev._dateEnd-ev._date)/60000)}min`:'';
-
-    // Année toujours affichée (ateliers peuvent être en 2027)
     const evYear=ev._date.getFullYear();const nowYear=new Date().getFullYear();
-    const yearDisp=evYear!==nowYear?`<div style="font-size:8px;opacity:.75">${evYear}</div>`:'';
-
-    const passedPill=isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passé</span>`:'';
+    const yearSuffix=evYear!==nowYear?' '+evYear:'';
     const safeUid=ev._uid.replace(/[^a-zA-Z0-9_-]/g,'_');
 
-    // ── Événement masqué : carte simplifiée, lecture seule sauf checkbox de réaffichage ──
-    if (ignored) {
-      const unmaskCb = Auth.readOnly ? '' : `
-        <label class="group-tag-btn" style="cursor:pointer">
-          <input type="checkbox" checked onchange="toggleIgnoreGroupEvent('${ev._uid}',this.checked)" style="margin-right:4px;cursor:pointer">
-          Ne plus masquer
-        </label>`;
-      return`<div class="group-card ignored${isPast?' past':''}" style="opacity:.55">
-        <div class="group-time-badge past">
-          <div class="gtb-day">${fmtDay(ev._date)}</div><div class="gtb-date">${fmtShort(ev._date)}</div>${yearDisp}<div class="gtb-time">${timeStr}</div>
+    // ── Événement masqué : carte simplifiée ────────────────
+    if(ignored){
+      return`<div class="card-item past" style="opacity:.55;animation-delay:${i*25}ms">
+        <div class="time-badge past-ev">
+          <div class="tb-day">${fmtDay(ev._date)}</div>
+          <div class="tb-date">${fmtShort(ev._date)}${yearSuffix}</div>
+          <div class="tb-time">${timeStr}</div>
         </div>
-        <div class="group-card-body">
-          <div class="tags"><span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-eye-off"></i> Masqué</span>${passedPill}</div>
-          <div class="group-card-title" title="${ev._title}">${ev._title||'—'}</div>
-          <div class="group-card-meta">${timeStr}${endStr}${dur}</div>
-          ${unmaskCb}
+        <div class="card-body">
+          <div class="tags"><span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-eye-off"></i> Masqué</span>${isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passé</span>`:''}</div>
+          <div class="card-title">${ev._title||'—'}</div>
+          <div class="card-meta">${timeStr}${endStr}${dur}</div>
+          ${!Auth.readOnly?`<label class="group-tag-btn" style="cursor:pointer;margin-top:6px">
+            <input type="checkbox" checked onchange="toggleIgnoreGroupEvent('${ev._uid}',this.checked)" style="margin-right:4px;cursor:pointer">
+            Ne plus masquer
+          </label>`:''}
         </div>
       </div>`;
     }
 
-    const sub=detectSubgroup(ev);const tag=getGroupTag(ev._uid);
+    // ── Badges ─────────────────────────────────────────────
+    const typePill=sub
+      ?`<span class="pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> Sous-groupe</span>`
+      :`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Atelier</span>`;
+    const pastPill=isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passé</span>`:'';
+    const subInfo=sub?`<div class="card-meta" style="color:var(--c-orange)"><i class="ti ti-git-branch" style="font-size:10px"></i> Même créneau : ${sub._courseName||sub._courseCode||'Live session'}</div>`:'';
 
-    const badgeLabel=sub?`<span class="pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> Sous-groupe</span>`
-                        :`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Atelier</span>`;
+    // ── Bloc course ─────────────────────────────────────────
+    const courseBlock=tag?.subjectName||tag?.subject
+      ?`<div class="course-block"><span class="course-code">${tag.subject||''}</span><span class="course-name">${tag.subjectName||tag.subject}</span></div>`:'';
 
-    // Devoir lié dans le bouton d'attribution
-    const linkedDevoir=tag?.devoirUid?allDevoirs.find(d=>d.UID===tag.devoirUid):null;
-    const tagDevoir=linkedDevoir?` · ${linkedDevoir._title.length>28?linkedDevoir._title.slice(0,26)+'…':linkedDevoir._title}`:'';
-    const tagLabel = tag
-      ? Auth.readOnly
-        ? `<span class="group-tag-btn tagged" style="cursor:default"><i class="ti ti-tag"></i> ${tag.subjectName||tag.subject}${tagDevoir}</span>`
-        : `<button class="group-tag-btn tagged" onclick="toggleTagForm('${ev._uid}')" title="${tag.subjectName||tag.subject}${linkedDevoir?' · '+linkedDevoir._title:''}"><i class="ti ti-tag"></i> ${tag.subjectName||tag.subject}${tagDevoir}</button>`
-      : Auth.readOnly ? ''
-      : `<button class="group-tag-btn" onclick="toggleTagForm('${ev._uid}')"><i class="ti ti-tag"></i> Attribuer</button>`;
-    const subInfo=sub?`<div class="group-card-meta" style="color:var(--c-orange)"><i class="ti ti-git-branch" style="font-size:10px"></i> Même créneau : ${sub._courseName||sub._courseCode||'Live session'}</div>`:'';
+    // ── Tag / Attribution ───────────────────────────────────
+    const linkedDevoir=tag?.devoirUid&&tag.devoirUid!=='__subgroup__'?allDevoirs.find(d=>d.UID===tag.devoirUid):null;
+    const tagDevoir=linkedDevoir?` · ${linkedDevoir._title.length>28?linkedDevoir._title.slice(0,26)+'…':linkedDevoir._title}`:tag?.devoirUid==='__subgroup__'?' · Sous-groupe live session':'';
+    const tagLabel=tag
+      ?Auth.readOnly
+        ?`<span class="group-tag-btn tagged" style="cursor:default"><i class="ti ti-tag"></i> ${tag.subjectName||tag.subject||''}${tagDevoir}</span>`
+        :`<button class="group-tag-btn tagged" onclick="toggleTagForm('${ev._uid}')"><i class="ti ti-tag"></i> ${tag.subjectName||tag.subject||''}${tagDevoir}</button>`
+      :Auth.readOnly?''
+      :`<button class="group-tag-btn" onclick="toggleTagForm('${ev._uid}')"><i class="ti ti-tag"></i> Attribuer</button>`;
+    const ignoreCb=Auth.readOnly?'':`<label class="group-tag-btn" title="Masquer cet événement" style="cursor:pointer">
+      <input type="checkbox" onchange="toggleIgnoreGroupEvent('${ev._uid}',this.checked)" style="margin-right:4px;cursor:pointer"> Masquer
+    </label>`;
 
-    // Checkbox "Masquer" — exclut l'événement de tout (atelier non pertinent)
-    const ignoreCb = Auth.readOnly ? '' : `
-      <label class="group-tag-btn" title="Cet événement n'est ni un atelier ni un sous-groupe pertinent" style="cursor:pointer">
-        <input type="checkbox" onchange="toggleIgnoreGroupEvent('${ev._uid}',this.checked)" style="margin-right:4px;cursor:pointer">
-        Masquer
-      </label>`;
-
-    // Options matières
+    // Options matière / devoir
     const subjectOptions=subjects.map(([code,name])=>`<option value="${code}" data-name="${name}" ${tag?.subject===code?'selected':''}>${code!==name?code+' — ':''} ${name}</option>`).join('');
-
-    // Options devoirs pour la matière déjà sélectionnée (si tag existant)
-    const tagCode=tag?.subject||'';
-    const tagName=tag?.subjectName||'';
-    const tagDevoirs=tagCode?allDevoirs.filter(d=>
-      d._courseCode===tagCode ||
-      d._courseName===tagCode ||
-      (tagName && d._courseName===tagName)
-    ):[];
-    const devoirOptions=tagDevoirs.map(d=>{
-      const r=effectivelyRendu(d);
-      const isP=getDays(d._date)<0;
-      const status=r?' ✓ rendu':isP?' (passé)':'';
-      const style=r?'color:#5a9620':isP?'color:#888':'';
-      return`<option value="${d.UID}" ${tag?.devoirUid===d.UID?'selected':''} style="${style}">${d._title}${status}</option>`;
+    const tagCode=tag?.subject||'';const tagName=tag?.subjectName||'';
+    const tagDevoirs=tagCode?allDevoirs.filter(d=>d._courseCode===tagCode||d._courseName===tagCode||(tagName&&d._courseName===tagName)):[];
+    const devoirOptions=`<option value="__subgroup__"${tag?.devoirUid==='__subgroup__'?' selected':''}>— Sous-groupe live session —</option>`+tagDevoirs.map(d=>{
+      const r=effectivelyRendu(d);const isP=getDays(d._date)<0;
+      return`<option value="${d.UID}" ${tag?.devoirUid===d.UID?'selected':''} style="${r?'color:#5a9620':isP?'color:#888':''}">${d._title}${r?' ✓ rendu':isP?' (passé)':''}</option>`;
     }).join('');
 
-    return`<div class="group-card${isPast?' past':''}">
-      <div class="group-time-badge${sub?' subgroup':isPast?' past':''}">
-        <div class="gtb-day">${fmtDay(ev._date)}</div><div class="gtb-date">${fmtShort(ev._date)}</div>${yearDisp}<div class="gtb-time">${timeStr}</div>
+    // ── Boutons d'action ────────────────────────────────────
+    const joinBtn=ev._teamsUrl?`<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"><i class="ti ti-video"></i> Rejoindre</a><div class="action-sep"></div>`:'';
+    const actionsBlock=!Auth.readOnly&&!isPast?`
+      <div class="card-actions">
+        ${joinBtn}
+        <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
+        <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
+      </div>`:'';
+
+    return`<div class="card-item${isPast?' past':''}" style="animation-delay:${i*25}ms">
+      <div class="time-badge${isPast?' past-ev':days===0?' today-ev':''}">
+        <div class="tb-day">${days===0?'Auj.':fmtDay(ev._date)}</div>
+        <div class="tb-date">${fmtShort(ev._date)}${yearSuffix}</div>
+        <div class="tb-time">${timeStr}</div>
       </div>
-      <div class="group-card-body">
-        <div class="tags">${badgeLabel}${passedPill}</div>
-        <div class="group-card-title" title="${ev._title}">${ev._title||'—'}</div>
-        <div class="group-card-meta">${timeStr}${endStr}${dur}</div>
+      <div class="card-body">
+        <div class="tags">${typePill}${pastPill}</div>
+        ${courseBlock}
+        <div class="card-title" title="${ev._title}">${ev._title||'—'}</div>
+        <div class="card-meta">${timeStr}${endStr}${dur}</div>
         ${subInfo}
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${tagLabel}${ignoreCb}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${tagLabel}${ignoreCb}</div>
         <div class="tag-form" id="tag-form-${safeUid}">
           <select id="tag-subject-${safeUid}" onchange="updateDevoirSelect('${safeUid}','${ev._uid}')">
             <option value="">— Choisir une matière —</option>${subjectOptions}
@@ -2340,6 +2630,7 @@ function renderGroupList(){
           </div>
         </div>
       </div>
+      ${actionsBlock}
     </div>`;
   }).join('');
 
@@ -2367,6 +2658,7 @@ function updateDevoirSelect(safeUid, uid){
     (name && d._courseName===name)
   ):[];
   de.innerHTML=`<option value="">— Devoir lié (optionnel) —</option>`
+    +`<option value="__subgroup__">— Sous-groupe live session —</option>`
     +devoirs.map(d=>{
       const r=effectivelyRendu(d);
       const isP=getDays(d._date)<0;
@@ -2536,9 +2828,10 @@ function renderNextSessionChip() {
   document.getElementById('nsc-when').textContent  = whenLabel + endStr;
   document.getElementById('nsc-badge').textContent = badge;
 
-  // Bouton Rejoindre : uniquement pour les live sessions
+  // Bouton Rejoindre : live sessions ou ateliers avec URL de réunion
   const joinBtn = document.getElementById('nsc-join');
-  if (next._kind === 'live' && next._teamsUrl && !Auth.readOnly) {
+  const hasJoinUrl = next._kind === 'live' ? (!!next._teamsUrl) : (!!next._teamsUrl);
+  if (hasJoinUrl && !Auth.readOnly) {
     joinBtn.href = next._teamsUrl; joinBtn.style.display = '';
   } else {
     joinBtn.style.display = 'none';
@@ -2708,15 +3001,43 @@ function renderDevoirs() {
 ══════════════════════════════════════════════════════════════ */
 function renderSessions() {
   const showPast=document.getElementById('show-past-sessions').checked;
-  const base=allSessions.filter(s=>showPast||getDays(s._date)>=0);
-  renderDisciplineChips('sessions',base);
-  const filtered=base.filter(s=>filterDiscSessions==='all'||(s._courseName||'').trim()===filterDiscSessions);
+
+  // Sous-groupes issus du calendrier privé
+  const subgroupItems=activeGroupEvents()
+    .filter(e=>detectSubgroup(e))
+    .map(e=>{
+      const sg=detectSubgroup(e);
+      const tag=getGroupTag(e._uid);
+      return{...e,
+        _itemType:'subgroup',
+        _courseName:tag?.subjectName||tag?.subject||sg._courseName||'',
+        _courseCode:tag?.subject||sg._courseCode||'',
+        _title:e._title||'Sous-groupe',
+        _date:e._date,_dateEnd:e._dateEnd,
+      };
+    });
+
+  // Afficher le chip "Sous-groupes" seulement s'il y en a
+  const sgChip=document.getElementById('chip-subgroup');
+  if(sgChip)sgChip.style.display=subgroupItems.length?'':'none';
+
+  // Fusionner sessions + sous-groupes
+  const sessions=allSessions.map(s=>({...s,_itemType:'session'}));
+  let combined=[...sessions,...subgroupItems].sort((a,b)=>a._date-b._date);
+  if(!showPast)combined=combined.filter(e=>getDays(e._date)>=0);
+
+  // Filtre type
+  if(filterSessions==='session') combined=combined.filter(e=>e._itemType==='session');
+  if(filterSessions==='subgroup')combined=combined.filter(e=>e._itemType==='subgroup');
+
+  renderDisciplineChips('sessions', combined);
+  combined=combined.filter(s=>filterDiscSessions==='all'||(s._courseName||'').trim()===filterDiscSessions);
+
   const el=document.getElementById('sessions-list');
+  if(!combined.length){el.innerHTML=`<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune session à afficher.</p></div>`;return;}
 
-  if(!filtered.length){el.innerHTML=`<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune session à afficher.</p></div>`;return;}
-
-  const visible=filtered.slice(0,shownSessions);
-  const remaining=filtered.length-visible.length;
+  const visible=combined.slice(0,shownSessions);
+  const remaining=combined.length-visible.length;
 
   el.innerHTML=visible.map((ev,i)=>{
     const days=getDays(ev._date);
@@ -2726,9 +3047,17 @@ function renderSessions() {
     const endStr=(hasTime&&ev._dateEnd)?fmtTime(ev._dateEnd):'';
     const timeStr=endStr?`${startStr} – ${endStr}`:startStr;
     const duration=(hasTime&&ev._dateEnd&&ev._date)?Math.round((ev._dateEnd-ev._date)/60000):0;
+
+    const isSG=ev._itemType==='subgroup';
+    const typePill=isSG
+      ?`<span class="pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> Sous-groupe</span>`
+      :`<span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>`;
+    const pastPill=isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>`:'';
+
     const courseBlock=(ev._courseCode||ev._courseName)?`<div class="course-block">${ev._courseCode?`<span class="course-code">${ev._courseCode}</span>`:''}${ev._courseName?`<span class="course-name">${ev._courseName}</span>`:''}</div>`:'';
     const instructorLine=ev._instructors?`<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`:'';
-    const joinBtn=ev._teamsUrl?`<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener" title="${ev._teamsUrl}"><i class="ti ti-video"></i> Rejoindre</a><div class="action-sep"></div>`:'';
+    const joinBtn=(!isSG&&ev._teamsUrl)?`<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"><i class="ti ti-video"></i> Rejoindre</a><div class="action-sep"></div>`:'';
+
     return`
     <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
       <div class="time-badge ${isPast?'past-ev':days===0?'today-ev':''}">
@@ -2737,18 +3066,18 @@ function renderSessions() {
         <div class="tb-time">${days===0?'':startStr}</div>
       </div>
       <div class="card-body">
-        <div class="tags"><span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>${isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>`:''}</div>
+        <div class="tags">${typePill}${pastPill}</div>
         ${courseBlock}
-        <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
+        <div class="card-title" title="${(ev._title||'').replace(/"/g,'&quot;')}">${ev._title||'—'}</div>
         <div class="card-meta"><i class="ti ti-clock" style="font-size:11px"></i><span>${timeStr}</span>${duration?`<span style="color:var(--text3)">·</span><span>${duration} min</span>`:''}</div>
         ${instructorLine}
       </div>
-      ${Auth.readOnly || isPast ? '' : `
+      ${(!Auth.readOnly&&!isPast&&!isSG)?`
       <div class="card-actions">
         ${joinBtn}
         <a class="action-btn" href="${gcUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-google"></i> Google Cal.</a>
         <a class="action-btn" href="${outlookUrl(ev)}" target="_blank" rel="noopener"><i class="ti ti-brand-office"></i> Outlook</a>
-      </div>`}
+      </div>`:''}
     </div>`;
   }).join('');
 
@@ -3116,6 +3445,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try { const saved=localStorage.getItem(STORAGE_KEY); if(saved){ document.getElementById('ics-url').value=saved; document.getElementById('ics-url-setup').value=saved; } } catch(_) {}
   // Auth detection (guest / connected / share)
   await Auth.init();
+  loadFilterPrefs(); // restaurer les préférences de filtres
   Notif.load();
   loadCalendar();
 });

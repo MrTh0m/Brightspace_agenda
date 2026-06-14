@@ -30,18 +30,17 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 ### Mode invité (aucune configuration requise)
 - URL ICS et état "rendu" stockés dans le `localStorage` du navigateur
 - Utilise `proxy.php` pour récupérer le calendrier Brightspace (proxies publics en cascade)
-- Tous les onglets disponibles, y compris **Groupe** (URL ICS privée optionnelle, stockée localement)
+- Tous les onglets disponibles, y compris **Groupes** (URL ICS privée optionnelle, stockée localement)
 
 ### Mode connecté (1 compte, persistance serveur)
 - Login par mot de passe (bcrypt PHP)
 - URL ICS Brightspace + URL ICS privée stockées dans `data/config.json` — jamais exposées au navigateur
 - État "rendu", attributions d'ateliers et exclusions stockés dans `data/state.json`, synchronisés sur tous les appareils
 - **Nom personnalisé** du dashboard configurable dans les paramètres
-- Onglet **Groupe de travail** disponible (calendrier privé Outlook/Google)
 
 ### Mode lecture seule — lien de partage
 - URL : `https://ton-domaine/index.html?share=TOKEN`
-- Accès en lecture seule à tous les onglets, dont **Groupe** (attributions visibles, sans édition)
+- Accès en lecture seule à tous les onglets, dont **Groupes** (attributions visibles, sans édition)
 - URLs privées Brightspace et groupe jamais exposées
 - ⚙ Paramètres accessible pour configurer les **notifications** (réglages propres à l'appareil)
 - Bouton "Installer l'app" masqué (le start_url du manifest ne contient pas le token)
@@ -63,7 +62,7 @@ sudo systemctl restart apache2
 4. Supprime `setup.php` et `test-proxy.php` après configuration
 
 ### Mises à jour
-À chaque modification de `index.html` ou `sw.js`, incrémenter `SHELL_VER` dans `sw.js` pour invalider le cache PWA chez tous les utilisateurs (une fermeture/réouverture de l'app peut être nécessaire sur mobile pour forcer la mise à jour du Service Worker).
+À chaque modification de `index.html` ou `sw.js`, incrémenter `SHELL_VER` dans `sw.js` pour invalider le cache PWA.
 
 ---
 
@@ -80,70 +79,62 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 ## ✨ Fonctionnalités
 
 ### Interface globale
-- **Bouton ℹ️ "À propos"** : notes de version, notice d'utilisation et lien vers le dépôt GitHub — accessible depuis n'importe quel mode
-- **Titre dynamique** : `X-WR-CALNAME` de l'ICS, institution extraite du sous-domaine Brightspace, ou nom personnalisé en mode connecté
-- **Chip "Prochain événement"** : affiche la prochaine live session OU le prochain atelier groupe, selon l'échéance la plus proche
-  - Compte à rebours `"Dans X min"` quand < 60 min (rouge), orange si aujourd'hui/demain
-  - Pour un atelier : rappelle la matière et le devoir liés si une attribution existe
-  - Bouton Rejoindre (live sessions uniquement, masqué en lecture seule) · auto-refresh toutes les minutes
-- Thème clair / sombre / système · Design responsive mobile
+- **Bouton ℹ️ "À propos"** : description de l'app, notice d'utilisation, lien GitHub
+- **Entête sticky compacte** au scroll (titre + badge mode toujours visibles), barre d'onglets et filtres sticky
+- **Chip "Prochain événement"** : prochaine live session OU atelier groupe, selon l'échéance la plus proche ; compte à rebours `"Dans X min"` quand < 60 min
+- **Navigation par swipe** gauche/droite entre les onglets (mobile) ; changement d'onglet revient au début du contenu
+- **Bouton ↑ retour en haut** (flottant, apparaît après 300 px)
+- Thème clair / sombre / système · Design responsive mobile et desktop
 
 ### Onglet Devoirs
 - Détection automatique : `Assessment`, `Co-construction`, `à échéance`
-- Nettoyage des titres : suppression du préfixe `Assessment :` seulement si suivi d'un séparateur (`:`, `–`, `-`), suppression du suffixe `à échéance` et des séparateurs résiduels en fin de titre
+- Nettoyage des titres (séparateurs résiduels, suffixe `à échéance`)
 - Compte à rebours coloré : rouge ≤ 3j · orange ≤ 7j · vert ≥ 15j
-- Filtres **Passés** et **Rendus** (cases à droite) — combinables, réinitialisent la pagination pour un effet immédiat
-- Cases "Marquer comme rendu" persistantes · devoirs passés = rendus automatiquement
-- Sur un devoir **rendu**, les boutons Copier tâche / Google Cal. / Outlook sont masqués (seuls Casier et Afficher l'événement restent)
-- **Atelier lié** sur les devoirs collectifs : "Prochain atelier : ..." (à venir) ou "Atelier réalisé le ..." (passé), uniquement si explicitement lié à ce devoir via l'onglet Groupe
-- **"Aucun atelier lié — associe-en un dans l'onglet Groupe"** si calendrier groupe chargé mais aucun lien établi
-- Filtres par type et discipline · Pagination
+- Filtres **Passés** et **Rendus** alignés à droite, persistants entre sessions
+- Boutons Copier tâche / Google Cal. / Outlook masqués quand le devoir est rendu
+- **Atelier lié** sur les devoirs collectifs (futur ou passé), uniquement si lié explicitement via l'onglet Groupes
+- Filtres par type (Individuel/Collectif) et discipline, avec chips de discipline sticky
 
 ### Onglet Live Sessions
-- Détection : `Cours distanciel`, `virtual-room.em-lyon.com`, URLs Teams
-- Extraction code matière + nom depuis le titre ou la parenthèse finale du LOCATION
-- Bouton **Rejoindre** masqué pour les sessions passées (avec Google Cal. / Outlook) · badge "Aujourd'hui" · filtre par discipline
+- Détection : `Cours distanciel`, `virtual-room`, URLs Teams
+- **Sous-groupes** (depuis le calendrier privé) affichés avec badge orange, filtrables via chip "Sous-groupes"
+- Boutons Rejoindre / Google Cal. / Outlook masqués pour les sessions passées
+- Filtres : Toutes / Live Sessions / Sous-groupes · Passées
 
-### Onglet Groupe de travail *(tous modes — invité, connecté, lecture seule)*
+### Onglet Groupes *(tous modes)*
 - **Source** : calendrier ICS privé (Outlook 365, Google Calendar...)
-  - Mode connecté : URL stockée côté serveur (`config.json`), fetchée par `api.php`, jamais exposée
-  - Mode invité : URL + attributions stockées en `localStorage` (par appareil)
-  - Mode partage : attributions visibles en lecture seule (synchronisées depuis le compte connecté)
-- **Section Vue semaine** : grille 7j × 6 créneaux (08h-20h) ou liste chronologique (toggle)
-  - 🟦 Teal = Live sessions Brightspace · 🟩 Vert = Ateliers · 🟧 Orange = Sous-groupe (même créneau ±30 min)
-  - Navigation semaine ← → · code matière visible sur les ateliers en vue liste
-- **Section Par matière** : tableau récap (ateliers, sous-groupes, prochain) par matière attribuée
-- **Section Ateliers** : liste chronologique avec toggles "Passés" et "Masqués"
-  - **Attribution manuelle** : lier un atelier à une matière + devoir précis (mode connecté/invité)
-    - Le menu déroulant des devoirs signale en couleur les devoirs déjà **rendus** (✓ rendu) ou **passés**
-  - **Masquer** : exclut un événement non pertinent (ni atelier, ni sous-groupe) de toute la liste, vue semaine, comptages et notifications ; pas d'attribution possible tant que masqué
-  - Attribution et masquage visibles en lecture seule (badges non éditables)
-  - Année toujours affichée sur la date (ateliers pouvant s'étendre sur l'année suivante)
-  - Nom du devoir lié affiché sur le bouton d'attribution
+  - Mode connecté : URL stockée côté serveur, jamais exposée
+  - Mode invité : URL + attributions en `localStorage`
+  - Mode partage : attributions visibles en lecture seule
+- **Section Vue semaine** : grille (08h–20h) ou liste chronologique avec toggle
+  - Teal = Live sessions · Vert = Ateliers · Orange = Sous-groupe (même créneau ±30 min)
+- **Section Par matière** : ateliers et sous-groupes par matière attribuée
+- **Section Ateliers** : liste avec filtres Passés / Masqués (persistants), pagination
+  - **Attribution** : lier à une matière + devoir précis, ou désigner formellement "Sous-groupe live session"
+  - **Règle override** : auto-détecté sous-groupe MAIS lié à un vrai devoir → traité comme atelier
+  - **Masquer** : exclut un événement non pertinent de tous les calculs et affichages
+  - Lien de réunion extrait automatiquement (Teams, virtual-room) → bouton **Rejoindre** + Google Cal. / Outlook
+  - Carte responsive mobile (même mise en page que Devoirs et Live Sessions)
 
 ### Onglet Progression
 - Cartes par matière : barre de progression, répartition individuel/collectif
-- **Ateliers** : compteur `X ateliers · Y sous-gr.` sur chaque carte si des ateliers sont attribués à la matière, avec légende dédiée
-- Histogramme hebdomadaire avec segments plein/hachuré, tooltip détaillant chaque devoir (point coloré = rendu/à rendre, ✓ = rendu)
-- **Gantt** : durées des cours, ligne "Aujourd'hui"
+- Ateliers et sous-groupes comptés par matière (si attribués)
+- Histogramme hebdomadaire · Gantt
 
 ### 🔔 Notifications *(tous modes, réglages par appareil)*
-Section dédiée dans ⚙ Paramètres — fonctionne tant qu'un onglet de l'app est ouvert (premier plan ou arrière-plan desktop).
+Section dans ⚙ Paramètres — fonctionne tant qu'un onglet est ouvert.
 
-| Notification | Déclencheur |
+| Déclencheur | Condition |
 |---|---|
-| Devoir non rendu approchant | J−3 et J−1 avant l'échéance |
+| Devoir non rendu approchant | J−3 et J−1 |
 | Devoir collectif sans atelier | Échéance ≤ 7j, aucun atelier lié |
-| Programme du jour | Résumé une fois par jour (live sessions + ateliers du jour) |
-| Événement imminent | 15 min avant une live session ou un atelier |
+| Programme du jour | Sessions + ateliers du jour (une fois/jour) |
+| Événement imminent | 15 min avant |
 
-- Réglages stockés en `localStorage` (indépendants entre appareils — PC / téléphone)
-- Vérification automatique toutes les 60s + après chaque chargement de calendrier
-- Les événements masqués (onglet Groupe) sont exclus de toutes les notifications
-- Anti-doublon : chaque notification n'est envoyée qu'une fois (purge après 3 jours)
-- Bouton "Tester une notification" pour valider la configuration
-- Sur PWA Android installée : notifications via Service Worker (`showNotification`), tap → focus/ouvre l'app
-- ⚠️ Ne fonctionne pas si l'app est totalement fermée (pas de push serveur — limitation assumée)
+- Réglages en `localStorage` (indépendants entre appareils)
+- Anti-doublon avec purge automatique après 3 jours
+- PWA Android : notifications via Service Worker, tap → ouvre l'app
+- ⚠️ Ne fonctionne pas si l'app est totalement fermée
 
 ---
 
@@ -152,18 +143,19 @@ Section dédiée dans ⚙ Paramètres — fonctionne tant qu'un onglet de l'app 
 | Élément | Protection |
 |---|---|
 | Token ICS Brightspace | Jamais exposé au navigateur |
-| URL ICS privée (groupe) | Mode connecté : jamais exposée · auth ou share token requis |
-| Mot de passe | `password_hash()` bcrypt |
+| URL ICS privée | Auth ou share token requis |
+| Mot de passe | bcrypt |
 | Dossier `data/` | `.htaccess` Deny all |
 | Token de partage | 32 caractères aléatoires, révocable |
-| Anti-brute-force | Délai 1s sur mot de passe incorrect |
+| Anti-brute-force | Délai 1s |
 | SSRF Brightspace | Domaines `brightspace.com` / `em-lyon.com` uniquement |
-| ICS privée | HTTPS requis, tout domaine autorisé (Outlook, Google...) |
+| ICS privée | HTTPS requis, tout domaine |
 
 ---
 
-## 🗂 Structure de `data/config.json`
+## 🗂 Structures de données
 
+### `data/config.json`
 ```json
 {
   "password_hash": "$2y$...",
@@ -174,33 +166,30 @@ Section dédiée dans ⚙ Paramètres — fonctionne tant qu'un onglet de l'app 
 }
 ```
 
-## 🗂 Structure de `data/state.json`
-
+### `data/state.json`
 ```json
 {
   "rendus": { "uid-devoir": true },
   "group_tags": {
-    "uid-atelier": {
-      "subject": "PGMC05",
-      "subjectName": "Management agile et responsable",
-      "devoirUid": "uid-devoir-précis"
-    },
-    "uid-evenement-ignore": { "ignored": true }
+    "uid-atelier": { "subject": "PGMC05", "subjectName": "...", "devoirUid": "uid" },
+    "uid-sous-groupe-manuel": { "subject": "PGMC09", "subjectName": "...", "devoirUid": "__subgroup__" },
+    "uid-ignoré": { "ignored": true }
   }
 }
 ```
 
-## 🗂 Stockage local (par appareil, `localStorage`)
+### `localStorage` (par appareil)
 
 | Clé | Contenu |
 |---|---|
-| `emmgo_ics_url_v2` | URL ICS Brightspace (mode invité) |
-| `emmgo_rendu_v1` | État "rendu" des devoirs (mode invité) |
-| `emmgo_private_ics_url_v1` | URL ICS privée groupe (mode invité) |
-| `emmgo_group_tags_v1` | Attributions matière/devoir + exclusions des ateliers (mode invité) |
-| `emmgo_theme` | Thème (clair/sombre/système) |
-| `emmgo_notif_settings_v1` | Préférences de notifications |
-| `emmgo_notif_sent_v1` | Historique anti-doublon des notifications (purge 3j) |
+| `emmgo_ics_url_v2` | URL ICS Brightspace (invité) |
+| `emmgo_rendu_v1` | Rendus (invité) |
+| `emmgo_private_ics_url_v1` | URL ICS privée (invité) |
+| `emmgo_group_tags_v1` | Attributions + exclusions (invité) |
+| `emmgo_theme` | Thème |
+| `emmgo_notif_settings_v1` | Préférences notifications |
+| `emmgo_notif_sent_v1` | Anti-doublon notifications |
+| `emmgo_filter_prefs_v1` | État des checkboxes (Passés/Rendus/Masqués) |
 
 ---
 
@@ -208,4 +197,4 @@ Section dédiée dans ⚙ Paramètres — fonctionne tant qu'un onglet de l'app 
 
 MIT License — Copyright (c) 2025 MrTh0m
 
-Compatible avec tout établissement utilisant Brightspace by D2L, quelle que soit la promotion ou le cursus.
+Compatible avec tout établissement utilisant Brightspace by D2L.
