@@ -18,7 +18,7 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 | `setup.php` | Configuration initiale — mot de passe, token de partage |
 | `test-proxy.php` | Diagnostic réseau/PHP — **à supprimer après usage** |
 | `manifest.json` | Manifest PWA — installation sur Android/iOS/Desktop |
-| `sw.js` | Service Worker — cache offline + notifications |
+| `sw.js` | Service Worker — cache offline + notifications + sync périodique |
 | `icon-192.png` / `icon-512.png` | Icônes PWA |
 | `apple-touch-icon.png` | Icône iOS |
 | `data/` | Dossier créé automatiquement — `config.json`, `state.json` |
@@ -30,17 +30,18 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 ### Mode invité (aucune configuration requise)
 - URL ICS et état "rendu" stockés dans le `localStorage` du navigateur
 - Utilise `proxy.php` pour récupérer le calendrier Brightspace (proxies publics en cascade)
-- Tous les onglets disponibles, y compris **Groupes** (URL ICS privée optionnelle, stockée localement)
+- Tous les onglets disponibles, y compris **Ateliers** (URL ICS privée optionnelle, stockée localement)
 
 ### Mode connecté (1 compte, persistance serveur)
 - Login par mot de passe (bcrypt PHP)
 - URL ICS Brightspace + URL ICS privée stockées dans `data/config.json` — jamais exposées au navigateur
 - État "rendu", attributions d'ateliers et exclusions stockés dans `data/state.json`, synchronisés sur tous les appareils
 - **Nom personnalisé** du dashboard configurable dans les paramètres
+- Notifications en arrière-plan via Periodic Background Sync (app fermée, Chrome/Edge installés)
 
 ### Mode lecture seule — lien de partage
 - URL : `https://ton-domaine/index.html?share=TOKEN`
-- Accès en lecture seule à tous les onglets, dont **Groupes** (attributions visibles, sans édition)
+- Accès en lecture seule à tous les onglets, dont **Ateliers** (attributions visibles, sans édition)
 - URLs privées Brightspace et groupe jamais exposées
 - ⚙ Paramètres accessible pour configurer les **notifications** (réglages propres à l'appareil)
 - Bouton "Installer l'app" masqué (le start_url du manifest ne contient pas le token)
@@ -84,7 +85,17 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - **Chip "Prochain événement"** : prochaine live session OU atelier groupe, selon l'échéance la plus proche ; compte à rebours `"Dans X min"` quand < 60 min
 - **Navigation par swipe** gauche/droite entre les onglets (mobile) ; changement d'onglet revient au début du contenu
 - **Bouton ↑ retour en haut** (flottant, apparaît après 300 px)
+- **Badges semaine/total** sur les onglets Devoirs et Ateliers (ex. `3/12`) : le premier nombre exclut les éléments de la semaine déjà rendus ou passés
 - Thème clair / sombre / système · Design responsive mobile et desktop
+
+### Onglet Agenda *(premier onglet, toujours visible)*
+- **Vue semaine** combinée : devoirs, live sessions et ateliers sur la même grille ou liste
+  - Mode **Grille** : créneaux horaires (08h–20h) + ligne dédiée "tout-le-jour" pour les devoirs
+  - Mode **Liste** : chronologique par jour, devoirs en tête
+  - Légende : Live (teal) · Atelier (vert) · Sous-groupe (orange) · Devoir (violet)
+  - Navigation semaine ← → · bouton retour à la semaine courante
+- **Charge par semaine** : histogramme des échéances sur 8 semaines, tooltip détaillant chaque devoir
+- **Planning des cours** (Gantt) : durées des live sessions par matière, ligne "Aujourd'hui", charge hebdomadaire
 
 ### Onglet Devoirs
 - Détection automatique : `Assessment`, `Co-construction`, `à échéance`
@@ -92,7 +103,7 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - Compte à rebours coloré : rouge ≤ 3j · orange ≤ 7j · vert ≥ 15j
 - Filtres **Passés** et **Rendus** alignés à droite, persistants entre sessions
 - Boutons Copier tâche / Google Cal. / Outlook masqués quand le devoir est rendu
-- **Atelier lié** sur les devoirs collectifs (futur ou passé), uniquement si lié explicitement via l'onglet Groupes
+- **Atelier lié** affiché sur tous les devoirs (individuels et collectifs), uniquement si lié explicitement via l'onglet Ateliers
 - Filtres par type (Individuel/Collectif) et discipline, avec chips de discipline sticky
 
 ### Onglet Live Sessions
@@ -101,40 +112,38 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - Boutons Rejoindre / Google Cal. / Outlook masqués pour les sessions passées
 - Filtres : Toutes / Live Sessions / Sous-groupes · Passées
 
-### Onglet Groupes *(tous modes)*
+### Onglet Ateliers *(anciennement "Groupes", tous modes)*
 - **Source** : calendrier ICS privé (Outlook 365, Google Calendar...)
   - Mode connecté : URL stockée côté serveur, jamais exposée
   - Mode invité : URL + attributions en `localStorage`
   - Mode partage : attributions visibles en lecture seule
-- **Section Vue semaine** : grille (08h–20h) ou liste chronologique avec toggle
-  - Teal = Live sessions · Vert = Ateliers · Orange = Sous-groupe (même créneau ±30 min)
-- **Section Par matière** : ateliers et sous-groupes par matière attribuée
-- **Section Ateliers** : liste avec filtres Passés / Masqués (persistants), pagination
-  - **Attribution** : lier à une matière + devoir précis, ou désigner formellement "Sous-groupe live session"
-  - **Règle override** : auto-détecté sous-groupe MAIS lié à un vrai devoir → traité comme atelier
-  - **Masquer** : exclut un événement non pertinent de tous les calculs et affichages
-  - Lien de réunion extrait automatiquement (Teams, virtual-room) → bouton **Rejoindre** + Google Cal. / Outlook
-  - Carte responsive mobile (même mise en page que Devoirs et Live Sessions)
+- Liste avec filtres **Tous / Non lié** et **Passés / Masqués** (persistants), pagination
+- **Attribution** : lier un événement à une matière + devoir précis, ou désigner formellement "Sous-groupe live session"
+- **Règle override** : auto-détecté sous-groupe MAIS lié à un vrai devoir → traité comme atelier
+- **Masquer** : exclut un événement non pertinent de tous les calculs et affichages (vue semaine, badges, notifications)
+- Lien de réunion extrait automatiquement (Teams, virtual-room) → bouton **Rejoindre** + Google Cal. / Outlook
+- Carte responsive mobile (même mise en page que Devoirs et Live Sessions)
 
 ### Onglet Progression
 - Cartes par matière : barre de progression, répartition individuel/collectif
 - Ateliers et sous-groupes comptés par matière (si attribués)
-- Histogramme hebdomadaire · Gantt
+- **Ateliers par matière** : tableau récapitulatif (ateliers, sous-groupes, prochaine échéance) par matière attribuée — masqué si aucun calendrier privé n'est configuré
 
 ### 🔔 Notifications *(tous modes, réglages par appareil)*
-Section dans ⚙ Paramètres — fonctionne tant qu'un onglet est ouvert.
+Section dans ⚙ Paramètres.
 
 | Déclencheur | Condition |
 |---|---|
-| Devoir non rendu approchant | J−3 et J−1 |
+| Devoir non rendu approchant | J−3 et J−1, groupées si plusieurs devoirs |
 | Devoir collectif sans atelier | Échéance ≤ 7j, aucun atelier lié |
-| Programme du jour | Sessions + ateliers du jour (une fois/jour) |
-| Événement imminent | 15 min avant |
+| Programme du jour | Sessions + ateliers du jour avec horaires (une fois/jour) |
+| Événement imminent | 15 min avant, avec bouton Rejoindre si lien de réunion |
 
 - Réglages en `localStorage` (indépendants entre appareils)
-- Anti-doublon avec purge automatique après 3 jours
-- PWA Android : notifications via Service Worker, tap → ouvre l'app
-- ⚠️ Ne fonctionne pas si l'app est totalement fermée
+- Anti-doublon avec purge automatique après 3 jours, partagé entre l'app et la sync en arrière-plan
+- **Periodic Background Sync** (Chrome/Edge, PWA installée) : notifications même app fermée, en mode connecté ou partage
+- PWA Android : notifications via Service Worker avec actions (Rejoindre, Voir), tap → ouvre l'app ou le lien de réunion
+- ⚠️ Mode invité : fonctionne uniquement tant qu'un onglet de l'app est ouvert
 
 ---
 
@@ -190,6 +199,14 @@ Section dans ⚙ Paramètres — fonctionne tant qu'un onglet est ouvert.
 | `emmgo_notif_settings_v1` | Préférences notifications |
 | `emmgo_notif_sent_v1` | Anti-doublon notifications |
 | `emmgo_filter_prefs_v1` | État des checkboxes (Passés/Rendus/Masqués) |
+
+### IndexedDB `brightspace-pbs` (partagée app ↔ Service Worker)
+
+| Clé | Contenu |
+|---|---|
+| `pbs-config` | Mode (connecté/partage/invité) + token de partage |
+| `notif-prefs` | Copie des préférences de notification pour la sync en arrière-plan |
+| `notif-sent` | Anti-doublon partagé entre `setInterval` (app) et `periodicsync` (SW) |
 
 ---
 
