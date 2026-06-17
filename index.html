@@ -996,6 +996,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
             <input type="checkbox" id="show-past-sessions" onchange="saveFilterPrefs();resetPaginationAndRender('sessions')">
             Passées (<span id="past-count-sessions">0</span>)
           </label>
+          <label class="past-label">
+            <input type="checkbox" id="show-hidden-sessions" onchange="saveFilterPrefs();resetPaginationAndRender('sessions')">
+            Masquées
+          </label>
         </div>
       </div>
       <div class="filters disc-filters" id="disc-filter-sessions" style="display:none"></div>
@@ -1152,6 +1156,7 @@ function saveFilterPrefs(){
     past_devoirs:  g('show-past-devoirs')?.checked  ?? false,
     rendus_devoirs:g('show-rendus-devoirs')?.checked ?? true,
     past_sessions: g('show-past-sessions')?.checked  ?? false,
+    hidden_sessions:g('show-hidden-sessions')?.checked ?? false,
     past_groupe:   g('show-past-groupe')?.checked    ?? false,
     hidden_groupe: g('show-hidden-groupe')?.checked   ?? false,
   };
@@ -1164,6 +1169,7 @@ function loadFilterPrefs(){
     set('show-past-devoirs',  p.past_devoirs  ?? false);
     set('show-rendus-devoirs',p.rendus_devoirs ?? true);
     set('show-past-sessions', p.past_sessions  ?? false);
+    set('show-hidden-sessions',p.hidden_sessions ?? false);
     set('show-past-groupe',   p.past_groupe    ?? false);
     set('show-hidden-groupe', p.hidden_groupe  ?? false);
   }catch(_){}
@@ -1362,7 +1368,7 @@ const Notif = {
 
     // 3. Programme du jour (une seule fois par jour)
     if (this.settings.today) {
-      const todaysLive  = allSessions.filter(s=>s._date&&getDays(s._date)===0)
+      const todaysLive  = activeSessions().filter(s=>s._date&&getDays(s._date)===0)
                            .sort((a,b)=>a._date-b._date);
       const todaysGroup = activeGroupEvents().filter(e=>e._date&&getDays(e._date)===0&&!detectSubgroup(e))
                            .sort((a,b)=>a._date-b._date);
@@ -1383,7 +1389,7 @@ const Notif = {
     // 4. Événement imminent (≤ 15 min)
     if (this.settings.imminent) {
       const now = Date.now();
-      [...allSessions, ...activeGroupEvents()].forEach(e => {
+      [...activeSessions(), ...activeGroupEvents()].forEach(e => {
         if (!e._date) return;
         const mins = Math.round((e._date - now)/60000);
         if (mins <= 0 || mins > 15) return;
@@ -1727,12 +1733,35 @@ const Auth = {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body:   JSON.stringify({ action: 'logout' }),
     });
-    Auth.mode = 'guest'; Auth._cache = null;
+    Auth.mode = 'guest'; Auth.readOnly = false; Auth._cache = null;
+
+    // Vider les données en mémoire du compte qui vient de se déconnecter — sans ça, devoirs,
+    // sessions, ateliers et attributions resteraient visibles en mode invité jusqu'au prochain
+    // rechargement complet de la page.
+    allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {};
+
+    // Réinitialiser les champs URL : en mode connecté ils contiennent l'URL réelle masquée
+    // dans dataset.realUrl, lue en priorité par getIcsUrl()/getPrivateIcsUrl().
+    unlockIcsUrl();
+    unlockPrivateUrl();
+
     pbsSyncConfig('guest', null); // PBS : retour mode invité (désactive le fetch serveur)
     Auth._updateUI();
     const sec = document.getElementById('auth-section');
     if (sec) sec.style.display = 'none';
-    renderDevoirs(); renderProgression(); renderStats(); updateBadges(); renderAgenda();
+
+    // Afficher immédiatement l'état vidé, avant de tenter de recharger des données invité
+    renderDevoirs(); renderSessions(); renderGroupTab(); renderProgression(); renderStats();
+    updateBadges(); updateGroupBadge(); renderAgenda(); renderNextSessionChip();
+
+    // Recharger une éventuelle URL invité propre à cet appareil (distincte du compte déconnecté)
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) { document.getElementById('ics-url').value = saved; document.getElementById('ics-url-setup').value = saved; }
+    } catch(_) {}
+    loadCalendar();          // recharge allDevoirs/allSessions si une URL invité existe
+    Auth._initGuestGroup();  // recharge allGroupEvents (calendrier privé invité) ou affiche "non configuré"
+
     toast('Déconnecté — mode invité');
   },
 
@@ -2471,11 +2500,11 @@ function updateBadges() {
   const weekDevoirs = allDevoirs.filter(d=>isThisWeek(d._date)&&!effectivelyRendu(d)).length;
   const totalDevoirs = allDevoirs.filter(d=>getDays(d._date)>=0).length;
   document.getElementById('badge-devoirs').textContent=`${weekDevoirs}/${totalDevoirs}`;
-  const weekSessions = allSessions.filter(s=>isThisWeek(s._date)&&getDays(s._date)>=0).length;
-  const totalSessions = allSessions.filter(s=>getDays(s._date)>=0).length;
+  const weekSessions = activeSessions().filter(s=>isThisWeek(s._date)&&getDays(s._date)>=0).length;
+  const totalSessions = activeSessions().filter(s=>getDays(s._date)>=0).length;
   document.getElementById('badge-sessions').textContent=`${weekSessions}/${totalSessions}`;
   document.getElementById('past-count-devoirs').textContent=allDevoirs.filter(d=>getDays(d._date)<0).length;
-  document.getElementById('past-count-sessions').textContent=allSessions.filter(s=>getDays(s._date)<0).length;
+  document.getElementById('past-count-sessions').textContent=activeSessions().filter(s=>getDays(s._date)<0).length;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2557,6 +2586,12 @@ function processGroupICS(txt){
 // Détecte si un événement groupe est un sous-groupe d'une live session.
 // Priorité : désignation manuelle via tag.devoirUid === '__subgroup__'
 // Règle d'override : si auto-détecté MAIS lié à un vrai devoir → traiter comme atelier
+// Trouve la live session dont l'horaire chevauche celui d'un événement privé (±30 min)
+// Réutilisé pour l'auto-détection ET pour retrouver la session "correspondante" d'un sous-groupe confirmé manuellement
+function findOverlappingSession(ev){
+  if(!ev._date)return null;
+  return allSessions.find(s=>s._date&&Math.abs(ev._date-s._date)/60000<30)||null;
+}
 function detectSubgroup(ev){
   if(!ev._date)return null;
   const tag=getGroupTag(ev._uid);
@@ -2564,7 +2599,7 @@ function detectSubgroup(ev){
   if(tag?.devoirUid==='__subgroup__')
     return {_manual:true, _courseName:tag.subjectName||tag.subject||'', _courseCode:tag.subject||''};
   // 2. Auto-détection par chevauchement temporel (±30 min)
-  const autoMatch=allSessions.find(s=>s._date&&Math.abs(ev._date-s._date)/60000<30)||null;
+  const autoMatch=findOverlappingSession(ev);
   if(!autoMatch)return null;
   // 3. Auto-détecté MAIS utilisateur a lié un vrai devoir → c'est un atelier
   if(tag?.subject&&tag?.devoirUid&&tag.devoirUid!=='__subgroup__')return null;
@@ -2585,6 +2620,9 @@ function setGroupTag(uid,data){
 // Événements groupe "ignorés" (non pertinents — ni atelier, ni sous-groupe)
 function isIgnored(uid){ return !!getGroupTag(uid)?.ignored; }
 function activeGroupEvents(){ return allGroupEvents.filter(e=>!isIgnored(e._uid)); }
+// Live sessions non masquées — utilisé partout sauf dans l'onglet Live Sessions lui-même
+// (qui gère son propre affichage des sessions masquées via la checkbox "Masquées")
+function activeSessions(){ return allSessions.filter(s=>!isIgnored(s.UID)); }
 
 // Marquer/démarquer un événement comme non pertinent (exclu de tous les calculs)
 function toggleIgnoreGroupEvent(uid, checked){
@@ -2596,6 +2634,17 @@ function toggleIgnoreGroupEvent(uid, checked){
   renderAgenda();
   updateGroupBadge();
   toast(checked ? 'Événement masqué — exclu des calculs' : 'Événement réaffiché');
+}
+
+// Masquer/démasquer une live session — réutilise le même store que les ateliers (groupTagsCache) :
+// la clé "ignored" est générique et fonctionne pour n'importe quel UID d'événement
+function toggleIgnoreSession(uid, checked){
+  setGroupTag(uid, checked ? { ignored:true } : null);
+  renderSessions();
+  updateBadges();
+  renderNextSessionChip();
+  renderAgenda();
+  toast(checked ? 'Session masquée — exclue des calculs' : 'Session réaffichée');
 }
 
 function updateGroupBadge(){
@@ -2882,7 +2931,7 @@ function renderGroupGrid(el,monday){
   const weekEnd=new Date(monday);weekEnd.setDate(monday.getDate()+7);
   const grid={};for(let d=0;d<7;d++)for(let s=0;s<6;s++)grid[`${d}-${s}`]=[];
   const devoirsByDay={};for(let d=0;d<7;d++)devoirsByDay[d]=[];
-  allSessions.forEach(ev=>{
+  activeSessions().forEach(ev=>{
     if(!ev._date||ev._date<monday||ev._date>=weekEnd)return;
     const d=Math.round((new Date(ev._date.getFullYear(),ev._date.getMonth(),ev._date.getDate())-monday)/86400000);
     const s=Math.max(0,Math.min(5,Math.floor((ev._date.getHours()-8)/2)));
@@ -2938,7 +2987,7 @@ function renderGroupWeekList(el,monday){
   for(let d=0;d<7;d++){
     const day=new Date(monday);day.setDate(monday.getDate()+d);
     const isT=dayIdx(day)===todayD;
-    const lives=allSessions.filter(s=>s._date&&dayIdx(s._date)===dayIdx(day));
+    const lives=activeSessions().filter(s=>s._date&&dayIdx(s._date)===dayIdx(day));
     const groups=activeGroupEvents().filter(e=>e._date&&dayIdx(e._date)===dayIdx(day));
     const devoirs=allDevoirs.filter(dv=>dv._date&&dayIdx(dv._date)===dayIdx(day));
     if(!lives.length&&!groups.length&&!devoirs.length)continue;
@@ -2999,7 +3048,7 @@ function renderNextSessionChip() {
   if (!chip) return;
 
   // Fusionner live sessions Brightspace + ateliers groupe, trier par date
-  const liveItems  = allSessions.filter(s => getDays(s._date) >= 0).map(s => ({ ...s, _kind: 'live' }));
+  const liveItems  = activeSessions().filter(s => getDays(s._date) >= 0).map(s => ({ ...s, _kind: 'live' }));
   const groupItems = activeGroupEvents().filter(e => getDays(e._date) >= 0).map(e => ({ ...e, _kind: 'group' }));
   const next = [...liveItems, ...groupItems].sort((a,b) => a._date - b._date)[0];
   if (!next) { chip.classList.remove('visible'); return; }
@@ -3222,30 +3271,39 @@ function renderDevoirs() {
 ══════════════════════════════════════════════════════════════ */
 function renderSessions() {
   const showPast=document.getElementById('show-past-sessions').checked;
+  const showHidden=document.getElementById('show-hidden-sessions')?.checked||false;
 
-  // Sous-groupes issus du calendrier privé
-  const subgroupItems=activeGroupEvents()
-    .filter(e=>detectSubgroup(e))
-    .map(e=>{
-      const sg=detectSubgroup(e);
-      const tag=getGroupTag(e._uid);
-      return{...e,
-        _itemType:'subgroup',
-        _courseName:tag?.subjectName||tag?.subject||sg._courseName||'',
-        _courseCode:tag?.subject||sg._courseCode||'',
-        _title:e._title||'Sous-groupe',
-        _date:e._date,_dateEnd:e._dateEnd,
-      };
-    });
+  // Sous-groupes confirmés MANUELLEMENT + une session correspondante trouvée par chevauchement
+  // → fusionnés : pas d'item séparé, juste un badge "Sous-groupe" ajouté sur la session elle-même.
+  // Sous-groupes auto-détectés (pas encore confirmés) OU manuels sans session correspondante
+  // → comportement inchangé : item séparé avec son propre badge "Sous-groupe".
+  const mergedSessionUids=new Set();
+  const subgroupItems=activeGroupEvents().map(e=>{
+    const sg=detectSubgroup(e);
+    if(!sg)return null;
+    if(sg._manual){
+      const match=findOverlappingSession(e);
+      if(match){ mergedSessionUids.add(match.UID); return null; }
+    }
+    const tag=getGroupTag(e._uid);
+    return{...e,
+      _itemType:'subgroup',
+      _courseName:tag?.subjectName||tag?.subject||sg._courseName||'',
+      _courseCode:tag?.subject||sg._courseCode||'',
+      _title:e._title||'Sous-groupe',
+      _date:e._date,_dateEnd:e._dateEnd,
+    };
+  }).filter(Boolean);
 
-  // Afficher le chip "Sous-groupes" seulement s'il y en a
+  // Afficher le chip "Sous-groupes" s'il y a des items séparés OU des badges fusionnés
   const sgChip=document.getElementById('chip-subgroup');
-  if(sgChip)sgChip.style.display=subgroupItems.length?'':'none';
+  if(sgChip)sgChip.style.display=(subgroupItems.length||mergedSessionUids.size)?'':'none';
 
-  // Fusionner sessions + sous-groupes
-  const sessions=allSessions.map(s=>({...s,_itemType:'session'}));
+  // Fusionner sessions + sous-groupes non fusionnés
+  const sessions=allSessions.map(s=>({...s,_itemType:'session',_hasSubgroup:mergedSessionUids.has(s.UID),_ignored:isIgnored(s.UID)}));
   let combined=[...sessions,...subgroupItems].sort((a,b)=>a._date-b._date);
   if(!showPast)combined=combined.filter(e=>getDays(e._date)>=0);
+  if(!showHidden)combined=combined.filter(e=>!e._ignored);
 
   // Filtre type
   if(filterSessions==='session') combined=combined.filter(e=>e._itemType==='session');
@@ -3268,16 +3326,39 @@ function renderSessions() {
     const endStr=(hasTime&&ev._dateEnd)?fmtTime(ev._dateEnd):'';
     const timeStr=endStr?`${startStr} – ${endStr}`:startStr;
     const duration=(hasTime&&ev._dateEnd&&ev._date)?Math.round((ev._dateEnd-ev._date)/60000):0;
-
     const isSG=ev._itemType==='subgroup';
+
+    // ── Session masquée : carte simplifiée ──────────────────
+    if(ev._itemType==='session'&&ev._ignored){
+      return`<div class="card-item past" style="opacity:.55;animation-delay:${i*25}ms">
+        <div class="time-badge past-ev">
+          <div class="tb-day">${fmtDay(ev._date)}</div>
+          <div class="tb-date">${fmtShort(ev._date)}</div>
+          <div class="tb-time">${startStr}</div>
+        </div>
+        <div class="card-body">
+          <div class="tags"><span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-eye-off"></i> Masquée</span>${isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>`:''}</div>
+          <div class="card-title">${ev._title||'—'}</div>
+          <div class="card-meta">${timeStr}</div>
+          ${!Auth.readOnly?`<label class="group-tag-btn" style="cursor:pointer;margin-top:6px">
+            <input type="checkbox" checked onchange="toggleIgnoreSession('${ev.UID}',this.checked)" style="margin-right:4px;cursor:pointer">
+            Ne plus masquer
+          </label>`:''}
+        </div>
+      </div>`;
+    }
+
     const typePill=isSG
       ?`<span class="pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> Sous-groupe</span>`
-      :`<span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>`;
+      :`<span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-video"></i> Live Session</span>${ev._hasSubgroup?`<span class="pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> Sous-groupe</span>`:''}`;
     const pastPill=isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passée</span>`:'';
 
     const courseBlock=(ev._courseCode||ev._courseName)?`<div class="course-block">${ev._courseCode?`<span class="course-code">${ev._courseCode}</span>`:''}${ev._courseName?`<span class="course-name">${ev._courseName}</span>`:''}</div>`:'';
     const instructorLine=ev._instructors?`<div class="card-meta"><i class="ti ti-user-check" style="font-size:11px"></i><span>${ev._instructors}</span></div>`:'';
     const joinBtn=(!isSG&&ev._teamsUrl)?`<a class="action-btn teams" href="${ev._teamsUrl}" target="_blank" rel="noopener"><i class="ti ti-video"></i> Rejoindre</a><div class="action-sep"></div>`:'';
+    const hideCb=(!Auth.readOnly&&!isSG)?`<label class="group-tag-btn" title="Masquer cette session" style="cursor:pointer;margin-top:6px">
+      <input type="checkbox" onchange="toggleIgnoreSession('${ev.UID}',this.checked)" style="margin-right:4px;cursor:pointer"> Masquer
+    </label>`:'';
 
     return`
     <div class="card-item ${isPast?'past':''}" style="animation-delay:${i*25}ms">
@@ -3292,6 +3373,7 @@ function renderSessions() {
         <div class="card-title" title="${(ev._title||'').replace(/"/g,'&quot;')}">${ev._title||'—'}</div>
         <div class="card-meta"><i class="ti ti-clock" style="font-size:11px"></i><span>${timeStr}</span>${duration?`<span style="color:var(--text3)">·</span><span>${duration} min</span>`:''}</div>
         ${instructorLine}
+        ${hideCb}
       </div>
       ${(!Auth.readOnly&&!isPast&&!isSG)?`
       <div class="card-actions">
@@ -3312,7 +3394,7 @@ function renderSessions() {
    Render Gantt — Planning des cours
 ══════════════════════════════════════════════════════════════ */
 function renderGantt() {
-  if (!allSessions.length) return '';
+  if (!activeSessions().length) return '';
 
   const COLORS = [
     '#1a7fc1','#4b44b0','#0d6e4f','#b06010',
@@ -3343,7 +3425,7 @@ function renderGantt() {
   }
 
   const map = {};
-  allSessions.forEach(ev => {
+  activeSessions().forEach(ev => {
     const key = ganttKey(ev);
     if (!map[key]) map[key] = { code:'', name: ganttName(ev), dates:[] };
     // Stocker le code depuis la première session qui l'a
@@ -3633,7 +3715,9 @@ function renderProgression() {
 ══════════════════════════════════════════════════════════════ */
 function toggleSettings(){
   const p=document.getElementById('settings-panel');
-  p.style.display=p.style.display==='none'?'':'none';
+  const opening=p.style.display==='none';
+  p.style.display=opening?'':'none';
+  if(opening)window.scrollTo({top:0,behavior:'smooth'});
   // En mode connecté, afficher le bouton crayon pour modifier l'URL
   const unlockBtn = document.getElementById('btn-unlock-url');
   if (unlockBtn) unlockBtn.style.display = Auth.mode === 'connected' ? '' : 'none';

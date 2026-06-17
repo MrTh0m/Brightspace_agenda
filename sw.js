@@ -6,7 +6,7 @@
  *   - API (api.php, proxy.php) : réseau d'abord, cache en secours
  */
 
-const SHELL_VER = 'emmgo-shell-v7';
+const SHELL_VER = 'emmgo-shell-v10';
 const DATA_VER  = 'emmgo-data-v4';
 const ALL_CACHES = [SHELL_VER, DATA_VER];
 
@@ -469,120 +469,6 @@ async function pbsFetchState(config) {
     }
   } catch(_) {}
   return { rendus: {}, groupTags: {} };
-}
-
-// ── Cœur de la sync périodique ────────────────────────────────
-async function runPeriodicSync() {
-  const config = await idbGet('pbs-config');
-  const prefs  = await idbGet('notif-prefs');
-
-  // Vérifications préliminaires
-  if (!config || !prefs?.enabled) return;
-  if (config.mode === 'guest')    return; // mode invité = setInterval dans l'app
-
-  // 1. Fetch ICS Brightspace
-  const icsText = await pbsFetchICS(config);
-  if (!icsText || !icsText.includes('BEGIN:VCALENDAR')) return;
-  const events = pbsParse(icsText);
-
-  // 2. Fetch état serveur (rendus + group_tags)
-  const state = await pbsFetchState(config);
-
-  // 3. Fetch ICS privé (pour check ateliers)
-  const privateText = await pbsFetchPrivateICS(config);
-  const groupEvts   = privateText && privateText.includes('BEGIN:VCALENDAR')
-    ? pbsParse(privateText).map(ev => ({ ...ev, _uid: ev.UID||'', _date: pbsDate(ev.DTSTART) })).filter(e=>e._date)
-    : [];
-
-  const todayKey = new Date().toISOString().slice(0,10);
-
-  // 4. Devoirs non rendus approchants (J-3 et J-1)
-  if (prefs.deadline) {
-    events.filter(pbsIsDevoir).forEach(ev => {
-      const d = pbsDate(ev.DTSTART);
-      if (!d) return;
-      const days = pbsDays(d);
-      const isRendu = !!state.rendus[ev.UID] || days < 0;
-      if ((days === 3 || days === 1) && !isRendu) {
-        const title = pbsCleanTitle(ev.SUMMARY||'');
-        const loc   = (ev.LOCATION && !ev.LOCATION.startsWith('http')) ? ev.LOCATION : '';
-        pbsNotify(
-          `deadline-${ev.UID}-J${days}`,
-          days === 1 ? 'Devoir à rendre demain' : 'Devoir dans 3 jours',
-          `${title}${loc?' · '+loc:''} — ${pbsFmt(d)}`
-        );
-      }
-    });
-  }
-
-  // 5. Devoir collectif sans atelier lié (échéance ≤ 7j)
-  if (prefs.noAtelier && groupEvts.length > 0) {
-    events.filter(pbsIsDevoir).forEach(ev => {
-      // Déterminer si collectif (catégories ou title co-construction)
-      const cats  = (ev.CATEGORIES||'').toLowerCase();
-      const summ  = (ev.SUMMARY||'').toLowerCase();
-      const isCol = cats.includes('collectif') || summ.includes('co-construction');
-      if (!isCol) return;
-      const d = pbsDate(ev.DTSTART);
-      if (!d) return;
-      const days   = pbsDays(d);
-      const isRendu = !!state.rendus[ev.UID] || days < 0;
-      if (days >= 0 && days <= 7 && !isRendu) {
-        // Y a-t-il un atelier lié à ce devoir ?
-        const linked = groupEvts.some(ge => {
-          const tag = state.groupTags[ge._uid];
-          return tag && tag.devoirUid === ev.UID && !tag.ignored;
-        });
-        if (!linked) {
-          const title = pbsCleanTitle(ev.SUMMARY||'');
-          pbsNotify(
-            `noatelier-${ev.UID}`,
-            'Aucun atelier planifié',
-            `"${title}" — échéance le ${pbsFmt(d)} (J-${days})`
-          );
-        }
-      }
-    });
-  }
-
-  // 6. Programme du jour (une fois par jour)
-  if (prefs.today) {
-    const todaySessions = events.filter(ev => {
-      if (!pbsIsSession(ev)) return false;
-      const d = pbsDate(ev.DTSTART);
-      return d && pbsDays(d) === 0;
-    });
-    const todayGroup = groupEvts.filter(ge => {
-      const tag = state.groupTags[ge._uid];
-      if (tag?.ignored) return false;
-      // sous-groupe manuel ?
-      const isSubgroup = tag?.devoirUid === '__subgroup__' ||
-        groupEvts.some(s => pbsIsSession(s) && s._date && Math.abs(ge._date - s._date)/60000 < 30);
-      return !isSubgroup && pbsDays(ge._date) === 0;
-    });
-    if (todaySessions.length || todayGroup.length) {
-      const parts = [];
-      if (todaySessions.length) parts.push(`${todaySessions.length} live session${todaySessions.length>1?'s':''}`);
-      if (todayGroup.length)    parts.push(`${todayGroup.length} atelier${todayGroup.length>1?'s':''}`);
-      pbsNotify(`today-${todayKey}`, "Programme d'aujourd'hui", parts.join(' · '));
-    }
-  }
-
-  // 7. Événement imminent ≤ 20 min (best-effort — PBS est approximatif)
-  if (prefs.imminent) {
-    const now = Date.now();
-    const allEvts = [
-      ...events.filter(pbsIsSession).map(ev=>({ uid:ev.UID, d:pbsDate(ev.DTSTART), title:ev.SUMMARY||'' })),
-      ...groupEvts.map(ge=>({ uid:ge._uid, d:ge._date, title:ge.SUMMARY||'' })),
-    ];
-    allEvts.forEach(e => {
-      if (!e.d || !e.uid) return;
-      const mins = Math.round((e.d - now) / 60000);
-      if (mins > 0 && mins <= 20) {
-        pbsNotify(`imminent-${e.uid}`, `Dans ${mins} min`, e.title);
-      }
-    });
-  }
 }
 
 // ── Handler periodicsync ─────────────────────────────────────────
