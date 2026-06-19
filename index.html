@@ -1689,8 +1689,12 @@ const RemoteServer = {
 // WebView). En web, ce wrapper est totalement transparent — aucun header
 // ajouté, comportement identique à fetch() direct.
 function apiFetch(url, options = {}) {
-  if (!IS_PACKAGED_APP) return fetch(url, options);
-  const merged = { ...options, headers: { ...(options.headers || {}), ...RemoteServer.authHeaders() } };
+  // Injecter le header Authorization dès qu'un authToken est disponible,
+  // que ce soit en APK ou en web client pointant vers un serveur externe.
+  // En web same-origin sans token, comportement inchangé (cookie de session).
+  const authHdrs = RemoteServer.authHeaders();
+  if (Object.keys(authHdrs).length === 0) return fetch(url, options);
+  const merged = { ...options, headers: { ...(options.headers || {}), ...authHdrs } };
   return fetch(url, merged);
 }
 
