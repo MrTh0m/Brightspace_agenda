@@ -670,6 +670,70 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   </div>
 
   <!-- Login modal -->
+  <!-- Onboarding modal (APK uniquement) : choix Local / Serveur au premier lancement -->
+  <div id="onboarding-modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-overlay">
+      <div class="modal-box" style="max-width:420px">
+
+        <!-- Étape 1 : choix du mode -->
+        <div id="onb-step-choice">
+          <h3><i class="ti ti-rocket"></i> Bienvenue</h3>
+          <p class="msub">Comment veux-tu utiliser Brightspace Agenda ?</p>
+          <button class="btn primary" style="width:100%;height:44px;justify-content:center;margin-bottom:8px"
+            onclick="Onboarding.showLocal()">
+            <i class="ti ti-device-mobile"></i> Local — sur cet appareil
+          </button>
+          <button class="btn" style="width:100%;height:44px;justify-content:center"
+            onclick="Onboarding.showServer()">
+            <i class="ti ti-server-2"></i> Serveur — instance Brightspace Agenda
+          </button>
+          <p class="msub" style="margin-top:14px;font-size:12px">
+            <strong>Local</strong> : tes devoirs restent uniquement sur ce téléphone.<br>
+            <strong>Serveur</strong> : connecte-toi à une instance hébergée (la tienne ou celle d'un camarade), en mode connecté ou en lecture seule via un lien de partage.
+          </p>
+        </div>
+
+        <!-- Étape 2a : mode Local -->
+        <div id="onb-step-local" style="display:none">
+          <button class="modal-close" onclick="Onboarding.back()" title="Retour"><i class="ti ti-arrow-left"></i></button>
+          <h3><i class="ti ti-device-mobile"></i> Mode Local</h3>
+          <p class="msub">Renseigne ton flux ICS Brightspace (et, en option, ton calendrier de groupe privé). Tout reste sur cet appareil.</p>
+          <input type="text" id="onb-local-ics" placeholder="URL du flux ICS Brightspace">
+          <input type="text" id="onb-local-private-ics" placeholder="URL ICS privée (groupe) — optionnel" style="margin-top:8px">
+          <button class="btn primary" style="width:100%;height:38px;justify-content:center;margin-top:12px" onclick="Onboarding.confirmLocal()">
+            <i class="ti ti-check"></i> Continuer
+          </button>
+          <p class="modal-error" id="onb-local-error"></p>
+        </div>
+
+        <!-- Étape 2b : mode Serveur -->
+        <div id="onb-step-server" style="display:none">
+          <button class="modal-close" onclick="Onboarding.back()" title="Retour"><i class="ti ti-arrow-left"></i></button>
+          <h3><i class="ti ti-server-2"></i> Mode Serveur</h3>
+          <p class="msub">URL de l'instance Brightspace Agenda à laquelle te connecter.</p>
+          <input type="text" id="onb-server-url" placeholder="https://exemple.fr">
+          <div style="display:flex;gap:8px;margin:10px 0">
+            <button class="btn" id="onb-tab-pwd" style="flex:1;height:34px;justify-content:center" onclick="Onboarding.switchTab('pwd')">
+              <i class="ti ti-lock"></i> Mot de passe
+            </button>
+            <button class="btn" id="onb-tab-share" style="flex:1;height:34px;justify-content:center" onclick="Onboarding.switchTab('share')">
+              <i class="ti ti-link"></i> Lien de partage
+            </button>
+          </div>
+          <input type="password" id="onb-server-pwd" placeholder="Mot de passe"
+            onkeydown="if(event.key==='Enter')Onboarding.confirmServer()">
+          <input type="text" id="onb-server-share" placeholder="Lien ou token de partage" style="display:none"
+            onkeydown="if(event.key==='Enter')Onboarding.confirmServer()">
+          <button class="btn primary" style="width:100%;height:38px;justify-content:center;margin-top:12px" onclick="Onboarding.confirmServer()">
+            <i class="ti ti-login"></i> Se connecter
+          </button>
+          <p class="modal-error" id="onb-server-error"></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <div id="login-modal" style="display:none" role="dialog" aria-modal="true">
     <div class="modal-overlay">
       <div class="modal-box">
@@ -689,6 +753,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   <!-- Info modal -->
   <div id="info-modal" style="display:none" role="dialog" aria-modal="true">
     <div class="modal-overlay" onclick="if(event.target===this)toggleInfo()">
+
       <div class="modal-box" style="max-width:420px;text-align:left">
         <button class="modal-close" onclick="toggleInfo()" title="Fermer"><i class="ti ti-x"></i></button>
         <h3><i class="ti ti-info-circle"></i> Brightspace Agenda</h3>
@@ -723,34 +788,72 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
   <!-- Settings panel -->
   <div class="settings-panel" id="settings-panel" style="display:none">
-    <div id="settings-ics-section">
-    <h3><i class="ti ti-link"></i> URL du calendrier ICS Brightspace</h3>
-    <div class="field-row">
-      <input type="url" id="ics-url"
-        value=""
-        placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
-      <button class="btn primary" onclick="loadCalendar()">Charger</button>
-      <button class="btn" id="btn-unlock-url" onclick="unlockIcsUrl()" title="Saisir une nouvelle URL" style="display:none">
-        <i class="ti ti-pencil"></i>
-      </button>
-    </div>
-    <div class="error-msg" id="err-box" style="display:none">
-      <i class="ti ti-alert-circle" style="flex-shrink:0;margin-top:1px"></i>
-      <span id="err-msg"></span>
-    </div>
-    <div class="paste-zone" id="paste-zone" style="display:none">
-      <label>Ou colle directement le contenu du fichier .ics :</label>
-      <textarea id="ics-paste" rows="5"
-        placeholder="BEGIN:VCALENDAR&#10;VERSION:2.0&#10;..."
-        oninput="tryPaste(this.value)"></textarea>
-      <div class="hint">
-        <strong>Récupérer le .ics :</strong> Brightspace → Agenda → icône abonnement → Télécharger le calendrier
-        → ouvre avec un éditeur texte → Ctrl+A → colle ici.
+
+    <!-- ── Mode actif + déconnexion ─────────────────────────────── -->
+    <div id="settings-mode-section">
+      <!-- Mode local / invité -->
+      <div id="settings-mode-local" style="display:none">
+        <h3 style="display:flex;align-items:center;justify-content:space-between">
+          <span><i class="ti ti-device-mobile"></i> Mode local</span>
+          <button class="btn" style="font-size:11px;height:28px"
+            onclick="Auth.switchMode()">
+            <i class="ti ti-refresh"></i> Changer de mode
+          </button>
+        </h3>
+      </div>
+      <!-- Mode lecture seule -->
+      <div id="settings-mode-share" style="display:none">
+        <h3 style="display:flex;align-items:center;justify-content:space-between">
+          <span><i class="ti ti-eye"></i> Lecture seule</span>
+          <button class="btn" style="font-size:11px;height:28px;color:var(--c-red);border-color:var(--c-red)44"
+            onclick="Auth.clearGuestShare()">
+            <i class="ti ti-logout"></i> Se déconnecter
+          </button>
+        </h3>
+        <div style="font-size:12px;color:var(--text2);margin-top:4px">
+          <span id="settings-share-info"></span>
+        </div>
+      </div>
+      <!-- Mode connecté -->
+      <div id="settings-mode-connected" style="display:none">
+        <h3 style="display:flex;align-items:center;justify-content:space-between">
+          <span><i class="ti ti-shield-check"></i> Connecté</span>
+          <button class="btn" style="font-size:11px;height:28px;color:var(--c-red);border-color:var(--c-red)44"
+            onclick="Auth.logout()">
+            <i class="ti ti-logout"></i> Se déconnecter
+          </button>
+        </h3>
       </div>
     </div>
+
+    <!-- ── URL ICS Brightspace — local + connecté ────────────────── -->
+    <div id="settings-ics-section">
+      <h3><i class="ti ti-link"></i> URL du calendrier ICS Brightspace</h3>
+      <div class="field-row">
+        <input type="url" id="ics-url" value=""
+          placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
+        <button class="btn primary" onclick="loadCalendar()">Charger</button>
+        <button class="btn" id="btn-unlock-url" onclick="unlockIcsUrl()" title="Saisir une nouvelle URL" style="display:none">
+          <i class="ti ti-pencil"></i>
+        </button>
+      </div>
+      <div class="error-msg" id="err-box" style="display:none">
+        <i class="ti ti-alert-circle" style="flex-shrink:0;margin-top:1px"></i>
+        <span id="err-msg"></span>
+      </div>
+      <div class="paste-zone" id="paste-zone" style="display:none">
+        <label>Ou colle directement le contenu du fichier .ics :</label>
+        <textarea id="ics-paste" rows="5"
+          placeholder="BEGIN:VCALENDAR&#10;VERSION:2.0&#10;..."
+          oninput="tryPaste(this.value)"></textarea>
+        <div class="hint">
+          <strong>Récupérer le .ics :</strong> Brightspace → Agenda → icône abonnement → Télécharger le calendrier
+          → ouvre avec un éditeur texte → Ctrl+A → colle ici.
+        </div>
+      </div>
     </div>
-    <!-- Auth & share section (hidden in guest mode) -->
-    <!-- URL ICS privée (groupe) — visible en mode connecté uniquement -->
+
+    <!-- ── URL ICS privée — local + connecté ────────────────────── -->
     <div class="private-url-section" id="private-url-section">
       <h3 style="font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px">
         <i class="ti ti-users"></i> URL du calendrier ICS privé (groupe de travail)
@@ -765,9 +868,9 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       </div>
     </div>
 
+    <!-- ── Partage + dashboard — connecté uniquement ─────────────── -->
     <div class="auth-section" id="auth-section" style="display:none">
       <h4><i class="ti ti-shield-lock"></i> Mode connecté</h4>
-      <!-- Nom personnalisé du dashboard -->
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:500;color:var(--text2);display:block;margin-bottom:5px">
           <i class="ti ti-pencil" style="font-size:11px"></i> Nom du dashboard
@@ -793,18 +896,14 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Partage désactivé.</p>
         <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenToken()"><i class="ti ti-share"></i> Activer le partage</button>
       </div>
-      <button class="btn" style="margin-top:10px;font-size:12px;height:30px;color:var(--c-red);border-color:var(--c-red)44" onclick="Auth.logout()">
-        <i class="ti ti-logout"></i> Se déconnecter
-      </button>
     </div>
 
-    <!-- Notifications — toujours visible, réglages locaux à cet appareil -->
+    <!-- ── Notifications — toujours visible ─────────────────────── -->
     <div class="notif-section" id="notif-section">
       <h3><i class="ti ti-bell"></i> Notifications</h3>
       <p style="font-size:11px;color:var(--text3);margin:-4px 0 10px">
         Réglages propres à cet appareil/navigateur (stockés localement).
       </p>
-
       <div class="notif-row">
         <div class="notif-row-label">
           <strong>Activer les notifications</strong>
@@ -815,7 +914,6 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
           <span class="slider"></span>
         </label>
       </div>
-
       <div id="notif-options" style="display:none">
         <div class="notif-row">
           <div class="notif-row-label">
@@ -862,20 +960,105 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         </button>
       </div>
     </div>
+
   </div>
 
-  <!-- Setup card -->
+  <!-- Écran d'accueil — premier lancement ou aucun calendrier configuré -->
   <div class="setup-card" id="setup-card">
     <div class="icon-wrap"><i class="ti ti-calendar-down"></i></div>
-    <h2>Connecte ton agenda Brightspace</h2>
-    <p>Saisis ton URL ICS Brightspace pour voir tes devoirs et live sessions.</p>
-    <div class="url-field">
-      <input type="url" id="ics-url-setup"
-        value=""
-        placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
-      <button class="btn primary" onclick="loadFromSetup()">
-        <i class="ti ti-player-play"></i> Charger
+    <h2>Brightspace Agenda</h2>
+    <p style="margin-bottom:16px">Choisis comment tu veux accéder à tes données.</p>
+
+    <!-- Onglets -->
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <button class="btn primary" id="wc-tab-local"
+        onclick="wcTab('local')" style="flex:1;height:34px;justify-content:center;font-size:12px">
+        <i class="ti ti-device-mobile"></i> Local
       </button>
+      <button class="btn" id="wc-tab-share"
+        onclick="wcTab('share')" style="flex:1;height:34px;justify-content:center;font-size:12px">
+        <i class="ti ti-eye"></i> Lecture seule
+      </button>
+      <button class="btn" id="wc-tab-connected"
+        onclick="wcTab('connected')" style="flex:1;height:34px;justify-content:center;font-size:12px">
+        <i class="ti ti-lock"></i> Connecté
+      </button>
+    </div>
+
+    <!-- Panneau Local -->
+    <div id="wc-pane-local">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+        Configure tes flux ICS. Les données restent sur <strong>cet appareil</strong>.
+      </p>
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-link" style="font-size:10px"></i> URL ICS Brightspace *
+      </label>
+      <div class="url-field" style="margin-bottom:10px">
+        <input type="url" id="ics-url-setup"
+          placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=…">
+        <button class="btn primary" onclick="loadFromSetup()">
+          <i class="ti ti-player-play"></i> Charger
+        </button>
+      </div>
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-users" style="font-size:10px"></i> URL ICS groupe <span style="font-weight:400">(optionnel)</span>
+      </label>
+      <div class="url-field">
+        <input type="url" id="wc-local-private"
+          placeholder="https://outlook.office365.com/owa/calendar/…">
+      </div>
+    </div>
+
+    <!-- Panneau Lecture seule -->
+    <div id="wc-pane-share" style="display:none">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+        Accède en lecture seule au tableau de bord d'un camarade via un lien ou token de partage. Les données sont stockées <strong>sur cet appareil</strong>.
+      </p>
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-key" style="font-size:10px"></i> Token ou lien de partage *
+      </label>
+      <input type="text" id="wc-share-token"
+        placeholder="Colle le lien complet ou le token brut"
+        style="width:100%;margin-bottom:8px"
+        onkeydown="if(event.key==='Enter')wcApplyShare()">
+      <p style="font-size:11px;color:var(--text3);margin-bottom:10px">
+        Si tu colles un lien complet (https://…?share=TOKEN), le serveur est détecté automatiquement.
+      </p>
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-server-2" style="font-size:10px"></i> URL du serveur <span style="font-weight:400">(vide = ce serveur)</span>
+      </label>
+      <input type="text" id="wc-share-server"
+        placeholder="https://mon-serveur.exemple.fr"
+        style="width:100%;margin-bottom:12px"
+        onkeydown="if(event.key==='Enter')wcApplyShare()">
+      <button class="btn primary" style="width:100%;height:38px;justify-content:center" onclick="wcApplyShare()">
+        <i class="ti ti-eye"></i> Accéder en lecture seule
+      </button>
+      <p class="modal-error" id="wc-share-error" style="margin-top:8px"></p>
+    </div>
+
+    <!-- Panneau Connecté -->
+    <div id="wc-pane-connected" style="display:none">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+        Connecte-toi à une instance Brightspace Agenda pour synchroniser tes données côté serveur.
+      </p>
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-server-2" style="font-size:10px"></i> URL du serveur <span style="font-weight:400">(vide = ce serveur)</span>
+      </label>
+      <input type="text" id="wc-connected-server"
+        placeholder="https://mon-serveur.exemple.fr"
+        style="width:100%;margin-bottom:8px">
+      <label style="font-size:11px;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">
+        <i class="ti ti-lock" style="font-size:10px"></i> Mot de passe *
+      </label>
+      <input type="password" id="wc-connected-pwd"
+        placeholder="••••••••"
+        style="width:100%;margin-bottom:12px"
+        onkeydown="if(event.key==='Enter')wcApplyConnected()">
+      <button class="btn primary" style="width:100%;height:38px;justify-content:center" onclick="wcApplyConnected()">
+        <i class="ti ti-login"></i> Se connecter
+      </button>
+      <p class="modal-error" id="wc-connected-error" style="margin-top:8px"></p>
     </div>
   </div>
 
@@ -1083,6 +1266,10 @@ const PRIVATE_ICS_KEY  = 'emmgo_private_ics_url_v1';
 const NOTIF_KEY        = 'emmgo_notif_settings_v1';
 const NOTIF_SENT_KEY   = 'emmgo_notif_sent_v1';
 const FILTER_PREFS_KEY = 'emmgo_filter_prefs_v1';
+// Token de partage en lecture seule, persisté côté client (invité ou APK).
+// Vide = pas de token configuré. SERVER vide = même serveur que l'app courante.
+const GUEST_SHARE_TOKEN_KEY  = 'emmgo_guest_share_token_v1';
+const GUEST_SHARE_SERVER_KEY = 'emmgo_guest_share_server_v1';
 const PAGE_SIZE        = 5;
 
 // ── Pont IndexedDB partagé avec le Service Worker (PBS) ──────────
@@ -1414,8 +1601,101 @@ const Notif = {
   }
 };
 
+// ── Détection du contexte d'exécution ──────────────────────────────
+// Quand l'app est packagée avec Capacitor (APK), elle n'est associée à
+// aucun serveur fixe : au premier lancement, l'utilisateur choisit entre
+// mode Local (aucun serveur Brightspace Agenda, juste les ICS en direct)
+// et mode Serveur (saisie d'une URL Brightspace Agenda distante + mot de
+// passe ou lien/token de partage). En web, le comportement est inchangé :
+// l'app reste toujours associée à son propre serveur (chemins relatifs).
+const IS_PACKAGED_APP = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const API_ORIGIN = '';
+
+// ── Stockage cross-plateforme ────────────────────────────────────────
+// Web : localStorage (synchrone, mais on garde une API async pour que
+// le même code fonctionne des deux côtés sans condition).
+// APK : Capacitor Preferences (survit à la fermeture totale de l'app,
+// contrairement à une WebView qui peut purger son stockage local).
+const AppStorage = {
+  async get(key) {
+    if (IS_PACKAGED_APP && window.Capacitor?.Plugins?.Preferences) {
+      const r = await window.Capacitor.Plugins.Preferences.get({ key });
+      return r.value;
+    }
+    try { return localStorage.getItem(key); } catch(_) { return null; }
+  },
+  async set(key, value) {
+    if (IS_PACKAGED_APP && window.Capacitor?.Plugins?.Preferences) {
+      return window.Capacitor.Plugins.Preferences.set({ key, value });
+    }
+    try { localStorage.setItem(key, value); } catch(_) {}
+  },
+  async remove(key) {
+    if (IS_PACKAGED_APP && window.Capacitor?.Plugins?.Preferences) {
+      return window.Capacitor.Plugins.Preferences.remove({ key });
+    }
+    try { localStorage.removeItem(key); } catch(_) {}
+  },
+};
+
+// ── Config du serveur distant (mode packagé uniquement) ──────────────
+// En web, RemoteServer reste inerte : Auth._apiBase garde son
+// comportement relatif d'origine (voir plus bas, API_ORIGIN='').
+// Structure persistée : { kind: 'local' }
+//                     ou { kind: 'share', serverUrl, shareToken }
+//                     ou { kind: 'connected', serverUrl, authToken }
+const REMOTE_CFG_KEY = 'emmgo_remote_cfg_v1';
+const RemoteServer = {
+  kind:       'local',  // 'local' | 'share' | 'connected'
+  serverUrl:  '',        // ex: "https://mon-serveur.exemple.fr"
+  authToken:  '',        // mode 'connected' uniquement
+  shareToken: '',        // mode 'share' uniquement
+
+  async load() {
+    try {
+      const raw = await AppStorage.get(REMOTE_CFG_KEY);
+      if (!raw) return null;
+      const cfg = JSON.parse(raw);
+      if (cfg && cfg.kind) {
+        RemoteServer.kind       = cfg.kind;
+        RemoteServer.serverUrl  = cfg.serverUrl  || '';
+        RemoteServer.authToken  = cfg.authToken  || '';
+        RemoteServer.shareToken = cfg.shareToken || '';
+        return cfg;
+      }
+    } catch(_) {}
+    return null;
+  },
+  async save() {
+    await AppStorage.set(REMOTE_CFG_KEY, JSON.stringify({
+      kind: RemoteServer.kind, serverUrl: RemoteServer.serverUrl,
+      authToken: RemoteServer.authToken, shareToken: RemoteServer.shareToken,
+    }));
+  },
+  async clear() {
+    RemoteServer.kind = 'local'; RemoteServer.serverUrl = '';
+    RemoteServer.authToken = ''; RemoteServer.shareToken = '';
+    await AppStorage.remove(REMOTE_CFG_KEY);
+  },
+  // Construit les headers à joindre à chaque appel api.php en mode packagé
+  authHeaders() {
+    return RemoteServer.authToken ? { 'Authorization': `Bearer ${RemoteServer.authToken}` } : {};
+  },
+};
+
+// Wrapper autour de fetch() pour tout appel vers Auth._apiBase : injecte
+// automatiquement le header Authorization en mode packagé (le cookie de
+// session ne peut pas être envoyé de façon fiable cross-origin depuis une
+// WebView). En web, ce wrapper est totalement transparent — aucun header
+// ajouté, comportement identique à fetch() direct.
+function apiFetch(url, options = {}) {
+  if (!IS_PACKAGED_APP) return fetch(url, options);
+  const merged = { ...options, headers: { ...(options.headers || {}), ...RemoteServer.authHeaders() } };
+  return fetch(url, merged);
+}
+
 const CORS_PROXIES = [
-  u => ({ url:`proxy.php?url=${encodeURIComponent(u)}`,                           isJson:false }),
+  u => ({ url:`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(u)}`,            isJson:false }),
   u => ({ url:`https://corsproxy.io/?url=${encodeURIComponent(u)}`,              isJson:false }),
   u => ({ url:`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,     isJson:true  }),
   u => ({ url:`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,isJson:false }),
@@ -1457,6 +1737,156 @@ function cycleTheme() {
 }
 
 /* ══════════════════════════════════════════════════════════════
+   Onboarding (APK uniquement) — choix Local / Serveur au 1er lancement
+══════════════════════════════════════════════════════════════ */
+const Onboarding = {
+  _serverTab: 'pwd', // 'pwd' | 'share'
+
+  show() { document.getElementById('onboarding-modal').style.display = ''; this._reset(); },
+  hide() { document.getElementById('onboarding-modal').style.display = 'none'; },
+  _reset() {
+    document.getElementById('onb-step-choice').style.display = '';
+    document.getElementById('onb-step-local').style.display  = 'none';
+    document.getElementById('onb-step-server').style.display = 'none';
+  },
+  back() { this._reset(); },
+
+  showLocal() {
+    document.getElementById('onb-step-choice').style.display = 'none';
+    document.getElementById('onb-step-local').style.display  = '';
+  },
+  showServer() {
+    document.getElementById('onb-step-choice').style.display = 'none';
+    document.getElementById('onb-step-server').style.display = '';
+    this.switchTab('pwd');
+  },
+
+  switchTab(tab) {
+    this._serverTab = tab;
+    document.getElementById('onb-tab-pwd').classList.toggle('primary', tab === 'pwd');
+    document.getElementById('onb-tab-share').classList.toggle('primary', tab === 'share');
+    document.getElementById('onb-server-pwd').style.display   = tab === 'pwd'   ? '' : 'none';
+    document.getElementById('onb-server-share').style.display = tab === 'share' ? '' : 'none';
+  },
+
+  // Parse soit un lien complet "https://host/...?share=TOKEN", soit un
+  // token brut. Retourne { serverUrl, token } (serverUrl vide si non détecté).
+  // Appelé à la soumission du formulaire (onglet "Lien de partage") : si un
+  // lien complet est collé, l'URL serveur saisie manuellement est ignorée
+  // au profit de celle extraite du lien, qui est la source la plus fiable.
+  _parseShareInput(raw, fallbackServerUrl) {
+    raw = (raw || '').trim();
+    try {
+      const u = new URL(raw);
+      const token = u.searchParams.get('share') || '';
+      const serverUrl = `${u.protocol}//${u.host}`;
+      if (token) return { serverUrl, token };
+    } catch(_) { /* pas une URL valide : on traite raw comme un token brut */ }
+    return { serverUrl: fallbackServerUrl || '', token: raw };
+  },
+
+  _normalizeServerUrl(raw) {
+    let url = (raw || '').trim().replace(/\/+$/, '');
+    if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+    return url;
+  },
+
+  async confirmLocal() {
+    const ics     = document.getElementById('onb-local-ics').value.trim();
+    const private_ = document.getElementById('onb-local-private-ics').value.trim();
+    const errEl   = document.getElementById('onb-local-error');
+    errEl.textContent = '';
+    if (!ics) { errEl.textContent = 'Renseigne au moins l\'URL du flux ICS Brightspace.'; return; }
+
+    try { localStorage.setItem(STORAGE_KEY, ics); } catch(_) {}
+    if (private_) { try { localStorage.setItem(PRIVATE_ICS_KEY, private_); } catch(_) {} }
+
+    RemoteServer.kind = 'local';
+    await RemoteServer.save();
+    this.hide();
+
+    Auth.mode = 'guest'; Auth.readOnly = false; Auth._updateUI();
+    pbsSyncConfig('guest', null);
+    document.getElementById('ics-url').value = ics;
+    const pf = document.getElementById('private-ics-url');
+    if (pf && private_) pf.value = private_;
+    loadCalendar();
+    if (private_) loadGroupCalendar(); else showGroupNotConfigured();
+  },
+
+  async confirmServer() {
+    const serverUrl = this._normalizeServerUrl(document.getElementById('onb-server-url').value);
+    const errEl = document.getElementById('onb-server-error');
+    errEl.textContent = '';
+    if (!serverUrl) { errEl.textContent = 'Renseigne l\'URL du serveur.'; return; }
+
+    if (this._serverTab === 'share') {
+      const raw = document.getElementById('onb-server-share').value;
+      const { serverUrl: parsedUrl, token } = this._parseShareInput(raw, serverUrl);
+      const finalUrl = parsedUrl || serverUrl;
+      if (!token) { errEl.textContent = 'Renseigne un lien ou un token de partage.'; return; }
+
+      RemoteServer.kind = 'share'; RemoteServer.serverUrl = finalUrl;
+      RemoteServer.shareToken = token; RemoteServer.authToken = '';
+      try {
+        const sr = await apiFetch(`${RemoteServer.serverUrl}/api.php?action=get_state&share=${encodeURIComponent(token)}`,
+                                   { signal: AbortSignal.timeout(8000) });
+        const sd = sr.ok ? await sr.json() : null;
+        if (!sd || !sd.ok) { errEl.textContent = 'Lien de partage invalide ou serveur inaccessible.'; return; }
+        await RemoteServer.save();
+        this.hide();
+
+        Auth.mode = 'share'; Auth.readOnly = true; Auth.shareToken = token;
+        const raw2 = sd.state?.rendus;
+        Auth._cache = (raw2 && typeof raw2 === 'object' && !Array.isArray(raw2)) ? raw2 : {};
+        const tags = sd.state?.group_tags;
+        groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+        if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
+        Auth._updateUI();
+        pbsSyncConfig('share', token);
+        loadGroupCalendarShare();
+        loadCalendar();
+      } catch(_) {
+        errEl.textContent = 'Impossible de contacter le serveur. Vérifie l\'URL.';
+      }
+      return;
+    }
+
+    // Onglet mot de passe
+    const pwd = document.getElementById('onb-server-pwd').value;
+    if (!pwd) { errEl.textContent = 'Renseigne le mot de passe.'; return; }
+    try {
+      const r = await apiFetch(`${serverUrl}/api.php`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', password: pwd }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const d = await r.json();
+      if (!d.ok) { errEl.textContent = d.error || 'Mot de passe incorrect.'; return; }
+
+      RemoteServer.kind = 'connected'; RemoteServer.serverUrl = serverUrl;
+      RemoteServer.authToken = d.auth_token || ''; RemoteServer.shareToken = '';
+      await RemoteServer.save();
+      this.hide();
+
+      Auth.mode = 'connected'; Auth.readOnly = false; Auth._updateUI();
+      pbsSyncConfig('connected', null);
+      if (d.ics_url) Auth._setIcsUrlFields(d.ics_url);
+      if (d.dashboard_name) {
+        AppMeta.customName = d.dashboard_name; updateBrand();
+        const inp = document.getElementById('dashboard-name-input');
+        if (inp) inp.value = d.dashboard_name;
+      }
+      if (d.private_ics_url) { Auth._setPrivateUrlFields(d.private_ics_url); loadGroupCalendar(); }
+      else showGroupNotConfigured();
+      loadCalendar();
+    } catch(_) {
+      errEl.textContent = 'Impossible de contacter le serveur. Vérifie l\'URL.';
+    }
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
    Auth & mode management
 ══════════════════════════════════════════════════════════════ */
 const Auth = {
@@ -1464,27 +1894,110 @@ const Auth = {
   readOnly:   false,
   shareToken: null,
   _cache:     null,      // rendu map cache for connected/share mode
-  _apiBase:   'api.php',
+  get _apiBase() {
+    // Web : toujours le même serveur (chemin relatif, comportement
+    // historique inchangé), SAUF en mode share avec un serveur externe
+    // (ex: token saisi depuis la setup-card pointant vers un autre domaine).
+    // APK : serveur choisi par l'utilisateur au premier lancement.
+    if (IS_PACKAGED_APP)
+      return RemoteServer.serverUrl ? `${RemoteServer.serverUrl}/api.php` : '';
+    if (Auth.mode === 'share' && RemoteServer.serverUrl && RemoteServer.serverUrl !== location.origin)
+      return `${RemoteServer.serverUrl}/api.php`;
+    return `${API_ORIGIN}/api.php`;
+  },
 
   // ── Detect mode on startup ──────────────────────────────
   async init() {
+    // APK packagée (Capacitor) : pas de serveur fixe associé au binaire.
+    // On consulte la config persistée (choix fait au premier lancement) :
+    //  - rien d'enregistré encore  → écran de choix Local / Serveur
+    //  - 'local'                  → mode invité classique (ICS en direct)
+    //  - 'server' + token partage → mode partage en lecture seule
+    //  - 'server' + authToken     → mode connecté (reconnexion auto)
+    if (IS_PACKAGED_APP) {
+      const cfg = await RemoteServer.load();
+      if (!cfg) { Auth._showOnboarding(); return false; }
+
+      if (cfg.kind === 'local') {
+        Auth.mode     = 'guest';
+        Auth.readOnly = false;
+        Auth._updateUI();
+        pbsSyncConfig('guest', null);
+        Auth._initGuestGroup();
+        return true;
+      }
+
+      if (cfg.kind === 'share') {
+        try {
+          const sr = await apiFetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(cfg.shareToken)}`,
+                                     { signal: AbortSignal.timeout(8000) });
+          const sd = sr.ok ? await sr.json() : null;
+          if (sd && sd.ok) {
+            Auth.mode       = 'share';
+            Auth.readOnly   = true;
+            Auth.shareToken = cfg.shareToken;
+            const raw = sd.state?.rendus;
+            Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+            const tags = sd.state?.group_tags;
+            groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+            if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
+            Auth._updateUI();
+            pbsSyncConfig('share', cfg.shareToken);
+            loadGroupCalendarShare();
+            return true;
+          }
+        } catch(_) {}
+        await Auth._showInvalidShareError();
+        return false;
+      }
+
+      if (cfg.kind === 'connected') {
+        try {
+          await Auth._loadServerState();
+          Auth.mode     = 'connected';
+          Auth.readOnly = false;
+          Auth._updateUI();
+          pbsSyncConfig('connected', null);
+          const c2 = await (await apiFetch(`${Auth._apiBase}?action=get_config`)).json();
+          if (c2.ics_url) Auth._setIcsUrlFields(c2.ics_url);
+          if (c2.dashboard_name) {
+            AppMeta.customName = c2.dashboard_name; updateBrand();
+            const inp = document.getElementById('dashboard-name-input');
+            if (inp) inp.value = c2.dashboard_name;
+          }
+          if (c2.private_ics_url) { Auth._setPrivateUrlFields(c2.private_ics_url); loadGroupCalendar(); }
+          else showGroupNotConfigured();
+          return true;
+        } catch(_) {
+          // Token expiré ou serveur inaccessible : retour à l'écran de choix
+          await RemoteServer.clear();
+          Auth._showOnboarding();
+          return false;
+        }
+      }
+
+      // Config corrompue/inattendue : on repart de l'écran de choix
+      Auth._showOnboarding();
+      return false;
+    }
+
     // Check URL for share token
     const urlParams = new URLSearchParams(window.location.search);
     const shareParam = urlParams.get('share');
 
     try {
-      const r = await fetch(`${Auth._apiBase}?action=ping`, { signal: AbortSignal.timeout(3000) });
+      const r = await apiFetch(`${Auth._apiBase}?action=ping`, { signal: AbortSignal.timeout(3000) });
       if (!r.ok) throw new Error('api unavailable');
       const d = await r.json();
       if (!d.configured) throw new Error('not configured');
 
       // API available — check config
-      const cfg = await (await fetch(`${Auth._apiBase}?action=get_config`)).json();
+      const cfg = await (await apiFetch(`${Auth._apiBase}?action=get_config`)).json();
 
       if (shareParam) {
         // Try share mode — load state before returning so renderDevoirs() sees it
         try {
-          const sr = await fetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(shareParam)}`,
+          const sr = await apiFetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(shareParam)}`,
                                  { signal: AbortSignal.timeout(8000) });
           if (sr.ok) {
             const sd = await sr.json();
@@ -1492,6 +2005,12 @@ const Auth = {
               Auth.mode       = 'share';
               Auth.readOnly   = true;
               Auth.shareToken = shareParam;
+              // Persister le token pour les rechargements sans ?share= dans l'URL,
+              // et remplir les champs paramètres pour qu'ils soient visibles.
+              try { localStorage.setItem(GUEST_SHARE_TOKEN_KEY,  shareParam); } catch(_) {}
+              try { localStorage.setItem(GUEST_SHARE_SERVER_KEY, ''); } catch(_) {}
+              const _tf = document.getElementById('wc-share-token');
+              if (_tf) _tf.value = shareParam;
               const raw = sd.state?.rendus;
               Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
               // Attributions matière/devoir des ateliers (lecture seule)
@@ -1542,19 +2061,40 @@ const Auth = {
           showGroupNotConfigured();
         }
       } else {
-        // Not logged in but API available → show login button
+        // Not logged in but API available → show login button + check persisted share token
         Auth.mode = 'guest';
-        Auth._updateUI(true); // showLoginBtn=true
         pbsSyncConfig('guest', null); // PBS : mode invité (setInterval uniquement)
         Auth._initGuestGroup();
+        // Si ?share= dans l'URL : persister avant de tenter
+        if (shareParam) {
+          try { localStorage.setItem(GUEST_SHARE_TOKEN_KEY, shareParam); } catch(_) {}
+          try { localStorage.setItem(GUEST_SHARE_SERVER_KEY, ''); } catch(_) {}
+          const tf = document.getElementById('wc-share-token');
+          if (tf) tf.value = shareParam;
+        }
+        const shared = await Auth._loadPersistedShare();
+        if (!shared) Auth._updateUI(true); // showLoginBtn=true seulement si pas en mode share
       }
     } catch(_) {
       // api.php absent or unreachable → pure guest mode
       Auth.mode     = 'guest';
       Auth.readOnly = false;
-      Auth._updateUI();
       pbsSyncConfig('guest', null);
       Auth._initGuestGroup();
+
+      // Si ?share= est dans l'URL : persister le token et tenter de basculer
+      // en mode lecture seule (le serveur peut être l'origine courante ou une autre).
+      if (shareParam) {
+        try { localStorage.setItem(GUEST_SHARE_TOKEN_KEY, shareParam); } catch(_) {}
+        try { localStorage.setItem(GUEST_SHARE_SERVER_KEY, ''); } catch(_) {}
+        const tf = document.getElementById('wc-share-token');
+        if (tf) tf.value = shareParam;
+      }
+
+      // Tenter de charger un token persisté (nouveau ou déjà mémorisé)
+      const shared = await Auth._loadPersistedShare();
+      Auth._updateUI();
+      return shared ? true : undefined;
     }
   },
 
@@ -1576,7 +2116,7 @@ const Auth = {
   },
 
   async _loadServerState() {
-    const r = await fetch(`${Auth._apiBase}?action=get_state`);
+    const r = await apiFetch(`${Auth._apiBase}?action=get_state`);
     if (!r.ok) return;
     const d = await r.json();
     const raw = d.state?.rendus;
@@ -1586,7 +2126,7 @@ const Auth = {
 
   async _saveServerState() {
     if (Auth.mode !== 'connected') return;
-    await fetch(Auth._apiBase, {
+    await apiFetch(Auth._apiBase, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache } }),
@@ -1594,37 +2134,57 @@ const Auth = {
   },
 
   _updateUI(showLoginBtn = false) {
-    const badge  = document.getElementById('mode-badge');
-    const btnAuth = document.getElementById('btn-auth');
+    const badge      = document.getElementById('mode-badge');
+    const btnAuth    = document.getElementById('btn-auth');
     const authSection = document.getElementById('auth-section');
-    const roBanner = document.getElementById('ro-banner');
+    const roBanner   = document.getElementById('ro-banner');
+
+    // Sections paramètres par mode
+    const secLocal     = document.getElementById('settings-mode-local');
+    const secShare     = document.getElementById('settings-mode-share');
+    const secConnected = document.getElementById('settings-mode-connected');
+    const icsSection   = document.getElementById('settings-ics-section');
+    const privSection  = document.getElementById('private-url-section');
+
+    // Masquer toutes les sections mode par défaut
+    if (secLocal)     secLocal.style.display     = 'none';
+    if (secShare)     secShare.style.display     = 'none';
+    if (secConnected) secConnected.style.display = 'none';
 
     if (Auth.mode === 'connected') {
       badge.className = 'mode-badge connected';
       badge.innerHTML = '<i class="ti ti-shield-check"></i> Connecté';
-      if (btnAuth) { btnAuth.title='Se déconnecter'; btnAuth.innerHTML='<i class="ti ti-logout"></i>'; btnAuth.onclick=()=>Auth.logout(); }
+      if (btnAuth) { btnAuth.style.display=''; btnAuth.title='Se déconnecter'; btnAuth.innerHTML='<i class="ti ti-logout"></i>'; btnAuth.onclick=()=>Auth.logout(); }
       if (authSection) authSection.style.display='';
-      // Afficher onglet Groupe et section URL privée
+      if (secConnected) secConnected.style.display='';
+      if (icsSection) icsSection.style.display='';
+      if (privSection) privSection.classList.add('visible');
       const tabGroupe = document.getElementById('tab-groupe');
       if (tabGroupe) tabGroupe.style.display='';
-      const privateSection = document.getElementById('private-url-section');
-      if (privateSection) privateSection.classList.add('visible');
     } else if (Auth.mode === 'share') {
       badge.className = 'mode-badge share';
       badge.innerHTML = '<i class="ti ti-eye"></i> Lecture seule';
       if (btnAuth) btnAuth.style.display='none';
-      // Masquer les sections "source de données" — pas d'édition en lecture seule
-      const icsSection = document.getElementById('settings-ics-section');
-      if (icsSection) icsSection.style.display = 'none';
-      const privateSectionRO = document.getElementById('private-url-section');
-      if (privateSectionRO) privateSectionRO.classList.remove('visible');
+      if (authSection) authSection.style.display='none';
+      if (secShare) {
+        secShare.style.display='';
+        // Afficher token + serveur actif dans le résumé
+        const infoEl = document.getElementById('settings-share-info');
+        if (infoEl) {
+          const srv = RemoteServer.serverUrl || location.origin;
+          const tok = Auth.shareToken || '';
+          infoEl.textContent = `Token : ${tok.slice(0,12)}… — Serveur : ${srv}`;
+        }
+      }
+      if (icsSection) icsSection.style.display='none';
+      if (privSection) privSection.classList.remove('visible');
       const btnInstall = document.getElementById('btn-install');
       if (btnInstall) btnInstall.classList.remove('visible');
-      // Afficher l'onglet Ateliers en lecture seule
       const tabGroupe = document.getElementById('tab-groupe');
       if (tabGroupe) tabGroupe.style.display='';
       if (roBanner) roBanner.style.display='flex';
     } else {
+      // Mode local / invité
       badge.className = 'mode-badge';
       badge.innerHTML = '<i class="ti ti-user-circle"></i> Invité';
       if (btnAuth) {
@@ -1633,11 +2193,12 @@ const Auth = {
         btnAuth.innerHTML = '<i class="ti ti-login"></i>';
         btnAuth.onclick = () => Auth.showLogin();
       }
-      // Groupe disponible en invité aussi
+      if (authSection) authSection.style.display='none';
+      if (secLocal) secLocal.style.display='';
+      if (icsSection) icsSection.style.display='';
+      if (privSection) privSection.classList.add('visible');
       const tabGroupeG = document.getElementById('tab-groupe');
-      if (tabGroupeG) tabGroupeG.style.display = '';
-      const privateSectionG = document.getElementById('private-url-section');
-      if (privateSectionG) privateSectionG.classList.add('visible');
+      if (tabGroupeG) tabGroupeG.style.display='';
     }
   },
 
@@ -1673,7 +2234,7 @@ const Auth = {
     const errEl = document.getElementById('login-error');
     errEl.textContent = '';
     try {
-      const r = await fetch(Auth._apiBase, {
+      const r = await apiFetch(Auth._apiBase, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ action: 'login', password: pwd }),
@@ -1686,7 +2247,7 @@ const Auth = {
         Auth.readOnly = false;
         Auth._updateUI();
         pbsSyncConfig('connected', null); // PBS : basculer vers mode connecté
-        const cfg = await (await fetch(`${Auth._apiBase}?action=get_config`)).json();
+        const cfg = await (await apiFetch(`${Auth._apiBase}?action=get_config`)).json();
         Auth._showShareInfo(cfg);
 
         // URL ICS : utiliser celle du serveur, ou sauvegarder celle du localStorage si le serveur n'en a pas
@@ -1695,7 +2256,7 @@ const Auth = {
           // Premier login : récupérer l'URL depuis localStorage et la sauvegarder côté serveur
           const localUrl = localStorage.getItem(STORAGE_KEY) || '';
           if (localUrl) {
-            await fetch(Auth._apiBase, { method:'POST', headers:{'Content-Type':'application/json'},
+            await apiFetch(Auth._apiBase, { method:'POST', headers:{'Content-Type':'application/json'},
               body: JSON.stringify({ action:'save_ics_url', ics_url: localUrl }) });
             serverIcsUrl = localUrl;
             toast('✓ URL ICS sauvegardée sur le serveur');
@@ -1729,7 +2290,7 @@ const Auth = {
   },
 
   async logout() {
-    await fetch(Auth._apiBase, {
+    await apiFetch(Auth._apiBase, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body:   JSON.stringify({ action: 'logout' }),
     });
@@ -1767,7 +2328,7 @@ const Auth = {
 
   async regenToken() {
     if (!confirm('Régénérer l\'URL de partage ? L\'ancien lien sera immédiatement invalide.')) return;
-    const r = await fetch(Auth._apiBase, {
+    const r = await apiFetch(Auth._apiBase, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action:'regen_token'}),
     });
@@ -1780,7 +2341,7 @@ const Auth = {
 
   async disableShare() {
     if (!confirm('Désactiver le partage ? Le lien actuel sera invalide.')) return;
-    await fetch(Auth._apiBase, {
+    await apiFetch(Auth._apiBase, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({action:'disable_share'}),
     });
@@ -1805,7 +2366,7 @@ const Auth = {
 
   async saveDashboardName() {
     const name = (document.getElementById('dashboard-name-input')?.value || '').trim();
-    const r = await fetch(Auth._apiBase, {
+    const r = await apiFetch(Auth._apiBase, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'save_dashboard_name', name }),
     });
@@ -1823,12 +2384,105 @@ const Auth = {
     }
   },
 
+  // ── Token de partage côté invité (web + APK local) ───────────────
+  // Parse un lien complet ou un token brut, retourne {serverUrl, token}.
+  _parseShareInput(raw) {
+    raw = (raw || '').trim();
+    try {
+      const u = new URL(raw);
+      const token = u.searchParams.get('share') || '';
+      if (token) return { serverUrl: `${u.protocol}//${u.host}`, token };
+    } catch(_) {}
+    return { serverUrl: '', token: raw };
+  },
+
+  // Rouvre l'écran d'accueil pour changer de mode (bouton dans paramètres)
+  switchMode() {
+    document.getElementById('settings-panel').style.display = 'none';
+    document.getElementById('dashboard').style.display       = 'none';
+    document.getElementById('setup-card').style.display      = '';
+    wcTab('local');
+  },
+
+  // Efface le token persisté, repasse en mode invité et rouvre l'écran d'accueil
+  clearGuestShare() {
+    try { localStorage.removeItem(GUEST_SHARE_TOKEN_KEY);  } catch(_) {}
+    try { localStorage.removeItem(GUEST_SHARE_SERVER_KEY); } catch(_) {}
+    RemoteServer.serverUrl = ''; RemoteServer.shareToken = '';
+    Auth.mode = 'guest'; Auth.readOnly = false; Auth.shareToken = null;
+    Auth._cache = null;
+    if (document.getElementById('ro-banner')) document.getElementById('ro-banner').style.display = 'none';
+    // Rouvrir l'écran d'accueil sur l'onglet lecture seule pour faciliter un nouveau token
+    document.getElementById('settings-panel').style.display = 'none';
+    document.getElementById('dashboard').style.display       = 'none';
+    document.getElementById('setup-card').style.display      = '';
+    wcTab('share');
+    pbsSyncConfig('guest', null);
+  },
+
+  // Charge le token de partage persisté et l'applique au démarrage si présent.
+  async _loadPersistedShare() {
+    let token = '', server = '';
+    try { token  = localStorage.getItem(GUEST_SHARE_TOKEN_KEY)  || ''; } catch(_) {}
+    try { server = localStorage.getItem(GUEST_SHARE_SERVER_KEY) || ''; } catch(_) {}
+    if (!token) return false;
+
+    // Pré-remplir les champs dans paramètres
+    document.getElementById('wc-share-token').value  = token;
+    document.getElementById('wc-share-server').value = server;
+
+    const serverUrl = server || location.origin;
+    try {
+      const sr = await fetch(`${serverUrl}/api.php?action=get_state&share=${encodeURIComponent(token)}`,
+                              { signal: AbortSignal.timeout(8000) });
+      const sd = sr.ok ? await sr.json() : null;
+      if (!sd || !sd.ok) {
+        // Token expiré/invalide : rester invité, afficher l'écran d'accueil
+        // sur l'onglet share pour que l'utilisateur puisse corriger
+        wcTab('share');
+        return false;
+      }
+
+      RemoteServer.serverUrl  = server;
+      RemoteServer.kind       = 'share';
+      RemoteServer.shareToken = token;
+
+      Auth.mode       = 'share';
+      Auth.readOnly   = true;
+      Auth.shareToken = token;
+      const raw = sd.state?.rendus;
+      Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+      const tags = sd.state?.group_tags;
+      groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+      if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
+      pbsSyncConfig('share', token);
+      loadGroupCalendarShare();
+      return true;
+    } catch(_) { return false; }
+  },
+
+  // Premier lancement de l'APK : affiche l'écran de choix Local / Serveur
+  // et masque le reste de l'UI tant qu'aucun choix n'a été fait.
+  _showOnboarding() {
+    document.getElementById('setup-card').style.display     = 'none';
+    document.getElementById('loading-box').style.display    = 'none';
+    document.getElementById('dashboard').style.display       = 'none';
+    document.getElementById('settings-panel').style.display = 'none';
+    Onboarding.show();
+  },
+
   // Affiche une erreur explicite quand le token de partage est invalide ou expiré
-  _showInvalidShareError() {
+  async _showInvalidShareError() {
     document.getElementById('setup-card').style.display    = 'none';
     document.getElementById('loading-box').style.display   = 'none';
     document.getElementById('dashboard').style.display     = 'none';
     document.getElementById('settings-panel').style.display = 'none';
+
+    // En mode packagé, un token persistant invalide ne doit pas créer une
+    // boucle d'erreur au redémarrage : on nettoie la config et on rouvre
+    // l'écran de choix plutôt que de proposer un lien web inopérant.
+    if (IS_PACKAGED_APP) { await RemoteServer.clear(); }
+
     // Injecter un bloc d'erreur dans la page
     const homeUrl = location.origin + location.pathname;
     const errDiv = document.createElement('div');
@@ -1837,6 +2491,18 @@ const Auth = {
       background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
       box-shadow:var(--shadow);
     `;
+    const actionHtml = IS_PACKAGED_APP
+      ? `<button class="btn primary" style="justify-content:center" onclick="this.closest('div').remove();Onboarding.show()">
+           <i class="ti ti-arrow-back-up"></i> Choisir un autre mode
+         </button>`
+      : `<a href="${homeUrl}" style="
+          display:inline-flex;align-items:center;gap:8px;
+          padding:10px 22px;border-radius:9px;
+          background:var(--text);color:var(--bg);
+          text-decoration:none;font-size:14px;font-weight:600;
+        ">
+          <i class="ti ti-home"></i> Aller à l'accueil
+        </a>`;
     errDiv.innerHTML = `
       <i class="ti ti-link-off" style="font-size:48px;color:var(--c-red);display:block;margin-bottom:16px"></i>
       <h2 style="font-size:18px;font-weight:700;margin-bottom:10px">Lien de partage invalide</h2>
@@ -1844,14 +2510,7 @@ const Auth = {
         Ce lien de partage est invalide ou a expiré.<br>
         Demande un nouveau lien au propriétaire du tableau de bord.
       </p>
-      <a href="${homeUrl}" style="
-        display:inline-flex;align-items:center;gap:8px;
-        padding:10px 22px;border-radius:9px;
-        background:var(--text);color:var(--bg);
-        text-decoration:none;font-size:14px;font-weight:600;
-      ">
-        <i class="ti ti-home"></i> Aller à l'accueil
-      </a>
+      ${actionHtml}
     `;
     document.querySelector('.page').appendChild(errDiv);
   },
@@ -2209,7 +2868,110 @@ function syncUrlFields(){
   if(a&&!b)document.getElementById('ics-url-setup').value=a;
   if(b&&!a)document.getElementById('ics-url').value=b;
 }
-function loadFromSetup(){document.getElementById('ics-url').value=document.getElementById('ics-url-setup').value.trim();loadCalendar();}
+function loadFromSetup(){
+  const ics     = document.getElementById('ics-url-setup').value.trim();
+  const private_ = document.getElementById('wc-local-private').value.trim();
+  document.getElementById('ics-url').value = ics;
+  if (private_) {
+    try { localStorage.setItem(PRIVATE_ICS_KEY, private_); } catch(_) {}
+    const pf = document.getElementById('private-ics-url');
+    if (pf) pf.value = private_;
+  }
+  loadCalendar();
+}
+
+// ── Écran d'accueil : gestion des onglets ───────────────────────
+function wcTab(name) {
+  ['local','share','connected'].forEach(n => {
+    document.getElementById(`wc-tab-${n}`).classList.toggle('primary', n === name);
+    document.getElementById(`wc-pane-${n}`).style.display = n === name ? '' : 'none';
+  });
+}
+
+// Onglet Lecture seule → connexion via token de partage
+async function wcApplyShare() {
+  const rawToken  = (document.getElementById('wc-share-token').value  || '').trim();
+  const rawServer = (document.getElementById('wc-share-server').value || '').trim();
+  const errEl     = document.getElementById('wc-share-error');
+  errEl.textContent = '';
+  if (!rawToken) { errEl.textContent = 'Renseigne un lien ou un token de partage.'; return; }
+
+  const { serverUrl: parsedServer, token } = Auth._parseShareInput(rawToken);
+  const serverUrl = parsedServer || (rawServer ? (rawServer.startsWith('http') ? rawServer : `https://${rawServer}`) : location.origin);
+  if (!token) { errEl.textContent = 'Token invalide.'; return; }
+
+  try {
+    const sr = await fetch(`${serverUrl}/api.php?action=get_state&share=${encodeURIComponent(token)}`,
+                            { signal: AbortSignal.timeout(8000) });
+    const sd = sr.ok ? await sr.json() : null;
+    if (!sd || !sd.ok) { errEl.textContent = 'Token invalide ou serveur inaccessible.'; return; }
+
+    try { localStorage.setItem(GUEST_SHARE_TOKEN_KEY,  token); } catch(_) {}
+    try { localStorage.setItem(GUEST_SHARE_SERVER_KEY, serverUrl !== location.origin ? serverUrl : ''); } catch(_) {}
+
+    RemoteServer.serverUrl  = serverUrl !== location.origin ? serverUrl : '';
+    RemoteServer.kind       = 'share';
+    RemoteServer.shareToken = token;
+
+    Auth.mode       = 'share';
+    Auth.readOnly   = true;
+    Auth.shareToken = token;
+    const raw = sd.state?.rendus;
+    Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    const tags = sd.state?.group_tags;
+    groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+    if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
+    Auth._updateUI();
+    pbsSyncConfig('share', token);
+    loadGroupCalendarShare();
+    loadCalendar();
+  } catch(_) {
+    errEl.textContent = 'Impossible de contacter le serveur. Vérifie l\'URL.';
+  }
+}
+
+// Onglet Connecté → login avec mot de passe
+async function wcApplyConnected() {
+  const rawServer = (document.getElementById('wc-connected-server').value || '').trim();
+  const pwd       = (document.getElementById('wc-connected-pwd').value    || '').trim();
+  const errEl     = document.getElementById('wc-connected-error');
+  errEl.textContent = '';
+  if (!pwd) { errEl.textContent = 'Renseigne le mot de passe.'; return; }
+
+  const serverUrl = rawServer ? (rawServer.startsWith('http') ? rawServer : `https://${rawServer}`) : location.origin;
+  const apiBase   = serverUrl === location.origin ? `${API_ORIGIN}/api.php` : `${serverUrl}/api.php`;
+
+  try {
+    const r = await fetch(apiBase, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'login', password: pwd }),
+      signal: AbortSignal.timeout(8000),
+    });
+    const d = await r.json();
+    if (!d.ok) { errEl.textContent = d.error || 'Mot de passe incorrect.'; return; }
+
+    // Stocker le token si serveur externe (APK / client cross-origin)
+    if (serverUrl !== location.origin) {
+      RemoteServer.kind = 'connected'; RemoteServer.serverUrl = serverUrl;
+      RemoteServer.authToken = d.auth_token || ''; RemoteServer.shareToken = '';
+      await RemoteServer.save();
+    }
+
+    Auth.mode = 'connected'; Auth.readOnly = false; Auth._updateUI();
+    pbsSyncConfig('connected', null);
+    if (d.ics_url) Auth._setIcsUrlFields(d.ics_url);
+    if (d.dashboard_name) {
+      AppMeta.customName = d.dashboard_name; updateBrand();
+      const inp = document.getElementById('dashboard-name-input');
+      if (inp) inp.value = d.dashboard_name;
+    }
+    if (d.private_ics_url) { Auth._setPrivateUrlFields(d.private_ics_url); loadGroupCalendar(); }
+    else showGroupNotConfigured();
+    loadCalendar();
+  } catch(_) {
+    errEl.textContent = 'Impossible de contacter le serveur. Vérifie l\'URL.';
+  }
+}
 
 async function loadCalendar() {
   // ── Mode connecté ou share : fetch ICS côté serveur ─────────────
@@ -2217,7 +2979,7 @@ async function loadCalendar() {
     showLoading();
     const shareQ = Auth.mode === 'share' ? `&share=${encodeURIComponent(Auth.shareToken)}` : '';
     try {
-      const r = await fetch(`${Auth._apiBase}?action=fetch_ics${shareQ}`, { signal: AbortSignal.timeout(15000) });
+      const r = await apiFetch(`${Auth._apiBase}?action=fetch_ics${shareQ}`, { signal: AbortSignal.timeout(15000) });
       if (!r.ok) {
         const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
         showError(err.error || `Erreur ${r.status}`);
@@ -2237,17 +2999,20 @@ async function loadCalendar() {
   try { localStorage.setItem(STORAGE_KEY, url); } catch(_) {}
   // En mode connecté, sauvegarder l'URL côté serveur
   if (Auth.mode === 'connected') {
-    fetch(Auth._apiBase, { method:'POST', headers:{'Content-Type':'application/json'},
+    apiFetch(Auth._apiBase, { method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'save_ics_url', ics_url: url }) }).catch(()=>{});
   }
   showLoading();
   let txt = null;
-  // 1. Proxy local PHP
-  try { const r=await fetch(`proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)}); if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;} } catch(_) {}
-  // 2. Direct
+  // 1. Proxy local PHP (inutile en mode packagé : pas de serveur associé,
+  //    le fetch direct ci-dessous est déjà natif via CapacitorHttp)
+  if (!IS_PACKAGED_APP) {
+    try { const r=await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)}); if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;} } catch(_) {}
+  }
+  // 2. Direct (requête native sans CORS si CapacitorHttp est actif)
   if (!txt) { try { const r=await fetch(url,{signal:AbortSignal.timeout(5000)}); if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;} } catch(_) {} }
-  // 3. Proxies publics
-  if (!txt) {
+  // 3. Proxies publics (fallback web uniquement ; inutile en mode packagé)
+  if (!txt && !IS_PACKAGED_APP) {
     for (const pFn of CORS_PROXIES) {
       try {
         const p=pFn(url); const r=await fetch(p.url,{signal:AbortSignal.timeout(12000)}); if(!r.ok)continue;
@@ -2315,7 +3080,7 @@ function processICS(txt) {
 
   // In share mode, refresh state from server once more in case of race condition
   if (Auth.mode === 'share' && Auth.shareToken) {
-    fetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(Auth.shareToken)}`)
+    apiFetch(`${Auth._apiBase}?action=get_state&share=${encodeURIComponent(Auth.shareToken)}`)
       .then(r => r.ok ? r.json() : null)
       .then(sd => {
         if (!sd?.ok) return;
@@ -2517,7 +3282,7 @@ function unlockPrivateUrl(){const f=document.getElementById('private-ics-url');i
 async function loadGroupCalendarShare(){
   if(Auth.mode!=='share'||!Auth.shareToken)return;
   try{
-    const r=await fetch(`${Auth._apiBase}?action=fetch_private_ics&share=${encodeURIComponent(Auth.shareToken)}`,{signal:AbortSignal.timeout(12000)});
+    const r=await apiFetch(`${Auth._apiBase}?action=fetch_private_ics&share=${encodeURIComponent(Auth.shareToken)}`,{signal:AbortSignal.timeout(12000)});
     if(!r.ok)return; // silencieux si pas configuré
     const txt=await r.text();
     if(txt.includes('BEGIN:VCALENDAR'))processGroupICS(txt);
@@ -2530,9 +3295,9 @@ async function loadGroupCalendar(){
 
   if(Auth.mode==='connected'){
     // Sauvegarder côté serveur et fetcher via api.php
-    await fetch(Auth._apiBase,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_private_ics_url',private_ics_url:url})});
+    await apiFetch(Auth._apiBase,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'save_private_ics_url',private_ics_url:url})});
     try{
-      const r=await fetch(`${Auth._apiBase}?action=fetch_private_ics`,{signal:AbortSignal.timeout(15000)});
+      const r=await apiFetch(`${Auth._apiBase}?action=fetch_private_ics`,{signal:AbortSignal.timeout(15000)});
       if(!r.ok){const err=await r.json().catch(()=>({error:`HTTP ${r.status}`}));toast(`⚠ Calendrier privé : ${err.error}`);showGroupNotConfigured();return;}
       const txt=await r.text();
       if(!txt.includes('BEGIN:VCALENDAR')){toast('⚠ Réponse invalide (pas un ICS)');return;}
@@ -2558,7 +3323,7 @@ async function fetchPrivateIcsGuest(url){
   }catch(_){}
   // 2. Fallback proxy.php
   try{
-    const r=await fetch(`proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
+    const r=await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
     if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))return t;}
   }catch(_){}
   return null;
@@ -3756,7 +4521,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   // ICS URL
   try { const saved=localStorage.getItem(STORAGE_KEY); if(saved){ document.getElementById('ics-url').value=saved; document.getElementById('ics-url-setup').value=saved; } } catch(_) {}
   // Auth detection (guest / connected / share)
-  await Auth.init();
+  const continueStartup = await Auth.init();
   loadFilterPrefs(); // restaurer les préférences de filtres
   Notif.load();
   // Fusionner l'historique anti-doublon IDB (PBS) → localStorage (app)
@@ -3768,7 +4533,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       localStorage.setItem(NOTIF_SENT_KEY, JSON.stringify(merged));
     } catch(_) {}
   }).catch(()=>{});
-  loadCalendar();
+  if (continueStartup !== false) loadCalendar();
 });
 </script>
 <!-- Offline banner -->

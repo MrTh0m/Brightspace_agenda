@@ -19,9 +19,20 @@ session_start();
 define('DATA_DIR',    __DIR__ . '/data');
 define('CONFIG_FILE', DATA_DIR . '/config.json');
 define('STATE_FILE',  DATA_DIR . '/state.json');
+define('TOKENS_FILE',  DATA_DIR . '/tokens.json');
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache');
+
+// ── CORS : nécessaire pour l'app packagée (APK), qui appelle un
+// serveur Brightspace Agenda distant en cross-origin. Sans danger pour
+// la version web : same-origin n'envoie jamais d'en-tête Origin entrant
+// en conflit, et l'auth sensible (login) reste protégée par le token
+// opaque généré côté serveur, jamais par la seule origine déclarée.
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 $ALLOWED_HOSTS = ['emlyon.brightspace.com', 'brightspace.com', 'em-lyon.com'];
 
@@ -38,13 +49,58 @@ function respond($data, $code = 200) {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
-function isLoggedIn()         { return !empty($_SESSION['emmgo_auth']); }
+function isLoggedIn()         { return !empty($_SESSION['emmgo_auth']) || isValidAuthToken(); }
 function requireAuth()        { if (!isLoggedIn()) respond(['error' => 'Non authentifié'], 401); }
 function getConfig()          { return readJson(CONFIG_FILE, ['password_hash'=>'','share_token'=>'','ics_url'=>'']); }
 function isValidShare($token) {
     if (empty($token)) return false;
     $cfg = getConfig();
     return !empty($cfg['share_token']) && hash_equals($cfg['share_token'], $token);
+}
+
+// ── Auth par token (APK Capacitor) ───────────────────────────────
+// Utilisé en plus du cookie de session : nécessaire car les WebViews
+// mobiles (Capacitor/Cordova) appliquent SameSite de façon stricte sur
+// les requêtes fetch cross-origin, ce qui empêche le cookie de session
+// classique de fonctionner depuis une app packagée.
+function getBearerToken() {
+    $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (empty($hdr) && function_exists('getallheaders')) {
+        foreach (getallheaders() as $k => $v) {
+            if (strcasecmp($k, 'Authorization') === 0) { $hdr = $v; break; }
+        }
+    }
+    if (preg_match('/^Bearer\s+(.+)$/i', $hdr, $m)) return trim($m[1]);
+    return null;
+}
+function hashToken($token) { return hash('sha256', $token); }
+function readTokens() { return readJson(TOKENS_FILE, []); }
+function writeTokens($tokens) { return writeJson(TOKENS_FILE, $tokens); }
+function pruneExpiredTokens($tokens) {
+    $now = time();
+    foreach ($tokens as $h => $exp) if ($exp < $now) unset($tokens[$h]);
+    return $tokens;
+}
+function isValidAuthToken() {
+    $token = getBearerToken();
+    if (!$token) return false;
+    $tokens = readTokens();
+    $h = hashToken($token);
+    return isset($tokens[$h]) && $tokens[$h] > time();
+}
+function issueAuthToken($lifetime) {
+    $token = bin2hex(random_bytes(32));
+    $tokens = pruneExpiredTokens(readTokens());
+    $tokens[hashToken($token)] = time() + $lifetime;
+    writeTokens($tokens);
+    return $token;
+}
+function revokeAuthToken() {
+    $token = getBearerToken();
+    if (!$token) return;
+    $tokens = readTokens();
+    unset($tokens[hashToken($token)]);
+    writeTokens($tokens);
 }
 function curlFetch($url) {
     if (function_exists('curl_init')) {
@@ -116,7 +172,11 @@ switch ($action) {
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
-        respond(['ok'=>true, 'logged_in'=>true,
+        // Token d'auth (en plus du cookie) : nécessaire pour l'app packagée
+        // (APK Capacitor), où le cookie de session ne peut pas être envoyé
+        // de façon fiable sur des requêtes cross-origin.
+        $authToken = issueAuthToken($sessionLifetime);
+        respond(['ok'=>true, 'logged_in'=>true, 'auth_token'=>$authToken,
             'ics_url'         => $config['ics_url']         ?? '',
             'private_ics_url' => $config['private_ics_url'] ?? '',
             'dashboard_name'  => $config['dashboard_name']  ?? '']);
@@ -156,6 +216,7 @@ switch ($action) {
 
     case 'logout':
         $_SESSION = []; session_destroy();
+        revokeAuthToken();
         respond(['ok'=>true, 'logged_in'=>false]);
 
     // Sauvegarder l'URL ICS (connecté uniquement)
