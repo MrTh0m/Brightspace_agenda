@@ -1896,12 +1896,13 @@ const Auth = {
   _cache:     null,      // rendu map cache for connected/share mode
   get _apiBase() {
     // Web : toujours le même serveur (chemin relatif, comportement
-    // historique inchangé), SAUF en mode share avec un serveur externe
-    // (ex: token saisi depuis la setup-card pointant vers un autre domaine).
+    // historique inchangé), SAUF quand l'utilisateur s'est connecté à un
+    // serveur externe depuis l'écran d'accueil (mode share ou connected
+    // pointant vers un autre domaine que la page courante).
     // APK : serveur choisi par l'utilisateur au premier lancement.
     if (IS_PACKAGED_APP)
       return RemoteServer.serverUrl ? `${RemoteServer.serverUrl}/api.php` : '';
-    if (Auth.mode === 'share' && RemoteServer.serverUrl && RemoteServer.serverUrl !== location.origin)
+    if (RemoteServer.serverUrl && RemoteServer.serverUrl !== location.origin)
       return `${RemoteServer.serverUrl}/api.php`;
     return `${API_ORIGIN}/api.php`;
   },
