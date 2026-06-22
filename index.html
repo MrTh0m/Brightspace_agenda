@@ -1369,6 +1369,144 @@ let groupViewMode   = 'grid';
 let groupWeekOff    = 0;    // 0 = semaine courante
 
 /* ══════════════════════════════════════════════════════════════
+   NotifBackend — abstraction web Notification API / Capacitor
+   LocalNotifications. L'API web standard (Notification, registration.
+   showNotification) n'est PAS disponible dans une WebView Android
+   Capacitor : il faut le plugin natif @capacitor/local-notifications.
+   Ce module bascule automatiquement selon IS_PACKAGED_APP, sans que
+   le reste du code n'ait besoin de connaître la différence.
+══════════════════════════════════════════════════════════════ */
+const NotifBackend = {
+  // Compteur d'IDs : LocalNotifications exige des IDs numériques (int32),
+  // contrairement à l'API web qui accepte des tags texte libres. On
+  // dérive un entier stable à partir du tag texte (hash simple).
+  _idFromTag(tag) {
+    let h = 0;
+    for (let i = 0; i < tag.length; i++) { h = (h * 31 + tag.charCodeAt(i)) | 0; }
+    return Math.abs(h) || 1;
+  },
+
+  get _ln() {
+    return IS_PACKAGED_APP ? window.Capacitor?.Plugins?.LocalNotifications : null;
+  },
+
+  isAvailable() {
+    if (IS_PACKAGED_APP) return !!this._ln;
+    return 'Notification' in window;
+  },
+
+  async checkPermission() {
+    if (IS_PACKAGED_APP) {
+      if (!this._ln) return 'unsupported';
+      try {
+        const r = await this._ln.checkPermissions();
+        return r.display; // 'granted' | 'denied' | 'prompt' | 'prompt-with-rationale'
+      } catch(_) { return 'denied'; }
+    }
+    if (!('Notification' in window)) return 'unsupported';
+    return Notification.permission; // 'granted' | 'denied' | 'default'
+  },
+
+  async requestPermission() {
+    if (IS_PACKAGED_APP) {
+      if (!this._ln) return 'unsupported';
+      try {
+        const r = await this._ln.requestPermissions();
+        return r.display;
+      } catch(_) { return 'denied'; }
+    }
+    if (!('Notification' in window)) return 'unsupported';
+    return Notification.requestPermission();
+  },
+
+  // Vérifie le réglage Android "Alarmes et rappels" (nécessaire pour que
+  // les notifications programmées se déclenchent à l'heure exacte, même
+  // app fermée). Si refusé, ouvre l'écran de réglage système correspondant.
+  async checkExactAlarm() {
+    if (!IS_PACKAGED_APP || !this._ln) return true; // n/a en web
+    try {
+      if (typeof this._ln.checkExactNotificationSetting === 'function') {
+        const r = await this._ln.checkExactNotificationSetting();
+        return r.exact_alarm === 'granted';
+      }
+    } catch(_) {}
+    return true; // API non disponible sur cette version du plugin : ne pas bloquer
+  },
+
+  async openAlarmSettings() {
+    if (!IS_PACKAGED_APP || !this._ln) return;
+    try {
+      if (typeof this._ln.changeExactNotificationSetting === 'function') {
+        await this._ln.changeExactNotificationSetting();
+      }
+    } catch(_) {}
+  },
+
+  // Affiche une notification immédiatement (ou dans les ~secondes)
+  async show(tag, title, body, opts = {}) {
+    if (IS_PACKAGED_APP) {
+      if (!this._ln) return;
+      try {
+        await this._ln.schedule({ notifications: [{
+          id: this._idFromTag(tag), title, body,
+          smallIcon: 'ic_stat_notify', // icône monochrome — voir notes de déploiement
+          extra: { url: opts.data?.url || './' },
+        }] });
+      } catch(_) {}
+      return;
+    }
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) { await reg.showNotification(title, { body, tag, ...opts }); return; }
+      }
+    } catch(_) {}
+    const { actions:_a, ...safeOpts } = opts;
+    try { new Notification(title, { body, tag, ...safeOpts }); } catch(_) {}
+  },
+
+  // Programme une notification à une date précise (utilisé pour l'arrière-plan APK)
+  async scheduleAt(tag, title, body, when, opts = {}) {
+    if (when.getTime() <= Date.now()) return; // déjà passé : pas la peine
+    if (IS_PACKAGED_APP) {
+      if (!this._ln) return;
+      try {
+        await this._ln.schedule({ notifications: [{
+          id: this._idFromTag(tag), title, body,
+          schedule: { at: when, allowWhileIdle: true },
+          smallIcon: 'ic_stat_notify',
+          extra: { url: opts.data?.url || './' },
+        }] });
+      } catch(_) {}
+      return;
+    }
+    // Web : pas d'équivalent "programmé" fiable hors PBS (géré séparément
+    // par sw.js) — no-op ici, le PBS web prend le relais pour l'arrière-plan.
+  },
+
+  // Annule une notification programmée (par tag)
+  async cancel(tag) {
+    if (IS_PACKAGED_APP) {
+      if (!this._ln) return;
+      try { await this._ln.cancel({ notifications: [{ id: this._idFromTag(tag) }] }); } catch(_) {}
+      return;
+    }
+    // Web : géré via this.sent côté Notif (anti-doublon), rien à annuler côté navigateur.
+  },
+
+  // Annule toutes les notifications programmées en attente (APK uniquement)
+  async cancelAllPending() {
+    if (!IS_PACKAGED_APP || !this._ln) return;
+    try {
+      const pending = await this._ln.getPending();
+      if (pending?.notifications?.length) {
+        await this._ln.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) });
+      }
+    } catch(_) {}
+  },
+};
+
+/* ══════════════════════════════════════════════════════════════
    Notifications (navigateur, app ouverte) — réglages locaux
 ══════════════════════════════════════════════════════════════ */
 const Notif = {
@@ -1384,7 +1522,13 @@ const Notif = {
     Object.keys(this.sent).forEach(k => { if (this.sent[k] < cutoff) delete this.sent[k]; });
     this._saveSent();
     this._syncUI();
-    if (this.settings.enabled && 'Notification' in window && Notification.permission === 'granted') {
+    if (!this.settings.enabled) return;
+    if (IS_PACKAGED_APP) {
+      // APK : pas de timer — la reprogrammation se fait au chargement du
+      // calendrier (processICS), une fois les devoirs/sessions disponibles.
+      return;
+    }
+    if ('Notification' in window && Notification.permission === 'granted') {
       this._startTimer();
     }
   },
@@ -1398,20 +1542,20 @@ const Notif = {
     pbsIdbSet('notif-prefs', this.settings).catch(()=>{}); // sync vers IDB pour PBS
   },
 
-  _syncUI() {
+  async _syncUI() {
     const master  = document.getElementById('notif-master');
     const options = document.getElementById('notif-options');
     const status  = document.getElementById('notif-permission-status');
     if (!master) return;
 
-    if (!('Notification' in window)) {
-      status.textContent = "Non supportées par ce navigateur";
+    if (!NotifBackend.isAvailable()) {
+      status.textContent = "Non supportées sur cet appareil";
       master.disabled = true;
       return;
     }
-    const perm = Notification.permission;
+    const perm = await NotifBackend.checkPermission();
     if (perm === 'denied') {
-      status.textContent = "Bloquées — autorise-les dans les réglages du site";
+      status.textContent = "Bloquées — autorise-les dans les réglages";
       master.checked = false; master.disabled = true;
       options.style.display = 'none';
     } else if (perm === 'granted') {
@@ -1432,24 +1576,41 @@ const Notif = {
   },
 
   async toggleMaster(checked) {
-    if (!('Notification' in window)) return;
+    if (!NotifBackend.isAvailable()) return;
     if (checked) {
-      let perm = Notification.permission;
-      if (perm === 'default') perm = await Notification.requestPermission();
+      let perm = await NotifBackend.checkPermission();
+      if (perm === 'default' || perm === 'prompt' || perm === 'prompt-with-rationale') {
+        perm = await NotifBackend.requestPermission();
+      }
       if (perm !== 'granted') {
         this.settings.enabled = false;
         this._syncUI();
-        toast('⚠ Notifications refusées par le navigateur');
+        toast('⚠ Notifications refusées');
         return;
       }
       this.settings.enabled = true;
-      this._startTimer();
-      pbsRegister(true);   // activer la periodic sync en arrière-plan
-      this.check();
+      if (IS_PACKAGED_APP) {
+        // APK : pas de timer web ni de PBS — on programme directement
+        // toutes les notifications à venir avec des horaires précis.
+        const exactOk = await NotifBackend.checkExactAlarm();
+        if (!exactOk) {
+          toast('⚠ Active aussi "Alarmes et rappels" pour des notifs fiables même app fermée');
+          NotifBackend.openAlarmSettings();
+        }
+        await this.scheduleAllUpcoming();
+      } else {
+        this._startTimer();
+        pbsRegister(true);   // activer la periodic sync en arrière-plan
+        this.check();
+      }
     } else {
       this.settings.enabled = false;
-      this._stopTimer();
-      pbsRegister(false);  // désactiver la periodic sync
+      if (IS_PACKAGED_APP) {
+        await NotifBackend.cancelAllPending();
+      } else {
+        this._stopTimer();
+        pbsRegister(false);  // désactiver la periodic sync
+      }
     }
     try { localStorage.setItem(NOTIF_KEY, JSON.stringify(this.settings)); } catch(_) {}
     this._syncUI();
@@ -1458,25 +1619,17 @@ const Notif = {
   _startTimer() { this._stopTimer(); this._timer = setInterval(()=>this.check(), 60000); },
   _stopTimer()  { if (this._timer) clearInterval(this._timer); this._timer = null; },
 
-  // Affiche une notification via le Service Worker (requis sur PWA Android installée)
-  // avec repli sur le constructeur Notification (desktop / onglet navigateur)
+  // Affiche une notification (web : Service Worker ou constructeur Notification ;
+  // APK : plugin Capacitor LocalNotifications, via NotifBackend)
   async _show(title, opts) {
-    try {
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) { await reg.showNotification(title, opts); return; }
-      }
-    } catch(_) {}
-    // Repli sans les actions (new Notification ne les supporte pas)
-    const { actions:_, ...safeOpts } = opts;
-    try { new Notification(title, safeOpts); } catch(_) {}
+    await NotifBackend.show(opts.tag || `notif-${Date.now()}`, title, opts.body || '', opts);
   },
 
   _saveSent() { try { localStorage.setItem(NOTIF_SENT_KEY, JSON.stringify(this.sent)); } catch(_) {} },
 
   _notify(id, title, body, opts={}) {
     if (this.sent[id]) return;
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!NotifBackend.isAvailable()) return;
     this._show(title, {
       body, tag:id, icon:'icon-192.png', badge:'icon-192.png',
       ...opts,
@@ -1486,7 +1639,9 @@ const Notif = {
   },
 
   async test() {
-    if (!('Notification' in window) || Notification.permission !== 'granted') {
+    if (!NotifBackend.isAvailable()) { toast('⚠ Notifications non supportées sur cet appareil'); return; }
+    const perm = await NotifBackend.checkPermission();
+    if (perm !== 'granted') {
       toast('⚠ Active d\'abord les notifications');
       return;
     }
@@ -1496,9 +1651,92 @@ const Notif = {
     });
   },
 
-  // Vérification périodique — n'envoie chaque notification qu'une seule fois (anti-spam via this.sent)
+  // ── Programmation à l'avance (APK uniquement) ────────────────────
+  // Calcule et programme directement toutes les notifications futures
+  // calculables, plutôt que de vérifier périodiquement (pas de PBS
+  // fiable en WebView Capacitor). Appelée à l'activation des
+  // notifications et à chaque rechargement réussi du calendrier.
+  async scheduleAllUpcoming() {
+    if (!IS_PACKAGED_APP || !this.settings.enabled) return;
+    await NotifBackend.cancelAllPending(); // repartir propre : pas de doublons/obsolètes
+    const fmtLong = d => d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    const fmtTime = d => d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const capitalize = s => s.charAt(0).toUpperCase()+s.slice(1);
+    const at8h = (date) => { const d = new Date(date); d.setHours(8,0,0,0); return d; };
+
+    // 1. Devoirs non rendus — rappel J-3 et J-1 à 8h ce jour-là
+    if (this.settings.deadline) {
+      allDevoirs.filter(d => !effectivelyRendu(d) && d._date).forEach(d => {
+        [3, 1].forEach(threshold => {
+          const due = new Date(d._date);
+          const triggerDate = new Date(due); triggerDate.setDate(due.getDate() - threshold);
+          const when = at8h(triggerDate);
+          const urgent = threshold === 1;
+          const emoji  = urgent ? '🔴' : '🟡';
+          const heure  = d._date.getHours()>0 ? ` à ${fmtTime(d._date)}` : '';
+          NotifBackend.scheduleAt(
+            `deadline-${d.UID}-J${threshold}`,
+            `${emoji} ${urgent ? 'À rendre demain !' : 'Devoir dans 3 jours'}`,
+            `${d._title}\n${d._courseName||''}\n${capitalize(fmtLong(d._date))}${heure}`,
+            when
+          );
+        });
+      });
+    }
+
+    // 2. Devoir collectif sans atelier — rappel immédiat (≤7j) programmé pour dans 1 minute
+    if (this.settings.noAtelier && allGroupEvents.length > 0) {
+      allDevoirs.forEach(d => {
+        const days = getDays(d._date);
+        if (d._type !== 'collectif' || days < 0 || days > 7 || effectivelyRendu(d)) return;
+        if (getLinkedAtelierForDevoir(d.UID)) return;
+        const urgence = days <= 2 ? '🔴' : days <= 4 ? '🟠' : '🟡';
+        NotifBackend.scheduleAt(
+          `noatelier-${d.UID}`,
+          `${urgence} Devoir collectif sans atelier`,
+          `"${d._title}"\n${d._courseName||''}\nÉchéance ${capitalize(fmtLong(d._date))} (J-${days})`,
+          new Date(Date.now() + 60000)
+        );
+      });
+    }
+
+    // 3. Programme du jour — à 8h si aujourd'hui a des événements
+    if (this.settings.today) {
+      const todaysLive  = activeSessions().filter(s=>s._date&&getDays(s._date)===0).sort((a,b)=>a._date-b._date);
+      const todaysGroup = activeGroupEvents().filter(e=>e._date&&getDays(e._date)===0&&!detectSubgroup(e)).sort((a,b)=>a._date-b._date);
+      if (todaysLive.length || todaysGroup.length) {
+        const jdate = capitalize(fmtLong(new Date()));
+        const lines = [
+          ...todaysLive .map(s => `🎥 ${fmtTime(s._date)} ${s._courseName||s._title||'Live Session'}`),
+          ...todaysGroup.map(e => { const tag = getGroupTag(e._uid); return `📚 ${fmtTime(e._date)} ${tag?.subjectName||e._title||'Atelier'}`; }),
+        ].join('\n');
+        NotifBackend.scheduleAt(`today-${new Date().toISOString().slice(0,10)}`, `📅 ${jdate}`, lines, at8h(new Date()));
+      }
+    }
+
+    // 4. Événement imminent (15 min avant) — programmé directement à l'heure calculée
+    if (this.settings.imminent) {
+      [...activeSessions(), ...activeGroupEvents()].forEach(e => {
+        if (!e._date) return;
+        const id = e._uid || e.UID;
+        if (!id) return;
+        const when = new Date(e._date.getTime() - 15*60000);
+        const isSess  = !!e._teamsUrl;
+        const label   = e._courseName || e._title || 'Événement';
+        const timeStr = fmtTime(e._date);
+        const end     = e._dateEnd ? ` – ${fmtTime(e._dateEnd)}` : '';
+        NotifBackend.scheduleAt(
+          `imminent-${id}`, `🔔 Dans 15 min — ${label}`,
+          `${timeStr}${end}${e._dateEnd?` · ${Math.round((e._dateEnd-e._date)/60000)} min`:''}`,
+          when, { data:{ url: isSess ? e._teamsUrl : './' } }
+        );
+      });
+    }
+  },
+
+  // Vérification périodique (web uniquement) — n'envoie chaque notification qu'une seule fois (anti-spam via this.sent)
   check() {
-    if (!this.settings.enabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+    if (!this.settings.enabled || IS_PACKAGED_APP || !NotifBackend.isAvailable()) return;
     const todayKey  = new Date().toISOString().slice(0,10);
     const fmtLong   = d => d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
     const fmtTime   = d => d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -3082,6 +3320,7 @@ function processICS(txt) {
   PWA.markFreshData();  // horodater pour la bannière offline
   toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} sessions`);
   Notif.check();
+  if (IS_PACKAGED_APP) Notif.scheduleAllUpcoming();
 
   // In share mode, refresh state from server once more in case of race condition
   if (Auth.mode === 'share' && Auth.shareToken) {
@@ -3350,6 +3589,7 @@ function processGroupICS(txt){
   renderNextSessionChip(); // le prochain événement peut être un atelier
   renderAgenda(); // vue semaine (ateliers désormais inclus) + charge + planning
   Notif.check();
+  if (IS_PACKAGED_APP) Notif.scheduleAllUpcoming();
   toast(`✓ ${allGroupEvents.length} événements groupe chargés`);
 }
 
