@@ -1684,18 +1684,23 @@ const Notif = {
       });
     }
 
-    // 2. Devoir collectif sans atelier — rappel immédiat (≤7j) programmé pour dans 1 minute
+    // 2. Devoir collectif sans atelier — rappel à 8h le matin du jour J-1
+    // (anciennement "dans 1 minute" : ne fonctionnait qu'à l'ouverture de l'app)
     if (this.settings.noAtelier && allGroupEvents.length > 0) {
       allDevoirs.forEach(d => {
         const days = getDays(d._date);
         if (d._type !== 'collectif' || days < 0 || days > 7 || effectivelyRendu(d)) return;
         if (getLinkedAtelierForDevoir(d.UID)) return;
         const urgence = days <= 2 ? '🔴' : days <= 4 ? '🟠' : '🟡';
+        // Programmer à 8h du matin J-1 (ou aujourd'hui à 8h si J=0)
+        const targetDay = new Date(d._date);
+        targetDay.setDate(targetDay.getDate() - 1);
+        const when = at8h(targetDay);
         NotifBackend.scheduleAt(
           `noatelier-${d.UID}`,
           `${urgence} Devoir collectif sans atelier`,
           `"${d._title}"\n${d._courseName||''}\nÉchéance ${capitalize(fmtLong(d._date))} (J-${days})`,
-          new Date(Date.now() + 60000)
+          when
         );
       });
     }
@@ -1714,13 +1719,22 @@ const Notif = {
       }
     }
 
-    // 4. Événement imminent (15 min avant) — programmé directement à l'heure calculée
+    // 4. Événement imminent (15 min avant) — programmé directement à l'heure calculée.
+    // Tolérance de 30 min : si l'app est ouverte juste après l'heure idéale (ex: app
+    // ouverte à 14h20 pour un événement à 14h30), on déclenche quand même avec un
+    // court délai plutôt que de rejeter silencieusement la notification.
     if (this.settings.imminent) {
-      [...activeSessions(), ...activeGroupEvents()].forEach(e => {
+      const now = Date.now();
+      const TOLERANCE_MS = 30 * 60 * 1000; // 30 min
+      ;[...activeSessions(), ...activeGroupEvents()].forEach(e => {
         if (!e._date) return;
         const id = e._uid || e.UID;
         if (!id) return;
-        const when = new Date(e._date.getTime() - 15*60000);
+        const ideal = e._date.getTime() - 15*60000; // 15 min avant l'événement
+        // Rejeter si l'événement est déjà complètement passé
+        if (e._date.getTime() < now) return;
+        // Si l'heure idéale est dépassée mais dans la tolérance : déclencher dans 5s
+        const when = ideal > now ? new Date(ideal) : new Date(now + 5000);
         const isSess  = !!e._teamsUrl;
         const label   = e._courseName || e._title || 'Événement';
         const timeStr = fmtTime(e._date);

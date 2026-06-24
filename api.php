@@ -19,20 +19,9 @@ session_start();
 define('DATA_DIR',    __DIR__ . '/data');
 define('CONFIG_FILE', DATA_DIR . '/config.json');
 define('STATE_FILE',  DATA_DIR . '/state.json');
-define('TOKENS_FILE',  DATA_DIR . '/tokens.json');
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache');
-
-// ── CORS : nécessaire pour l'app packagée (APK), qui appelle un
-// serveur Brightspace Agenda distant en cross-origin. Sans danger pour
-// la version web : same-origin n'envoie jamais d'en-tête Origin entrant
-// en conflit, et l'auth sensible (login) reste protégée par le token
-// opaque généré côté serveur, jamais par la seule origine déclarée.
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 
 $ALLOWED_HOSTS = ['emlyon.brightspace.com', 'brightspace.com', 'em-lyon.com'];
 
@@ -49,58 +38,13 @@ function respond($data, $code = 200) {
     echo json_encode($data, JSON_UNESCAPED_UNICODE);
     exit;
 }
-function isLoggedIn()         { return !empty($_SESSION['emmgo_auth']) || isValidAuthToken(); }
+function isLoggedIn()         { return !empty($_SESSION['emmgo_auth']); }
 function requireAuth()        { if (!isLoggedIn()) respond(['error' => 'Non authentifié'], 401); }
 function getConfig()          { return readJson(CONFIG_FILE, ['password_hash'=>'','share_token'=>'','ics_url'=>'']); }
 function isValidShare($token) {
     if (empty($token)) return false;
     $cfg = getConfig();
     return !empty($cfg['share_token']) && hash_equals($cfg['share_token'], $token);
-}
-
-// ── Auth par token (APK Capacitor) ───────────────────────────────
-// Utilisé en plus du cookie de session : nécessaire car les WebViews
-// mobiles (Capacitor/Cordova) appliquent SameSite de façon stricte sur
-// les requêtes fetch cross-origin, ce qui empêche le cookie de session
-// classique de fonctionner depuis une app packagée.
-function getBearerToken() {
-    $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    if (empty($hdr) && function_exists('getallheaders')) {
-        foreach (getallheaders() as $k => $v) {
-            if (strcasecmp($k, 'Authorization') === 0) { $hdr = $v; break; }
-        }
-    }
-    if (preg_match('/^Bearer\s+(.+)$/i', $hdr, $m)) return trim($m[1]);
-    return null;
-}
-function hashToken($token) { return hash('sha256', $token); }
-function readTokens() { return readJson(TOKENS_FILE, []); }
-function writeTokens($tokens) { return writeJson(TOKENS_FILE, $tokens); }
-function pruneExpiredTokens($tokens) {
-    $now = time();
-    foreach ($tokens as $h => $exp) if ($exp < $now) unset($tokens[$h]);
-    return $tokens;
-}
-function isValidAuthToken() {
-    $token = getBearerToken();
-    if (!$token) return false;
-    $tokens = readTokens();
-    $h = hashToken($token);
-    return isset($tokens[$h]) && $tokens[$h] > time();
-}
-function issueAuthToken($lifetime) {
-    $token = bin2hex(random_bytes(32));
-    $tokens = pruneExpiredTokens(readTokens());
-    $tokens[hashToken($token)] = time() + $lifetime;
-    writeTokens($tokens);
-    return $token;
-}
-function revokeAuthToken() {
-    $token = getBearerToken();
-    if (!$token) return;
-    $tokens = readTokens();
-    unset($tokens[hashToken($token)]);
-    writeTokens($tokens);
 }
 function curlFetch($url) {
     if (function_exists('curl_init')) {
@@ -172,11 +116,7 @@ switch ($action) {
             'httponly' => true,
             'samesite' => 'Lax',
         ]);
-        // Token d'auth (en plus du cookie) : nécessaire pour l'app packagée
-        // (APK Capacitor), où le cookie de session ne peut pas être envoyé
-        // de façon fiable sur des requêtes cross-origin.
-        $authToken = issueAuthToken($sessionLifetime);
-        respond(['ok'=>true, 'logged_in'=>true, 'auth_token'=>$authToken,
+        respond(['ok'=>true, 'logged_in'=>true,
             'ics_url'         => $config['ics_url']         ?? '',
             'private_ics_url' => $config['private_ics_url'] ?? '',
             'dashboard_name'  => $config['dashboard_name']  ?? '']);
@@ -216,7 +156,6 @@ switch ($action) {
 
     case 'logout':
         $_SESSION = []; session_destroy();
-        revokeAuthToken();
         respond(['ok'=>true, 'logged_in'=>false]);
 
     // Sauvegarder l'URL ICS (connecté uniquement)
@@ -278,6 +217,130 @@ switch ($action) {
         $config['password_hash'] = password_hash($new, PASSWORD_DEFAULT);
         writeJson(CONFIG_FILE, $config);
         respond(['ok'=>true]);
+
+    case 'upcoming':
+        $shareToken = $_GET['token'] ?? ($_GET['share'] ?? ($input['token'] ?? ''));
+        if (!isLoggedIn() && !isValidShare($shareToken))
+            respond(['error' => 'Non autorisé'], 401);
+
+        $limit  = max(1, min(20, (int)($_GET['limit'] ?? 5)));
+        $days   = max(1, min(60, (int)($_GET['days']  ?? 14)));
+        $now    = time();
+        $cutoff = $now + $days * 86400;
+
+        // ICS URLs à parcourir
+        $icsUrls = array_filter([
+            $config['ics_url']         ?? '',
+            $config['private_ics_url'] ?? '',
+        ]);
+
+        // groupTagsCache depuis state.json pour typage et filtre ignored
+        $state      = readJson(STATE_FILE, []);
+        $groupTags  = $state['groupTagsCache'] ?? [];
+        $ignoredMap = [];
+        foreach ($groupTags as $uid => $tag) {
+            if (!empty($tag['ignored'])) $ignoredMap[$uid] = true;
+        }
+
+        $events = [];
+
+        foreach ($icsUrls as $icsUrl) {
+            $raw = curlFetch($icsUrl);
+            if (!$raw) continue;
+
+            $lines   = preg_split('/\r?\n/', $raw);
+            $inEvent = false;
+            $ev      = [];
+
+            foreach ($lines as $line) {
+                if ($line === 'BEGIN:VEVENT') { $inEvent = true; $ev = []; continue; }
+                if ($line === 'END:VEVENT') {
+                    $inEvent = false;
+                    $uid     = $ev['UID']     ?? '';
+                    $start   = $ev['DTSTART'] ?? 0;
+                    $end     = $ev['DTEND']   ?? $start;
+                    $summary = $ev['SUMMARY'] ?? '';
+
+                    // Filtres
+                    if (!$start || $start < $now || $start > $cutoff) continue;
+                    if (isset($ignoredMap[$uid])) continue;
+
+                    // Typage
+                    $tag = $groupTags[$uid] ?? null;
+                    // Typage aligné sur la logique de l'app
+                    $loc  = $ev['LOCATION']    ?? '';
+                    $desc = $ev['DESCRIPTION'] ?? '';
+                    $sl   = strtolower($summary);
+                    $ll   = strtolower($loc);
+                    $dl   = strtolower($desc);
+                    $sessionTitleRe = '/^\d{4}_[A-Z0-9]+_\d{4}-\d{2}\s+.+$/i';
+
+                    $isDevoir = str_contains($sl,'assessment') || str_contains($sl,'co-construction')
+                             || str_contains($dl,'assessment') || str_contains($dl,'co-construction')
+                             || str_ends_with($sl,'à échéance');
+
+                    $isSession = str_contains($sl,'live session') || str_contains($sl,'cours distanciel')
+                              || str_contains($ll,'live session') || str_contains($ll,'cours distanciel')
+                              || str_contains($ll,'teams.microsoft') || str_contains($ll,'teams.live.com')
+                              || str_contains($ll,'virtual-room.em-lyon.com')
+                              || preg_match($sessionTitleRe, $summary);
+
+                    if ($isDevoir) {
+                        // co-construction = collectif, sinon individuel → tous deadline ici
+                        $type = 'deadline';
+                    } elseif ($isSession) {
+                        $type = 'session';
+                    } elseif ($tag && !empty($tag['devoirUid']) && $tag['devoirUid'] !== '__subgroup__') {
+                        $type = 'workshop';
+                    } else {
+                        $type = 'event';
+                    }
+
+                    $daysUntil = (int)(($start - $now) / 86400);
+                    $events[]  = [
+                        'uid'        => $uid,
+                        'summary'    => $summary,
+                        'type'       => $type,
+                        'start'      => $start,
+                        'end'        => $end,
+                        'start_iso'  => date('c', $start),
+                        'end_iso'    => date('c', $end),
+                        'days_until' => $daysUntil,
+                        'subject'    => $tag['subjectName'] ?? ($tag['subject'] ?? null),
+                    ];
+                    continue;
+                }
+                if (!$inEvent) continue;
+
+                // Parse key[:params]:value, unfold multi-line
+                if (preg_match('/^([\w-]+)(?:;[^:]+)?:(.*)$/', $line, $m)) {
+                    $key = strtoupper(explode(';', $m[1])[0]);
+                    $val = $m[2];
+                    if (in_array($key, ['DTSTART', 'DTEND'])) {
+                        $d = preg_replace('/[^\d]/', '', substr($val, 0, 15));
+                        $val = strlen($d) >= 14
+                            ? mktime((int)substr($d,8,2),(int)substr($d,10,2),(int)substr($d,12,2),
+                                     (int)substr($d,4,2),(int)substr($d,6,2),(int)substr($d,0,4))
+                            : mktime(0,0,0,(int)substr($d,4,2),(int)substr($d,6,2),(int)substr($d,0,4));
+                    }
+                    $ev[$key] = $val;
+                }
+            }
+        }
+
+        usort($events, fn($a, $b) => $a['start'] <=> $b['start']);
+        // Métriques agrégées (calculées avant le slice)
+        $stats = [
+            'a_venir'     => count($events),
+            'individuels' => count(array_filter($events, fn($e) => $e['type'] === 'deadline')),
+            'collectifs'  => count(array_filter($events, fn($e) => $e['type'] === 'workshop')),
+            'urgents'     => count(array_filter($events, fn($e) =>
+                                $e['type'] === 'deadline' && $e['days_until'] <= 7)),
+        ];
+
+        $events = array_values(array_slice($events, 0, $limit));
+        respond(['ok' => true, 'count' => count($events), 'events' => $events,
+                 'stats' => $stats, 'generated_at' => date('c')]);
 
     default:
         respond(['error'=>"Action inconnue : $action"], 400);
