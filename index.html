@@ -189,12 +189,14 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .stat .s-sub   { font-size:10px;margin-top:4px;opacity:.7; }
 
 /* ── Tabs ── */
-.tab-bar { display:flex;border-bottom:2px solid var(--border);margin-bottom:20px; }
+.tab-bar { display:flex;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none; }
+.tab-bar::-webkit-scrollbar { display:none; }
 .tab {
   padding:10px 18px;font-size:13px;font-weight:600;
   color:var(--text2);cursor:pointer;border:none;background:transparent;
   font-family:var(--font);border-bottom:2px solid transparent;
   margin-bottom:-2px;display:flex;align-items:center;gap:7px;transition:color .15s;
+  white-space:nowrap;flex-shrink:0;
 }
 .tab:hover { color:var(--text); }
 .tab.active { color:var(--text);font-weight:700;border-bottom-color:transparent;box-shadow:inset 0 -3px 0 var(--text); }
@@ -283,6 +285,46 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .rendu-check { display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--text2);cursor:pointer;user-select:none; }
 .rendu-check input { cursor:pointer;accent-color:var(--c-green);width:14px;height:14px; }
 .rendu-check.auto { color:var(--text3);cursor:default;font-style:italic; }
+/* Carte devoir : indicateur Noté */
+.grade-check { display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--c-blue);cursor:pointer;user-select:none; }
+.grade-check input { cursor:pointer;accent-color:var(--c-blue);width:14px;height:14px; }
+.grade-check-info { font-size:11px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:4px; }
+/* Onglet Notes — score badge (bloc gauche, style countdown) */
+.note-badge { border-radius:10px;padding:10px 13px;text-align:center;min-width:68px;flex-shrink:0;border:1px solid transparent;background:var(--bg-blue);color:var(--c-blue); }
+.note-badge .nb-score { font-size:17px;font-weight:700;line-height:1.2; }
+.note-badge .nb-total { font-size:10px;margin-top:2px;opacity:.8; }
+.note-badge.no-score  { background:var(--bg2);color:var(--text3);border-color:var(--border); }
+/* Inputs note inline dans la card */
+.note-inputs { display:flex;align-items:center;gap:6px;margin:6px 0 4px; }
+.note-inputs label { font-size:11px;color:var(--text2); }
+.note-inputs input[type=number] { width:52px;height:28px;padding:0 6px;background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:var(--font);text-align:center; }
+.note-inputs .grade-sep { font-size:14px;font-weight:600;color:var(--text3); }
+.note-comment { width:100%;min-height:40px;padding:5px 8px;background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-family:var(--font);resize:vertical;box-sizing:border-box;margin-top:2px; }
+.note-comment::placeholder { color:var(--text3); }
+/* Section type + moyenne */
+.notes-section-header { display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px; }
+.notes-section-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px; }
+.notes-avg-pill { font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px;background:var(--bg-blue);color:var(--c-blue); }
+/* grade-form inline (même pattern que tag-form) */
+.grade-form { margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:8px;display:none; }
+.grade-form.open { display:block; }
+.grade-form-row { display:flex;align-items:center;gap:8px;margin-bottom:8px; }
+.grade-form-row label { font-size:12px;color:var(--text2); }
+.grade-form-row input[type=number] { width:60px;height:30px;padding:0 8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:14px;font-weight:700;font-family:var(--font);text-align:center; }
+.grade-form-row .grade-sep { font-size:16px;color:var(--text3);font-weight:300; }
+.grade-form-preview { font-size:11px;margin-left:auto; }
+.grade-form-actions { display:flex;gap:6px; }
+/* Header matière sticky */
+.notes-course-header {
+  position:sticky;top:var(--notes-course-top,220px);z-index:140;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 20px;margin:0 -20px 8px;
+  border-bottom:1px solid var(--border);border-top:1px solid var(--border);
+}
+.notes-course-header-left { display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text); }
+.notes-course-avg { font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;background:var(--bg-blue);color:var(--c-blue);white-space:nowrap; }
+@media(max-width:600px){ .notes-course-header { padding:8px 16px;margin:0 -16px 8px; } }
 
 /* ── Actions ── */
 .card-actions { display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:stretch;min-width:120px; }
@@ -386,7 +428,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   .nsc-icon  { display:none; }
 }
 /* ── Onglet Groupe de travail ── */
-.group-section{margin-bottom:24px}.group-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.group-section-title{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;margin:0}.group-tag-btn{font-size:10px;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);margin-top:5px;display:inline-flex;align-items:center;gap:4px}.group-tag-btn:hover{border-color:var(--c-blue);color:var(--c-blue)}.group-tag-btn.tagged{border-style:solid;background:var(--bg-violet);color:var(--c-violet);border-color:var(--c-violet)44}.tag-form{margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:8px;display:none}.tag-form.open{display:block}.tag-form select{width:100%;height:30px;margin-bottom:6px;padding:0 8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--font);cursor:pointer}.tag-form-actions{display:flex;gap:6px}.view-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}.view-toggle button{height:28px;padding:0 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-family:var(--font);display:flex;align-items:center;gap:4px}.view-toggle button.active{background:var(--text);color:var(--bg)}.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}.week-nav-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}.week-nav-btn:hover{background:var(--bg2)}.week-nav-label{font-size:13px;font-weight:600;flex:1;text-align:center}.week-grid{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.week-grid-header,.week-grid-body{display:grid;grid-template-columns:38px repeat(7,1fr)}.week-grid-header{background:var(--bg2);border-bottom:1px solid var(--border)}.week-grid-devoirs{display:grid;grid-template-columns:38px repeat(7,1fr);background:var(--bg2);border-bottom:1px solid var(--border)}.wgh-cell{padding:5px 2px;text-align:center;font-size:10px;font-weight:600;color:var(--text2)}.wgh-cell.today{color:var(--c-blue)}.wg-time{border-right:1px solid var(--border);border-bottom:0.5px solid var(--border);padding:3px 4px;font-size:9px;color:var(--text3);text-align:right;display:flex;align-items:flex-start;justify-content:flex-end}.wg-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:28px;padding:2px;display:flex;flex-direction:column;gap:1px}.wg-event{border-radius:3px;padding:1px 4px;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}.wg-live{background:var(--bg-teal);color:var(--c-teal)}.wg-group{background:var(--bg-green);color:var(--c-green)}.wg-overlap{background:var(--bg-orange);color:var(--c-orange)}.wg-devoir{background:var(--bg-violet);color:var(--c-violet)}.group-subject-table{width:100%;border-collapse:collapse;font-size:12px}.group-subject-table th{font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg2)}.group-subject-table td{padding:7px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle}.group-subject-table tr:last-child td{border-bottom:none}.gs-dots{display:flex;gap:3px}.gs-dot{width:7px;height:7px;border-radius:50%}.private-url-section{border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:none}.private-url-section.visible{display:block}
+.group-section{margin-bottom:24px}.group-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.group-section-title{font-size:13px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;margin:0}.group-tag-btn{font-size:10px;height:22px;padding:0 8px;border-radius:6px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font-family:var(--font);margin-top:5px;display:inline-flex;align-items:center;gap:4px}.group-tag-btn:hover{border-color:var(--c-blue);color:var(--c-blue)}.group-tag-btn.tagged{border-style:solid;background:var(--bg-violet);color:var(--c-violet);border-color:var(--c-violet)44}.tag-form{margin-top:8px;padding:10px 12px;background:var(--bg2);border-radius:8px;display:none}.tag-form.open{display:block}.tag-form select{width:100%;height:30px;margin-bottom:6px;padding:0 8px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--font);cursor:pointer}.tag-form-actions{display:flex;gap:6px}.view-toggle{display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden}.view-toggle button{height:28px;padding:0 10px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-family:var(--font);display:flex;align-items:center;gap:4px}.view-toggle button.active{background:var(--text);color:var(--bg)}.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:10px}.week-nav-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}.week-nav-btn:hover{background:var(--bg2)}.week-nav-label{font-size:13px;font-weight:600;flex:1;text-align:center}.week-grid{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}.week-grid-header,.week-grid-body{display:grid;grid-template-columns:38px repeat(7,1fr)}.week-grid-header{background:var(--bg2);border-bottom:1px solid var(--border)}.week-grid-devoirs{display:grid;grid-template-columns:38px repeat(7,1fr);background:var(--bg2);border-bottom:1px solid var(--border)}.wgh-cell{padding:5px 2px;text-align:center;font-size:10px;font-weight:600;color:var(--text2)}.wgh-cell.today{color:var(--c-blue)}.wg-time{border-right:1px solid var(--border);border-bottom:0.5px solid var(--border);padding:3px 4px;font-size:9px;color:var(--text3);text-align:right;display:flex;align-items:flex-start;justify-content:flex-end}.wg-cell{border-right:0.5px solid var(--border);border-bottom:0.5px solid var(--border);min-height:28px;padding:2px;display:flex;flex-direction:column;gap:1px}.wg-event{border-radius:3px;padding:1px 4px;font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:default}.wg-live{background:var(--bg-teal);color:var(--c-teal)}.wg-group{background:var(--bg-green);color:var(--c-green)}.wg-overlap{background:var(--bg-orange);color:var(--c-orange)}.wg-devoir{background:var(--bg-violet);color:var(--c-violet)}.group-subject-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px;}.group-subject-table{width:100%;border-collapse:collapse;font-size:12px}.group-subject-table th{font-size:11px;font-weight:600;color:var(--text2);text-align:left;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg2)}.group-subject-table td{padding:7px 10px;border-bottom:0.5px solid var(--border);vertical-align:middle}.group-subject-table tr:last-child td{border-bottom:none}.gs-dots{display:flex;gap:3px}.gs-dot{width:7px;height:7px;border-radius:50%}.private-url-section{border-top:1px solid var(--border);margin-top:14px;padding-top:14px;display:none}.private-url-section.visible{display:block}
 .offline-banner {
   display:none;position:fixed;bottom:0;left:0;right:0;z-index:900;
   background:#2a2932;color:#e8e6e0;
@@ -734,6 +776,8 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
     </div>
   </div>
 
+  <!-- Modale saisie note -->
+
   <div id="login-modal" style="display:none" role="dialog" aria-modal="true">
     <div class="modal-overlay">
       <div class="modal-box">
@@ -768,10 +812,11 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
           <div style="font-weight:600;color:var(--text);margin-bottom:4px"><i class="ti ti-sparkles" style="font-size:12px"></i> Ce que fait cette app</div>
           <ul style="margin:0;padding-left:18px;line-height:1.6">
             <li><strong>Agenda</strong> : vue semaine combinée (devoirs, sessions, ateliers), charge par semaine, planning des cours</li>
-            <li><strong>Devoirs</strong> : suivi des rendus, filtres, compte à rebours, liens Casier/Google/Outlook</li>
+            <li><strong>Devoirs</strong> : suivi des rendus, case "Noté" + saisie de note inline, filtres (Passés / Rendus / Notés), compte à rebours, liens Casier/Google/Outlook</li>
             <li><strong>Live Sessions</strong> : calendrier des cours, bouton Rejoindre, sous-groupes</li>
             <li><strong>Ateliers</strong> : groupes de travail depuis ton agenda privé, attribution matière/devoir, sous-groupes manuels ou auto-détectés</li>
-            <li><strong>Progression</strong> : barre de progression par matière, ateliers par matière, histogramme hebdo, Gantt</li>
+            <li><strong>Notes</strong> : synthèse des notes par matière (Individuels / Collectifs), moyennes par type et par matière, filtres par cours et par type, filtre "En attente"</li>
+            <li><strong>Progression</strong> : barre de progression par matière, moyennes de notes, ateliers par matière, histogramme hebdo, Gantt</li>
             <li><strong>Notifications</strong> : devoirs approchants, ateliers non planifiés, programme du jour, événement imminent</li>
             <li>Mode invité · Mode connecté · Lien de partage (lecture seule) · PWA installable</li>
           </ul>
@@ -1111,6 +1156,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <i class="ti ti-users"></i> Ateliers
         <span class="badge" id="badge-groupe">0</span>
       </button>
+      <button class="tab" id="tab-notes" onclick="switchTab('notes')" style="display:none">
+        <i class="ti ti-star"></i> Notes
+        <span class="badge" id="badge-notes">0</span>
+      </button>
       <button class="tab" id="tab-prog" onclick="switchTab('prog')">
         <i class="ti ti-chart-bar"></i> Progression
       </button>
@@ -1161,6 +1210,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
             <input type="checkbox" id="show-rendus-devoirs" checked onchange="saveFilterPrefs();resetPaginationAndRender('devoirs')">
             Rendus
           </label>
+          <label class="past-label">
+            <input type="checkbox" id="show-notes-devoirs" onchange="saveFilterPrefs();resetPaginationAndRender('devoirs')">
+            Notés
+          </label>
         </div>
       </div>
       <div class="filters disc-filters" id="disc-filter-devoirs" style="display:none"></div>
@@ -1198,6 +1251,13 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         </div>
         <div id="group-by-subject"></div>
       </div>
+    </div>
+
+    <!-- Notes pane -->
+    <div id="pane-notes" style="display:none">
+      <div class="filters filters-sticky" id="notes-filters-type"></div>
+      <div class="filters disc-filters" id="notes-filters-course" style="display:none"></div>
+      <div class="list" id="notes-content"></div>
     </div>
 
     <!-- Groupe pane (connecté + share) -->
@@ -1258,18 +1318,18 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 /* ══════════════════════════════════════════════════════════════
    Constants & state
 ══════════════════════════════════════════════════════════════ */
-const STORAGE_KEY      = 'emmgo_ics_url_v2';
-const RENDU_KEY        = 'emmgo_rendu_v1';
-const GROUP_TAGS_KEY   = 'emmgo_group_tags_v1';
-const THEME_KEY        = 'emmgo_theme';
-const PRIVATE_ICS_KEY  = 'emmgo_private_ics_url_v1';
-const NOTIF_KEY        = 'emmgo_notif_settings_v1';
-const NOTIF_SENT_KEY   = 'emmgo_notif_sent_v1';
-const FILTER_PREFS_KEY = 'emmgo_filter_prefs_v1';
+const STORAGE_KEY      = 'bsa_ics_url_v2';
+const RENDU_KEY        = 'bsa_rendu_v1';
+const GROUP_TAGS_KEY   = 'bsa_group_tags_v1';
+const THEME_KEY        = 'bsa_theme';
+const PRIVATE_ICS_KEY  = 'bsa_private_ics_url_v1';
+const NOTIF_KEY        = 'bsa_notif_settings_v1';
+const NOTIF_SENT_KEY   = 'bsa_notif_sent_v1';
+const FILTER_PREFS_KEY = 'bsa_filter_prefs_v1';
 // Token de partage en lecture seule, persisté côté client (invité ou APK).
 // Vide = pas de token configuré. SERVER vide = même serveur que l'app courante.
-const GUEST_SHARE_TOKEN_KEY  = 'emmgo_guest_share_token_v1';
-const GUEST_SHARE_SERVER_KEY = 'emmgo_guest_share_server_v1';
+const GUEST_SHARE_TOKEN_KEY  = 'bsa_guest_share_token_v1';
+const GUEST_SHARE_SERVER_KEY = 'bsa_guest_share_server_v1';
 const PAGE_SIZE        = 5;
 
 // ── Pont IndexedDB partagé avec le Service Worker (PBS) ──────────
@@ -1342,6 +1402,7 @@ function saveFilterPrefs(){
   const prefs={
     past_devoirs:  g('show-past-devoirs')?.checked  ?? false,
     rendus_devoirs:g('show-rendus-devoirs')?.checked ?? true,
+    notes_devoirs: g('show-notes-devoirs')?.checked  ?? false,
     past_sessions: g('show-past-sessions')?.checked  ?? false,
     hidden_sessions:g('show-hidden-sessions')?.checked ?? false,
     past_groupe:   g('show-past-groupe')?.checked    ?? false,
@@ -1355,6 +1416,7 @@ function loadFilterPrefs(){
     const set=(id,val)=>{const el=document.getElementById(id);if(el)el.checked=val;};
     set('show-past-devoirs',  p.past_devoirs  ?? false);
     set('show-rendus-devoirs',p.rendus_devoirs ?? true);
+    set('show-notes-devoirs', p.notes_devoirs  ?? false);
     set('show-past-sessions', p.past_sessions  ?? false);
     set('show-hidden-sessions',p.hidden_sessions ?? false);
     set('show-past-groupe',   p.past_groupe    ?? false);
@@ -1896,7 +1958,8 @@ const AppStorage = {
 // Structure persistée : { kind: 'local' }
 //                     ou { kind: 'share', serverUrl, shareToken }
 //                     ou { kind: 'connected', serverUrl, authToken }
-const REMOTE_CFG_KEY = 'emmgo_remote_cfg_v1';
+const REMOTE_CFG_KEY = 'bsa_remote_cfg_v1';
+const GRADES_KEY     = 'bsa_grades_v1';
 const RemoteServer = {
   kind:       'local',  // 'local' | 'share' | 'connected'
   serverUrl:  '',        // ex: "https://mon-serveur.exemple.fr"
@@ -2379,6 +2442,7 @@ const Auth = {
     const raw = d.state?.rendus;
     Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
     groupTagsCache = (d.state?.group_tags && typeof d.state.group_tags === 'object') ? d.state.group_tags : {};
+    Auth._gradesCache = (d.state?.grades && typeof d.state.grades === 'object') ? d.state.grades : {};
   },
 
   async _saveServerState() {
@@ -2386,7 +2450,7 @@ const Auth = {
     await apiFetch(Auth._apiBase, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache } }),
+      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {} } }),
     });
   },
 
@@ -2535,7 +2599,7 @@ const Auth = {
         } else {
           showGroupNotConfigured();
         }
-        renderDevoirs(); renderProgression(); renderStats();
+        renderDevoirs(); renderProgression(); renderStats(); renderNotes(); updateNotesTab();
         loadCalendar();
         toast('✓ Connecté — données synchronisées');
       } else {
@@ -2556,7 +2620,7 @@ const Auth = {
     // Vider les données en mémoire du compte qui vient de se déconnecter — sans ça, devoirs,
     // sessions, ateliers et attributions resteraient visibles en mode invité jusqu'au prochain
     // rechargement complet de la page.
-    allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {};
+    allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {}; Auth._gradesCache = {};
 
     // Réinitialiser les champs URL : en mode connecté ils contiennent l'URL réelle masquée
     // dans dataset.realUrl, lue en priorité par getIcsUrl()/getPrivateIcsUrl().
@@ -2569,7 +2633,7 @@ const Auth = {
     if (sec) sec.style.display = 'none';
 
     // Afficher immédiatement l'état vidé, avant de tenter de recharger des données invité
-    renderDevoirs(); renderSessions(); renderGroupTab(); renderProgression(); renderStats();
+    renderDevoirs(); renderSessions(); renderGroupTab(); renderProgression(); renderStats(); renderNotes(); updateNotesTab();
     updateBadges(); updateGroupBadge(); renderAgenda(); renderNextSessionChip();
 
     // Recharger une éventuelle URL invité propre à cet appareil (distincte du compte déconnecté)
@@ -2825,8 +2889,250 @@ function toggleRendu(uid, isPast) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   Métadonnées dynamiques du calendrier & du dashboard
+   Grades state
 ══════════════════════════════════════════════════════════════ */
+function getGradesMap() {
+  if (Auth.mode === 'connected') return Auth._gradesCache || {};
+  try { return JSON.parse(localStorage.getItem(GRADES_KEY) || '{}'); } catch(_) { return {}; }
+}
+function getGrade(uid) { return getGradesMap()[uid] || null; }
+function setGradeData(uid, data) {
+  const m = getGradesMap();
+  if (data) m[uid] = data; else delete m[uid];
+  if (Auth.mode === 'connected') {
+    Auth._gradesCache = m;
+    Auth._saveServerState();
+  } else {
+    try { localStorage.setItem(GRADES_KEY, JSON.stringify(m)); } catch(_) {}
+  }
+}
+function toggleGraded(uid) {
+  if (Auth.readOnly) return;
+  setGradeData(uid, getGrade(uid) ? null : { pts: '', total: '' });
+  renderDevoirs();
+  renderNotes();
+  updateNotesTab();
+}
+
+function toggleGradeForm(uid) {
+  const safeUid = uid.replace(/[^a-zA-Z0-9_-]/g,'_');
+  const f = document.getElementById(`grade-form-${safeUid}`);
+  if (!f) return;
+  const opening = !f.classList.contains('open');
+  document.querySelectorAll('.grade-form.open').forEach(el => el.classList.remove('open'));
+  if (opening) {
+    f.classList.add('open');
+    setTimeout(() => f.querySelector('input[type=number]')?.focus(), 50);
+  }
+}
+function gradeFormPreview(safeUid) {
+  const pts   = parseFloat(document.getElementById(`gf-pts-${safeUid}`)?.value);
+  const total = parseFloat(document.getElementById(`gf-total-${safeUid}`)?.value);
+  const el    = document.getElementById(`gf-preview-${safeUid}`);
+  if (!el) return;
+  if (!isNaN(pts) && !isNaN(total) && total > 0) {
+    const pct = pts / total;
+    const sur20 = (pct * 20).toFixed(1);
+    const color = pct>=0.7?'var(--c-green)':pct>=0.5?'var(--c-blue)':pct>=0.3?'var(--c-orange)':'var(--c-red,#c0392b)';
+    el.innerHTML = `<span style="color:${color};font-weight:700">= ${sur20}/20</span>`;
+  } else { el.innerHTML = ''; }
+}
+function saveGradeForm(safeUid) {
+  // Retrouver le UID original depuis l'index
+  const uid = window._gradeUidIndex?.[safeUid];
+  if (!uid) return;
+  const pts   = document.getElementById(`gf-pts-${safeUid}`)?.value   || '';
+  const total = document.getElementById(`gf-total-${safeUid}`)?.value || '';
+  const g = getGrade(uid) || { pts: '', total: '' };
+  g.pts = pts; g.total = total;
+  setGradeData(uid, g);
+  // Fermer le form avant de re-render
+  const f = document.getElementById(`grade-form-${safeUid}`);
+  if (f) f.classList.remove('open');
+  renderDevoirs();
+  renderNotes();
+  updateNotesTab();
+}
+function gradeFormHtml(uid) {
+  const safeUid = uid.replace(/[^a-zA-Z0-9_-]/g,'_');
+  // Stocker la correspondance safeUid → uid original
+  window._gradeUidIndex = window._gradeUidIndex || {};
+  window._gradeUidIndex[safeUid] = uid;
+  const g = getGrade(uid) || { pts: '', total: '' };
+  return `<div class="grade-form" id="grade-form-${safeUid}" onclick="event.stopPropagation()">
+    <div class="grade-form-row">
+      <label>Note :</label>
+      <input type="number" id="gf-pts-${safeUid}" min="0" max="999" step="0.5" placeholder="—" value="${g.pts||''}"
+        oninput="gradeFormPreview('${safeUid}')" onclick="event.stopPropagation()">
+      <span class="grade-sep">/</span>
+      <input type="number" id="gf-total-${safeUid}" min="1" max="999" step="1" placeholder="20" value="${g.total||''}"
+        oninput="gradeFormPreview('${safeUid}')" onclick="event.stopPropagation()">
+      <span class="grade-form-preview" id="gf-preview-${safeUid}"></span>
+    </div>
+    <div class="grade-form-actions">
+      <button class="btn primary" style="height:26px;font-size:11px" onclick="event.stopPropagation();saveGradeForm('${safeUid}')"><i class="ti ti-check"></i> Enregistrer</button>
+      <button class="btn" style="height:26px;font-size:11px" onclick="event.stopPropagation();toggleGradeForm('${uid.replace(/'/g,"\\'")}')"><i class="ti ti-x"></i> Annuler</button>
+    </div>
+  </div>`;
+}
+function saveGradeField(uid, field, value) {
+  const g = getGrade(uid) || { pts: '', total: '' };
+  g[field] = value;
+  setGradeData(uid, g);
+  // Mise à jour ciblée du badge
+  const badge = document.getElementById(`note-badge-${uid}`);
+  if (badge) {
+    const pts = parseFloat(g.pts), total = parseFloat(g.total);
+    const hasScore = g.pts !== '' && g.total !== '' && total > 0;
+    if (hasScore) {
+      const pct = pts / total;
+      const bg = pct>=0.7?'var(--bg-green)':pct>=0.5?'var(--bg-blue)':pct>=0.3?'var(--bg-orange)':'var(--bg-red,#ffeaea)';
+      const fg = pct>=0.7?'var(--c-green)':pct>=0.5?'var(--c-blue)':pct>=0.3?'var(--c-orange)':'var(--c-red,#c0392b)';
+      badge.style.background=bg;badge.style.color=fg;badge.style.borderColor=fg+'22';
+      badge.innerHTML=`<div class="nb-score">${g.pts}</div><div class="nb-total">/ ${g.total}</div>`;
+    } else {
+      badge.style.background='var(--bg2)';badge.style.color='var(--text3)';badge.style.borderColor='var(--border)';
+      badge.innerHTML=`<div class="nb-score" style="font-size:13px">?</div><div class="nb-total">à saisir</div>`;
+    }
+  }
+  updateNotesTab();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Render Notes
+══════════════════════════════════════════════════════════════ */
+let notesFilterCourse = 'all';
+let notesFilterType   = 'all';
+let notesFilterPending = false;
+
+function renderNotes() {
+  const el  = document.getElementById('notes-content');
+  const ft  = document.getElementById('notes-filters-type');
+  const fc  = document.getElementById('notes-filters-course');
+  if (!el) return;
+
+  const graded = allDevoirs.filter(d => !!getGrade(d.UID));
+
+  // Filtre type (sticky ligne 1)
+  if (ft) {
+    ft.innerHTML = `
+      <button class="chip ${notesFilterType==='all'?'active':''}" onclick="notesFilterType='all';renderNotes()"><i class="ti ti-list"></i> Tous</button>
+      <button class="chip ${notesFilterType==='individuel'?'active':''}" onclick="notesFilterType='individuel';renderNotes()"><i class="ti ti-user"></i> Individuels</button>
+      <button class="chip ${notesFilterType==='collectif'?'active':''}" onclick="notesFilterType='collectif';renderNotes()"><i class="ti ti-users"></i> Collectifs</button>
+      <div class="filter-toggles">
+        <label class="past-label"><input type="checkbox" id="notes-filter-pending" ${notesFilterPending?'checked':''} onchange="notesFilterPending=this.checked;renderNotes()"> En attente</label>
+      </div>`;
+  }
+
+  if (!graded.length) {
+    if (fc) fc.style.display = 'none';
+    el.innerHTML = `<div class="state-box"><i class="ti ti-star big-icon"></i><p>Coche "Noté" sur un devoir pour le faire apparaître ici.</p></div>`;
+    return;
+  }
+
+  // Filtre cours (sticky ligne 2)
+  const courseSet = [...new Set(graded.map(d => d._courseName || d._courseCode || 'Sans matière'))].sort((a,b)=>a.localeCompare(b,'fr'));
+  window._notesCourseIndex = courseSet;
+  if (fc) {
+    const courseChips = courseSet.map((c, i) =>
+      `<button class="chip ${notesFilterCourse===c?'active':''}" onclick="notesFilterCourse=window._notesCourseIndex[${i}];renderNotes()">${c}</button>`
+    ).join('');
+    fc.style.display = 'flex';
+    fc.innerHTML = `
+      <button class="chip ${notesFilterCourse==='all'?'active':''}" onclick="notesFilterCourse='all';renderNotes()"><i class="ti ti-list"></i> Toutes</button>
+      ${courseChips}`;
+  }
+
+  const filtered = graded.filter(d => {
+    const cn = d._courseName || d._courseCode || 'Sans matière';
+    if (notesFilterCourse !== 'all' && cn !== notesFilterCourse) return false;
+    if (notesFilterType   !== 'all' && d._type !== notesFilterType) return false;
+    if (notesFilterPending) { const g=getGrade(d.UID); if (g&&g.pts!==''&&g.total!=='') return false; }
+    return true;
+  });
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="state-box"><i class="ti ti-filter big-icon"></i><p>Aucun devoir pour ce filtre.</p></div>`;
+    return;
+  }
+
+  const byCourse = {};
+  filtered.forEach(d => {
+    const key = d._courseName || d._courseCode || 'Sans matière';
+    if (!byCourse[key]) byCourse[key] = { code: d._courseCode||'', name: key, individuels: [], collectifs: [] };
+    (d._type === 'individuel' ? byCourse[key].individuels : byCourse[key].collectifs).push(d);
+  });
+
+  function calcAvg(devoirs) {
+    const scored = devoirs.filter(d => { const g=getGrade(d.UID); return g&&g.pts!==''&&g.total!==''&&parseFloat(g.total)>0; });
+    if (!scored.length) return null;
+    return (scored.reduce((acc,d) => { const g=getGrade(d.UID); return acc+parseFloat(g.pts)/parseFloat(g.total)*20; }, 0) / scored.length).toFixed(1);
+  }
+
+  function renderCard(d) {
+    const g = getGrade(d.UID);
+    const hasScore = g && g.pts !== '' && g.total !== '' && parseFloat(g.total) > 0;
+    const typePill = d._type === 'individuel'
+      ? `<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
+      : `<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
+    let badgeStyle, badgeHtml;
+    if (hasScore) {
+      const pct  = parseFloat(g.pts) / parseFloat(g.total);
+      const bg   = pct>=0.7?'var(--bg-green)':pct>=0.5?'var(--bg-blue)':pct>=0.3?'var(--bg-orange)':'var(--bg-red,#ffeaea)';
+      const fg   = pct>=0.7?'var(--c-green)':pct>=0.5?'var(--c-blue)':pct>=0.3?'var(--c-orange)':'var(--c-red,#c0392b)';
+      badgeStyle = `background:${bg};color:${fg};border:1px solid ${fg}22`;
+      badgeHtml  = `<div class="nb-score">${g.pts}</div><div class="nb-total">/ ${g.total}</div>`;
+    } else {
+      badgeStyle = 'background:var(--bg2);color:var(--text3);border:1px solid var(--border)';
+      badgeHtml  = `<div class="nb-score" style="font-size:13px">—</div><div class="nb-total">en attente</div>`;
+    }
+    return `
+    <div class="card-item" style="margin-bottom:8px">
+      <div class="note-badge" id="note-badge-${d.UID}" style="${badgeStyle};cursor:pointer" onclick="event.stopPropagation();toggleGradeForm('${d.UID.replace(/'/g,"\\'")}')">${badgeHtml}</div>
+      <div class="card-body">
+        <div class="tags" style="margin-bottom:5px">${typePill}</div>
+        <div class="card-title">${d._title}</div>
+        ${gradeFormHtml(d.UID)}
+      </div>
+    </div>`;
+  }
+
+  function renderTypeSection(devoirs, label, icon, color) {
+    if (!devoirs.length) return '';
+    const avg = calcAvg(devoirs);
+    const avgPill = avg !== null ? `<span class="notes-avg-pill">Moy. ${avg}/20</span>` : '';
+    return `
+      <div class="notes-section-header">
+        <span class="notes-section-label" style="color:${color}"><i class="ti ti-${icon}"></i> ${label}</span>
+        ${avgPill}
+      </div>
+      ${devoirs.map(renderCard).join('')}`;
+  }
+
+  el.innerHTML = Object.values(byCourse).sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(c => {
+    const allCourse = [...c.individuels, ...c.collectifs];
+    const avg = calcAvg(allCourse);
+    const avgHtml = avg !== null ? `<span class="notes-course-avg">${avg}/20</span>` : '';
+    const codeSpan = c.code ? `<span class="course-code">${c.code}</span>` : '';
+    return `
+    <div class="notes-course-header">
+      <div class="notes-course-header-left">${codeSpan}${c.name}</div>
+      ${avgHtml}
+    </div>
+    ${renderTypeSection(c.individuels,'Individuels','user','var(--c-indigo)')}
+    ${renderTypeSection(c.collectifs,'Collectifs','users','var(--c-green)')}`;
+  }).join('');
+}
+
+
+function updateNotesTab() {
+  const graded  = allDevoirs.filter(d => !!getGrade(d.UID));
+  const scored  = graded.filter(d => { const g=getGrade(d.UID); return g&&g.pts!==''&&g.total!==''; });
+  const tabNotes   = document.getElementById('tab-notes');
+  const badgeNotes = document.getElementById('badge-notes');
+  if (tabNotes)   tabNotes.style.display  = graded.length > 0 ? '' : 'none';
+  if (badgeNotes) badgeNotes.textContent  = `${scored.length}/${graded.length}`;
+}
 const AppMeta = {
   calName:     '',   // X-WR-CALNAME du fichier ICS
   institution: '',   // sous-domaine de l'URL Brightspace (ex. "EMLYON")
@@ -3330,6 +3636,7 @@ function processICS(txt) {
   renderDevoirs();
   renderSessions();
   renderProgression();
+  renderNotes();
   renderAgenda(); // vue semaine + charge + planning (onglet Agenda)
   PWA.markFreshData();  // horodater pour la bannière offline
   toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} sessions`);
@@ -3364,7 +3671,7 @@ function processICS(txt) {
 ══════════════════════════════════════════════════════════════ */
 function switchTab(tab) {
   currentTab=tab;
-  ['agenda','devoirs','sessions','prog','groupe'].forEach(t=>{
+  ['agenda','devoirs','sessions','prog','groupe','notes'].forEach(t=>{
     document.getElementById(`pane-${t}`).style.display=t===tab?'':'none';
     const btn=document.getElementById(`tab-${t}`);
     if(btn)btn.classList.toggle('active',t===tab);
@@ -3417,6 +3724,9 @@ function switchTab(tab) {
     const mainFilter = activePane?.querySelector('.filters-sticky');
     const mainH = mainFilter ? mainFilter.getBoundingClientRect().height : 0;
     document.documentElement.style.setProperty('--disc-filter-top', (filterTop + mainH) + 'px');
+    const discFilter = activePane?.querySelector('.disc-filters');
+    const discH = (discFilter && discFilter.style.display !== 'none') ? discFilter.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty('--notes-course-top', (filterTop + mainH + discH) + 'px');
   }
 
   function onScroll(){
@@ -3455,7 +3765,7 @@ function switchTab(tab) {
   }
 
   function visibleTabs(){
-    return ['agenda','devoirs','sessions','groupe','prog']
+    return ['agenda','devoirs','sessions','groupe','notes','prog']
       .filter(t=>{const b=document.getElementById(`tab-${t}`);return b&&b.style.display!=='none';});
   }
 
@@ -3528,6 +3838,7 @@ function updateBadges() {
   document.getElementById('badge-sessions').textContent=`${weekSessions}/${totalSessions}`;
   document.getElementById('past-count-devoirs').textContent=allDevoirs.filter(d=>getDays(d._date)<0).length;
   document.getElementById('past-count-sessions').textContent=activeSessions().filter(s=>getDays(s._date)<0).length;
+  updateNotesTab();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -4064,7 +4375,7 @@ function renderGroupBySubject(){
       <td style="font-size:11px;color:var(--text2)">${next?fmtShort(next._date)+' · J−'+getDays(next._date):'—'}</td></tr>`;
   }).join('');
   if(untagged.length)rows+=`<tr style="opacity:.55"><td colspan="2" style="font-style:italic;color:var(--text3)">Non attribués</td><td style="text-align:center"><span style="font-size:10px;color:var(--text3)">${untagged.length}</span></td><td>—</td><td>—</td></tr>`;
-  el.innerHTML=`<table class="group-subject-table"><thead><tr><th>Code</th><th>Matière</th><th style="text-align:center">Ateliers</th><th style="text-align:center">Sous-gr.</th><th>Prochain</th></tr></thead><tbody>${rows}</tbody></table>`;
+  el.innerHTML=`<div class="group-subject-table-wrap"><table class="group-subject-table"><thead><tr><th>Code</th><th>Matière</th><th style="text-align:center">Ateliers</th><th style="text-align:center">Sous-gr.</th><th>Prochain</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderNextSessionChip() {
@@ -4184,9 +4495,11 @@ function renderStats() {
 function renderDevoirs() {
   const showPast=document.getElementById('show-past-devoirs').checked;
   const showRendus=document.getElementById('show-rendus-devoirs')?.checked ?? true;
+  const showNotes=document.getElementById('show-notes-devoirs')?.checked ?? false;
   const base=allDevoirs.filter(d=>filterDevoirs==='all'||d._type===filterDevoirs)
     .filter(d=>showPast||getDays(d._date)>=0)
-    .filter(d=>showRendus||!effectivelyRendu(d));
+    .filter(d=>showRendus||!effectivelyRendu(d)||getDays(d._date)<0)
+    .filter(d=>!showNotes||!!getGrade(d.UID));
   renderDisciplineChips('devoirs',base);
   const filtered=base.filter(d=>filterDiscDevoirs==='all'||(d._courseName||'').trim()===filterDiscDevoirs);
   const el=document.getElementById('devoirs-list');
@@ -4263,11 +4576,28 @@ function renderDevoirs() {
         <div class="cd-date">${fmtShort(ev._date)}</div>
       </div>
       <div class="card-body">
-        <div class="tags">${typePill}${rendu?`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-check"></i> Rendu</span>`:''}</div>
+        <div class="tags">${typePill}${rendu?`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-check"></i> Rendu</span>`:''}${Auth.readOnly ? '' : (()=>{
+          const g = getGrade(ev.UID);
+          if (!g) return '';
+          const hasScore = g.pts !== '' && g.total !== '' && parseFloat(g.total) > 0;
+          const chipLabel = hasScore ? `${g.pts}&thinsp;/&thinsp;${g.total}` : '&thinsp;—&thinsp;/&thinsp;—&thinsp;';
+          const chipStyle = hasScore
+            ? (()=>{ const pct=parseFloat(g.pts)/parseFloat(g.total); return pct>=0.7?'background:var(--bg-green);color:var(--c-green)':pct>=0.5?'background:var(--bg-blue);color:var(--c-blue)':pct>=0.3?'background:var(--bg-orange);color:var(--c-orange)':'background:var(--bg-red,#ffeaea);color:var(--c-red,#c0392b)'; })()
+            : 'background:var(--bg2);color:var(--text3);border:1px solid var(--border)';
+          return `<span class="pill" style="cursor:pointer;${chipStyle}" onclick="event.stopPropagation();toggleGradeForm('${ev.UID.replace(/'/g,"\\'")}')">${chipLabel}</span>`;
+        })()}</div>
         ${courseBlock}
         <div class="card-title" title="${ev._title.replace(/"/g,'&quot;')}">${ev._title}</div>
         <div class="card-meta"><i class="ti ti-calendar-event" style="font-size:11px"></i><span>${fmtLong(ev._date)}</span></div>
-        ${checkboxBlock}
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          ${checkboxBlock}
+          ${Auth.readOnly ? '' : (()=>{
+            const g = getGrade(ev.UID);
+            const isGraded = !!g;
+            return `<label class="grade-check" onclick="event.stopPropagation();toggleGraded('${ev.UID}')"><input type="checkbox" ${isGraded?'checked':''} onclick="event.stopPropagation();toggleGraded('${ev.UID}')"> Noté</label>`;
+          })()}
+        </div>
+        ${Auth.readOnly ? '' : (getGrade(ev.UID) ? gradeFormHtml(ev.UID) : '')}
         ${atelierBlock}
       </div>
       ${Auth.readOnly ? '' : `
@@ -4698,6 +5028,19 @@ function renderProgression() {
       ${atelierCount?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> ${atelierCount} atelier${atelierCount>1?'s':''}</span>`:''}
       ${sgCount?`<span class="prog-type-pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> ${sgCount} sous-gr.</span>`:''}
     </div>` : '';
+    // Moyennes notes pour cette matière
+    const mkAvg = (type) => {
+      const devs = allDevoirs.filter(ev2=>ev2._type===type&&(ev2._courseName||ev2._courseCode||'')===d.name&&!!getGrade(ev2.UID));
+      const scored = devs.filter(ev2=>{const g=getGrade(ev2.UID);return g&&g.pts!==''&&g.total!==''&&parseFloat(g.total)>0;});
+      if(!scored.length)return null;
+      return (scored.reduce((acc,ev2)=>{const g=getGrade(ev2.UID);return acc+parseFloat(g.pts)/parseFloat(g.total)*20;},0)/scored.length).toFixed(2);
+    };
+    const avgIndiv = mkAvg('individuel');
+    const avgColl  = mkAvg('collectif');
+    const avgRow = (avgIndiv||avgColl) ? `<div class="prog-type-row" style="margin-top:4px">
+      ${avgIndiv?`<span class="prog-type-pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-star"></i> Indiv. ${avgIndiv}/20</span>`:''}
+      ${avgColl?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-star"></i> Coll. ${avgColl}/20</span>`:''}
+    </div>` : '';
     return`
     <div class="prog-card">
       <div class="pc-header">
@@ -4714,6 +5057,7 @@ function renderProgression() {
       </div>
       ${typeSplit}
       ${groupRow}
+      ${avgRow}
       ${nextDeadline}
     </div>`;
   }).join('');

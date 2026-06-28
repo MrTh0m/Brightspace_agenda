@@ -28,14 +28,14 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 ## 🔐 Modes de fonctionnement
 
 ### Mode invité (aucune configuration requise)
-- URL ICS et état "rendu" stockés dans le `localStorage` du navigateur
+- URL ICS et état stockés dans le `localStorage` du navigateur
 - Utilise `proxy.php` pour récupérer le calendrier Brightspace (proxies publics en cascade)
 - Tous les onglets disponibles, y compris **Ateliers** (URL ICS privée optionnelle, stockée localement)
 
 ### Mode connecté (1 compte, persistance serveur)
 - Login par mot de passe (bcrypt PHP)
 - URL ICS Brightspace + URL ICS privée stockées dans `data/config.json` — jamais exposées au navigateur
-- État "rendu", attributions d'ateliers et exclusions stockés dans `data/state.json`, synchronisés sur tous les appareils
+- État (rendus, attributions, notes) stocké dans `data/state.json`, synchronisé sur tous les appareils
 - **Nom personnalisé** du dashboard configurable dans les paramètres
 - Notifications en arrière-plan via Periodic Background Sync (app fermée, Chrome/Edge installés)
 
@@ -101,7 +101,8 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - Détection automatique : `Assessment`, `Co-construction`, `à échéance`
 - Nettoyage des titres (séparateurs résiduels, suffixe `à échéance`)
 - Compte à rebours coloré : rouge ≤ 3j · orange ≤ 7j · vert ≥ 15j
-- Filtres **Passés** et **Rendus** alignés à droite, persistants entre sessions
+- Filtres **Passés**, **Rendus** et **Notés** alignés à droite, persistants entre sessions
+- **Case "Noté"** sur chaque devoir → chip `—/—` ou `12/20` cliquable → formulaire inline de saisie de note (pts / total) avec prévisualisation en temps réel ramenée sur 20
 - Boutons Copier tâche / Google Cal. / Outlook masqués quand le devoir est rendu
 - **Atelier lié** affiché sur tous les devoirs (individuels et collectifs), uniquement si lié explicitement via l'onglet Ateliers
 - Filtres par type (Individuel/Collectif) et discipline, avec chips de discipline sticky
@@ -112,22 +113,30 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - Boutons Rejoindre / Google Cal. / Outlook masqués pour les sessions passées
 - Filtres : Toutes / Live Sessions / Sous-groupes · Passées
 
-### Onglet Ateliers *(anciennement "Groupes", tous modes)*
+### Onglet Ateliers *(tous modes)*
 - **Source** : calendrier ICS privé (Outlook 365, Google Calendar...)
   - Mode connecté : URL stockée côté serveur, jamais exposée
   - Mode invité : URL + attributions en `localStorage`
   - Mode partage : attributions visibles en lecture seule
 - Liste avec filtres **Tous / Non lié** et **Passés / Masqués** (persistants), pagination
 - **Attribution** : lier un événement à une matière + devoir précis, ou désigner formellement "Sous-groupe live session"
-- **Règle override** : auto-détecté sous-groupe MAIS lié à un vrai devoir → traité comme atelier
-- **Masquer** : exclut un événement non pertinent de tous les calculs et affichages (vue semaine, badges, notifications)
+- **Masquer** : exclut un événement non pertinent de tous les calculs et affichages
 - Lien de réunion extrait automatiquement (Teams, virtual-room) → bouton **Rejoindre** + Google Cal. / Outlook
-- Carte responsive mobile (même mise en page que Devoirs et Live Sessions)
+
+### Onglet Notes *(visible dès qu'un devoir est coché "Noté")*
+- Synthèse en lecture seule — la saisie des notes se fait depuis l'onglet **Devoirs**
+- Regroupement par **matière** (header sticky avec moyenne globale de la matière)
+- Sections **Individuels** / **Collectifs** avec moyenne par type
+- Badge `N/X` : devoirs avec note saisie / total cochés "Noté"
+- Formulaire inline cliquable depuis le badge coloré de chaque card
+- Filtres : type (Tous / Individuels / Collectifs) · matière · **En attente** (devoirs sans note saisie)
+- Codes couleur : vert ≥ 70 % · bleu ≥ 50 % · orange ≥ 30 % · rouge < 30 %
 
 ### Onglet Progression
 - Cartes par matière : barre de progression, répartition individuel/collectif
+- **Moyennes de notes** par matière (individuels et collectifs) si des notes sont saisies
 - Ateliers et sous-groupes comptés par matière (si attribués)
-- **Ateliers par matière** : tableau récapitulatif (ateliers, sous-groupes, prochaine échéance) par matière attribuée — masqué si aucun calendrier privé n'est configuré
+- **Ateliers par matière** : tableau récapitulatif (ateliers, sous-groupes, prochaine échéance)
 
 ### 🔔 Notifications *(tous modes, réglages par appareil)*
 Section dans ⚙ Paramètres.
@@ -140,9 +149,9 @@ Section dans ⚙ Paramètres.
 | Événement imminent | 15 min avant, avec bouton Rejoindre si lien de réunion |
 
 - Réglages en `localStorage` (indépendants entre appareils)
-- Anti-doublon avec purge automatique après 3 jours, partagé entre l'app et la sync en arrière-plan
-- **Periodic Background Sync** (Chrome/Edge, PWA installée) : notifications même app fermée, en mode connecté ou partage
-- PWA Android : notifications via Service Worker avec actions (Rejoindre, Voir), tap → ouvre l'app ou le lien de réunion
+- Anti-doublon avec purge automatique après 3 jours
+- **Periodic Background Sync** (Chrome/Edge, PWA installée) : notifications même app fermée
+- PWA Android : notifications via Service Worker avec actions (Rejoindre, Voir)
 - ⚠️ Mode invité : fonctionne uniquement tant qu'un onglet de l'app est ouvert
 
 ---
@@ -183,6 +192,9 @@ Section dans ⚙ Paramètres.
     "uid-atelier": { "subject": "PGMC05", "subjectName": "...", "devoirUid": "uid" },
     "uid-sous-groupe-manuel": { "subject": "PGMC09", "subjectName": "...", "devoirUid": "__subgroup__" },
     "uid-ignoré": { "ignored": true }
+  },
+  "grades": {
+    "uid-devoir": { "pts": "12", "total": "20" }
   }
 }
 ```
@@ -191,14 +203,18 @@ Section dans ⚙ Paramètres.
 
 | Clé | Contenu |
 |---|---|
-| `emmgo_ics_url_v2` | URL ICS Brightspace (invité) |
-| `emmgo_rendu_v1` | Rendus (invité) |
-| `emmgo_private_ics_url_v1` | URL ICS privée (invité) |
-| `emmgo_group_tags_v1` | Attributions + exclusions (invité) |
-| `emmgo_theme` | Thème |
-| `emmgo_notif_settings_v1` | Préférences notifications |
-| `emmgo_notif_sent_v1` | Anti-doublon notifications |
-| `emmgo_filter_prefs_v1` | État des checkboxes (Passés/Rendus/Masqués) |
+| `bsa_ics_url_v2` | URL ICS Brightspace (invité) |
+| `bsa_rendu_v1` | Rendus (invité) |
+| `bsa_private_ics_url_v1` | URL ICS privée (invité) |
+| `bsa_group_tags_v1` | Attributions + exclusions (invité) |
+| `bsa_grades_v1` | Notes des devoirs (invité) |
+| `bsa_theme` | Thème |
+| `bsa_notif_settings_v1` | Préférences notifications |
+| `bsa_notif_sent_v1` | Anti-doublon notifications |
+| `bsa_filter_prefs_v1` | État des checkboxes (Passés/Rendus/Notés/Masqués) |
+| `bsa_guest_share_token_v1` | Token de partage (mode invité) |
+| `bsa_guest_share_server_v1` | URL serveur (mode invité connecté à distance) |
+| `bsa_remote_cfg_v1` | Configuration distante |
 
 ### IndexedDB `brightspace-pbs` (partagée app ↔ Service Worker)
 
