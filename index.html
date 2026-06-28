@@ -1006,6 +1006,54 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       </div>
     </div>
 
+    <!-- ── Sauvegarde & restauration ────────────────────────────── -->
+    <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
+      <h3><i class="ti ti-database-export"></i> Sauvegarde & restauration</h3>
+      <p style="font-size:11px;color:var(--text3);margin:-4px 0 12px;line-height:1.5">
+        Exporte tes données pour les sauvegarder ou les restaurer après une réinstallation.
+      </p>
+
+      <!-- Choix des données à inclure -->
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Inclure dans la sauvegarde :</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+        <label class="past-label" style="font-size:12px">
+          <input type="checkbox" id="backup-include-ics" checked> URL ICS (calendrier Brightspace)
+        </label>
+        <label class="past-label" style="font-size:12px">
+          <input type="checkbox" id="backup-include-rendus" checked> Rendus
+        </label>
+        <label class="past-label" style="font-size:12px">
+          <input type="checkbox" id="backup-include-grades" checked> Notes
+        </label>
+        <label class="past-label" style="font-size:12px">
+          <input type="checkbox" id="backup-include-ateliers" checked> Attributions ateliers
+        </label>
+        <label class="past-label" style="font-size:12px">
+          <input type="checkbox" id="backup-include-prefs" checked> Préférences & thème
+        </label>
+      </div>
+
+      <!-- Boutons export -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="backup-export-btns">
+        <button class="btn primary" style="flex:1;min-width:140px" onclick="exportBackup('download')">
+          <i class="ti ti-download"></i> Télécharger
+        </button>
+        <button class="btn" style="flex:1;min-width:140px;display:none" id="backup-share-btn" onclick="exportBackup('share')">
+          <i class="ti ti-share"></i> Exporter
+        </button>
+      </div>
+
+      <!-- Import -->
+      <div style="border-top:1px solid var(--border);padding-top:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Restaurer une sauvegarde</div>
+        <label class="btn" style="cursor:pointer;width:100%;justify-content:center;box-sizing:border-box">
+          <i class="ti ti-file-import"></i> Choisir un fichier…
+          <input type="file" id="backup-file-input" accept=".json" style="display:none" onchange="importBackup(this)">
+        </label>
+        <p class="modal-error" id="backup-import-error" style="margin-top:8px;display:none"></p>
+      </div>
+    </div>
+
   </div>
 
   <!-- Écran d'accueil — premier lancement ou aucun calendrier configuré -->
@@ -3133,6 +3181,148 @@ function updateNotesTab() {
   if (tabNotes)   tabNotes.style.display  = graded.length > 0 ? '' : 'none';
   if (badgeNotes) badgeNotes.textContent  = `${scored.length}/${graded.length}`;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Sauvegarde & restauration
+══════════════════════════════════════════════════════════════ */
+function _backupIncludes(id) {
+  return document.getElementById(id)?.checked ?? true;
+}
+
+async function exportBackup(method) {
+  const backup = { _version: 1, _date: new Date().toISOString(), _mode: Auth.mode };
+
+  // ICS URLs
+  if (_backupIncludes('backup-include-ics')) {
+    backup.ics_url         = localStorage.getItem(STORAGE_KEY)     || '';
+    backup.private_ics_url = localStorage.getItem(PRIVATE_ICS_KEY) || '';
+    if (Auth.mode === 'connected') {
+      backup.ics_url         = '';  // stockée côté serveur, non exportable
+      backup.private_ics_url = '';
+    }
+  }
+
+  // Rendus
+  if (_backupIncludes('backup-include-rendus')) {
+    if (Auth.mode === 'connected') {
+      backup.rendus = Auth._cache || {};
+    } else {
+      try { backup.rendus = JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { backup.rendus = {}; }
+    }
+  }
+
+  // Notes
+  if (_backupIncludes('backup-include-grades')) {
+    if (Auth.mode === 'connected') {
+      backup.grades = Auth._gradesCache || {};
+    } else {
+      try { backup.grades = JSON.parse(localStorage.getItem(GRADES_KEY) || '{}'); } catch(_) { backup.grades = {}; }
+    }
+  }
+
+  // Attributions ateliers
+  if (_backupIncludes('backup-include-ateliers')) {
+    if (Auth.mode === 'connected') {
+      backup.group_tags = groupTagsCache || {};
+    } else {
+      try { backup.group_tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}'); } catch(_) { backup.group_tags = {}; }
+    }
+  }
+
+  // Préférences
+  if (_backupIncludes('backup-include-prefs')) {
+    backup.theme        = localStorage.getItem(THEME_KEY)        || '';
+    backup.filter_prefs = localStorage.getItem(FILTER_PREFS_KEY) || '';
+    backup.notif_prefs  = localStorage.getItem(NOTIF_KEY)        || '';
+  }
+
+  const json     = JSON.stringify(backup, null, 2);
+  const filename = `brightspace-agenda-backup-${new Date().toISOString().slice(0,10)}.json`;
+
+  if (method === 'share' && IS_PACKAGED_APP && window.Capacitor?.Plugins?.Share) {
+    // APK : Share sheet Android
+    try {
+      const { Filesystem, Directory } = window.Capacitor.Plugins;
+      await Filesystem.writeFile({ path: filename, data: btoa(unescape(encodeURIComponent(json))), directory: Directory.Cache });
+      const { uri } = await Filesystem.getUri({ path: filename, directory: Directory.Cache });
+      await window.Capacitor.Plugins.Share.share({ title: 'Sauvegarde Brightspace Agenda', url: uri, dialogTitle: 'Exporter la sauvegarde' });
+    } catch(e) { toast('❌ Erreur partage : ' + e.message); }
+    return;
+  }
+
+  // Web / APK download
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('✓ Sauvegarde téléchargée');
+}
+
+function importBackup(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const errEl = document.getElementById('backup-import-error');
+  errEl.style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let backup;
+    try { backup = JSON.parse(e.target.result); } catch(_) {
+      errEl.textContent = 'Fichier invalide — ce n\'est pas un JSON valide.';
+      errEl.style.display = '';
+      input.value = '';
+      return;
+    }
+    if (!backup._version) {
+      errEl.textContent = 'Fichier non reconnu — ce n\'est pas une sauvegarde Brightspace Agenda.';
+      errEl.style.display = '';
+      input.value = '';
+      return;
+    }
+
+    if (!confirm('⚠️ Ceci remplacera toutes tes données actuelles.\n\nContinuer ?')) {
+      input.value = '';
+      return;
+    }
+
+    // Restaurer
+    if (backup.ics_url         !== undefined) try { localStorage.setItem(STORAGE_KEY,     backup.ics_url); } catch(_) {}
+    if (backup.private_ics_url !== undefined) try { localStorage.setItem(PRIVATE_ICS_KEY, backup.private_ics_url); } catch(_) {}
+    if (backup.rendus          !== undefined) {
+      if (Auth.mode === 'connected') { Auth._cache = backup.rendus; Auth._saveServerState(); }
+      else try { localStorage.setItem(RENDU_KEY, JSON.stringify(backup.rendus)); } catch(_) {}
+    }
+    if (backup.grades          !== undefined) {
+      if (Auth.mode === 'connected') { Auth._gradesCache = backup.grades; Auth._saveServerState(); }
+      else try { localStorage.setItem(GRADES_KEY, JSON.stringify(backup.grades)); } catch(_) {}
+    }
+    if (backup.group_tags      !== undefined) {
+      if (Auth.mode === 'connected') { groupTagsCache = backup.group_tags; Auth._saveServerState(); }
+      else try { localStorage.setItem(GROUP_TAGS_KEY, JSON.stringify(backup.group_tags)); } catch(_) {}
+    }
+    if (backup.theme           !== undefined && backup.theme) try { localStorage.setItem(THEME_KEY, backup.theme); } catch(_) {}
+    if (backup.filter_prefs    !== undefined && backup.filter_prefs) try { localStorage.setItem(FILTER_PREFS_KEY, backup.filter_prefs); } catch(_) {}
+    if (backup.notif_prefs     !== undefined && backup.notif_prefs) try { localStorage.setItem(NOTIF_KEY, backup.notif_prefs); } catch(_) {}
+
+    input.value = '';
+    toast('✓ Données restaurées — rechargement…');
+    setTimeout(() => location.reload(), 1200);
+  };
+  reader.readAsText(file);
+}
+
+// Afficher le bouton "Exporter" (share sheet) uniquement sur APK
+function _initBackupUI() {
+  if (IS_PACKAGED_APP && window.Capacitor?.Plugins?.Share) {
+    const btn = document.getElementById('backup-share-btn');
+    if (btn) btn.style.display = '';
+  }
+}
+
+
 const AppMeta = {
   calName:     '',   // X-WR-CALNAME du fichier ICS
   institution: '',   // sous-domaine de l'URL Brightspace (ex. "EMLYON")
@@ -5127,6 +5317,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const continueStartup = await Auth.init();
   loadFilterPrefs(); // restaurer les préférences de filtres
   Notif.load();
+  _initBackupUI();
   // Fusionner l'historique anti-doublon IDB (PBS) → localStorage (app)
   pbsIdbGet('notif-sent').then(idbSent => {
     if (!idbSent) return;
