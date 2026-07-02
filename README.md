@@ -38,6 +38,17 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 - État (rendus, attributions, notes) stocké dans `data/state.json`, synchronisé sur tous les appareils
 - **Nom personnalisé** du dashboard configurable dans les paramètres
 - Notifications en arrière-plan via Periodic Background Sync (app fermée, Chrome/Edge installés)
+- **Exporter l'agenda** (paramètres → « Exporter l'agenda ») : 2 liens `?action=export_ics&token=…`
+  à ajouter comme calendrier par abonnement (Google/Outlook/Apple). Chaque flux est régénéré à la
+  volée à chaque requête depuis les calendriers sources, donc ajouts/suppressions/modifications
+  suivent automatiquement au fil des rafraîchissements périodiques du client abonné :
+  - **Lien abonnement privé** : toujours tout inclus (devoirs, live sessions, ateliers/groupe),
+    y compris les liens Teams/virtual-room — usage perso
+  - **Lien abonnement public** : mêmes événements filtrés par type (case à cocher indépendante par
+    type — Devoirs / Live sessions / Ateliers), sans aucun lien ni corps de description (infos de
+    connexion, codes, etc. entièrement retirés) — pensé pour être partagé à des proches
+  - Chaque lien a son propre token, régénérable/désactivable indépendamment
+  - Les événements masqués/ignorés (onglet Ateliers) sont exclus des deux flux
 
 ### Mode lecture seule — lien de partage
 - URL : `https://ton-domaine/index.html?share=TOKEN`

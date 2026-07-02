@@ -778,6 +778,184 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 
   <!-- Modale saisie note -->
 
+  <!-- Modale Sauvegarde & restauration -->
+  <div id="backup-modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-overlay" onclick="if(event.target===this)closeBackupModal()">
+      <div class="modal-box" style="max-width:380px;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeBackupModal()"><i class="ti ti-x"></i></button>
+        <h3><i class="ti ti-database-export" style="color:var(--c-blue)"></i> Sauvegarde & restauration</h3>
+        <div class="msub">Sélectionne les données concernées, puis choisis une action.</div>
+
+        <!-- Vue choix des données (commune export + import) -->
+        <div id="backup-select-view">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin:14px 0 8px">Données concernées :</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px" id="backup-fields-list">
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-ics_url" onchange="saveBackupFieldPrefs()"> URL ICS (calendrier Brightspace)</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-private_ics_url" onchange="saveBackupFieldPrefs()"> URL ICS privée (ateliers)</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-rendus" onchange="saveBackupFieldPrefs()"> Rendus</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-grades" onchange="saveBackupFieldPrefs()"> Notes</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-group_tags" onchange="saveBackupFieldPrefs()"> Attributions ateliers</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-theme" onchange="saveBackupFieldPrefs()"> Thème</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-filter_prefs" onchange="saveBackupFieldPrefs()"> Préférences de filtres</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-notif_prefs" onchange="saveBackupFieldPrefs()"> Préférences de notifications</label>
+          </div>
+
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Action :</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+            <button class="btn primary" style="flex:1;min-width:140px" onclick="exportBackup('download')">
+              <i class="ti ti-download"></i> Télécharger
+            </button>
+            <button class="btn" style="flex:1;min-width:140px;display:none" id="backup-share-btn" onclick="exportBackup('share')">
+              <i class="ti ti-share"></i> Exporter
+            </button>
+          </div>
+          <label class="btn" style="cursor:pointer;width:100%;justify-content:center;box-sizing:border-box">
+            <i class="ti ti-file-import"></i> Importer un fichier…
+            <input type="file" id="backup-file-input" accept=".json" style="display:none" onchange="importBackup(this)">
+          </label>
+          <p class="modal-error" id="backup-import-error" style="margin-top:8px;display:none"></p>
+        </div>
+
+        <!-- Vue confirmation import (apparaît après lecture du fichier) -->
+        <div id="backup-import-panel" style="display:none">
+          <div style="font-size:12px;color:var(--text3);margin:14px 0 10px" id="backup-import-meta"></div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Données disponibles dans le fichier :</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px" id="backup-import-options"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn primary" style="flex:1" onclick="confirmImportBackup()"><i class="ti ti-check"></i> Restaurer</button>
+            <button class="btn" style="flex:1" onclick="cancelImportBackup()"><i class="ti ti-x"></i> Annuler</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Notifications -->
+  <div id="notif-modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-overlay" onclick="if(event.target===this)closeNotifModal()">
+      <div class="modal-box" style="max-width:380px;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeNotifModal()"><i class="ti ti-x"></i></button>
+        <h3><i class="ti ti-bell" style="color:var(--c-blue)"></i> Notifications</h3>
+        <div class="msub">Réglages propres à cet appareil/navigateur (stockés localement).</div>
+
+        <div class="notif-section" id="notif-section" style="border-top:none;margin-top:14px;padding-top:0">
+          <div class="notif-row">
+            <div class="notif-row-label">
+              <strong>Activer les notifications</strong>
+              <small id="notif-permission-status">Autorisation requise</small>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="notif-master" onchange="Notif.toggleMaster(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div id="notif-options" style="display:none">
+            <div class="notif-row">
+              <div class="notif-row-label">
+                <strong>Devoir non rendu approchant</strong>
+                <small>J−3 et J−1 avant l'échéance</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notif-deadline" onchange="Notif.save()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="notif-row">
+              <div class="notif-row-label">
+                <strong>Devoir collectif sans atelier</strong>
+                <small>Aucun atelier lié, échéance ≤ 7 jours</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notif-no-atelier" onchange="Notif.save()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="notif-row">
+              <div class="notif-row-label">
+                <strong>Programme du jour</strong>
+                <small>Live sessions et ateliers prévus aujourd'hui</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notif-today" onchange="Notif.save()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="notif-row">
+              <div class="notif-row-label">
+                <strong>Événement imminent</strong>
+                <small>15 minutes avant une session ou un atelier</small>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="notif-imminent" onchange="Notif.save()">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <button class="btn" style="margin-top:8px;font-size:11px;height:28px" onclick="Notif.test()">
+              <i class="ti ti-bell-ringing"></i> Tester une notification
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale Exporter l'agenda -->
+  <div id="export-ics-modal" style="display:none" role="dialog" aria-modal="true">
+    <div class="modal-overlay" onclick="if(event.target===this)closeExportModal()">
+      <div class="modal-box" style="max-width:380px;max-height:85vh;overflow-y:auto" onclick="event.stopPropagation()">
+        <button class="modal-close" onclick="closeExportModal()"><i class="ti ti-x"></i></button>
+        <h3><i class="ti ti-calendar-share" style="color:var(--c-blue)"></i> Exporter l'agenda</h3>
+        <div class="msub">2 liens à ajouter comme calendrier par abonnement (Google/Outlook/Apple). Ils se mettent à jour automatiquement (ajouts, suppressions, modifications).</div>
+
+        <div style="margin:14px 0">
+          <p style="font-size:12px;font-weight:600;margin-bottom:6px">
+            Lien abonnement privé <span style="font-weight:400;color:var(--text3)">(tout, y compris liens Teams — usage perso)</span>
+          </p>
+          <div id="export-full-section" style="display:none">
+            <div class="share-box" id="export-full-url-box"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.copyExportUrl('full')"><i class="ti ti-copy"></i> Copier</button>
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenExportToken('full')"><i class="ti ti-refresh"></i> Nouveau lien</button>
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.disableExportToken('full')"><i class="ti ti-link-off"></i> Désactiver</button>
+            </div>
+          </div>
+          <div id="export-full-disabled-section" style="display:none">
+            <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenExportToken('full')"><i class="ti ti-share"></i> Activer</button>
+          </div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:14px">
+          <p style="font-size:12px;font-weight:600;margin-bottom:6px">
+            Lien abonnement public <span style="font-weight:400;color:var(--text3)">(sans aucun lien — pour tes proches)</span>
+          </p>
+          <p style="font-size:11px;color:var(--text3);margin:0 0 8px">Visible dans ce lien :</p>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+              <input type="checkbox" id="export-public-devoirs" onchange="Auth.saveExportPrefs()"> Devoirs
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+              <input type="checkbox" id="export-public-sessions" onchange="Auth.saveExportPrefs()"> Live sessions
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+              <input type="checkbox" id="export-public-ateliers" onchange="Auth.saveExportPrefs()"> Ateliers / groupe
+            </label>
+          </div>
+          <div id="export-safe-section" style="display:none">
+            <div class="share-box" id="export-safe-url-box"></div>
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.copyExportUrl('safe')"><i class="ti ti-copy"></i> Copier</button>
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenExportToken('safe')"><i class="ti ti-refresh"></i> Nouveau lien</button>
+              <button class="btn" style="font-size:11px;height:28px" onclick="Auth.disableExportToken('safe')"><i class="ti ti-link-off"></i> Désactiver</button>
+            </div>
+          </div>
+          <div id="export-safe-disabled-section" style="display:none">
+            <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenExportToken('safe')"><i class="ti ti-share"></i> Activer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="login-modal" style="display:none" role="dialog" aria-modal="true">
     <div class="modal-overlay">
       <div class="modal-box">
@@ -941,117 +1119,42 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <p style="font-size:12px;color:var(--text2);margin-bottom:6px">Partage désactivé.</p>
         <button class="btn" style="font-size:11px;height:28px" onclick="Auth.regenToken()"><i class="ti ti-share"></i> Activer le partage</button>
       </div>
-    </div>
 
-    <!-- ── Notifications — toujours visible ─────────────────────── -->
-    <div class="notif-section" id="notif-section">
-      <h3><i class="ti ti-bell"></i> Notifications</h3>
-      <p style="font-size:11px;color:var(--text3);margin:-4px 0 10px">
-        Réglages propres à cet appareil/navigateur (stockés localement).
-      </p>
-      <div class="notif-row">
-        <div class="notif-row-label">
-          <strong>Activer les notifications</strong>
-          <small id="notif-permission-status">Autorisation requise</small>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="notif-master" onchange="Notif.toggleMaster(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <div id="notif-options" style="display:none">
-        <div class="notif-row">
-          <div class="notif-row-label">
-            <strong>Devoir non rendu approchant</strong>
-            <small>J−3 et J−1 avant l'échéance</small>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="notif-deadline" onchange="Notif.save()">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="notif-row">
-          <div class="notif-row-label">
-            <strong>Devoir collectif sans atelier</strong>
-            <small>Aucun atelier lié, échéance ≤ 7 jours</small>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="notif-no-atelier" onchange="Notif.save()">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="notif-row">
-          <div class="notif-row-label">
-            <strong>Programme du jour</strong>
-            <small>Live sessions et ateliers prévus aujourd'hui</small>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="notif-today" onchange="Notif.save()">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="notif-row">
-          <div class="notif-row-label">
-            <strong>Événement imminent</strong>
-            <small>15 minutes avant une session ou un atelier</small>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="notif-imminent" onchange="Notif.save()">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <button class="btn" style="margin-top:8px;font-size:11px;height:28px" onclick="Notif.test()">
-          <i class="ti ti-bell-ringing"></i> Tester une notification
+      <!-- ── Exporter l'agenda — bouton d'ouverture (modal) ──────────── -->
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+        <h4 style="margin-bottom:4px"><i class="ti ti-calendar-share"></i> Exporter l'agenda</h4>
+        <p style="font-size:11px;color:var(--text3);margin:0 0 10px;line-height:1.5">
+          2 liens à ajouter comme calendrier par abonnement, mis à jour automatiquement.
+        </p>
+        <button class="btn" style="width:100%;justify-content:center" onclick="openExportModal()">
+          <i class="ti ti-calendar-share"></i> Exporter l'agenda
         </button>
       </div>
+    </div>
+
+    <!-- ── Notifications — bouton d'ouverture (modal) ─────────────── -->
+    <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
+      <h3 style="font-size:13px;font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px">
+        <i class="ti ti-bell"></i> Notifications
+      </h3>
+      <p style="font-size:11px;color:var(--text3);margin:-2px 0 12px;line-height:1.5">
+        Réglages propres à cet appareil/navigateur (stockés localement).
+      </p>
+      <button class="btn" style="width:100%;justify-content:space-between" onclick="openNotifModal()">
+        <span><i class="ti ti-bell"></i> Gérer les notifications</span>
+        <span id="notif-status-badge" style="font-size:10px;color:var(--text3)"></span>
+      </button>
     </div>
 
     <!-- ── Sauvegarde & restauration ────────────────────────────── -->
     <div style="border-top:1px solid var(--border);margin-top:18px;padding-top:16px">
       <h3><i class="ti ti-database-export"></i> Sauvegarde & restauration</h3>
       <p style="font-size:11px;color:var(--text3);margin:-4px 0 12px;line-height:1.5">
-        Exporte tes données pour les sauvegarder ou les restaurer après une réinstallation.
+        Exporte tes données pour les sauvegarder, ou restaure une sauvegarde existante.
       </p>
-
-      <!-- Choix des données à inclure -->
-      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Inclure dans la sauvegarde :</div>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-        <label class="past-label" style="font-size:12px">
-          <input type="checkbox" id="backup-include-ics" checked> URL ICS (calendrier Brightspace)
-        </label>
-        <label class="past-label" style="font-size:12px">
-          <input type="checkbox" id="backup-include-rendus" checked> Rendus
-        </label>
-        <label class="past-label" style="font-size:12px">
-          <input type="checkbox" id="backup-include-grades" checked> Notes
-        </label>
-        <label class="past-label" style="font-size:12px">
-          <input type="checkbox" id="backup-include-ateliers" checked> Attributions ateliers
-        </label>
-        <label class="past-label" style="font-size:12px">
-          <input type="checkbox" id="backup-include-prefs" checked> Préférences & thème
-        </label>
-      </div>
-
-      <!-- Boutons export -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="backup-export-btns">
-        <button class="btn primary" style="flex:1;min-width:140px" onclick="exportBackup('download')">
-          <i class="ti ti-download"></i> Télécharger
-        </button>
-        <button class="btn" style="flex:1;min-width:140px;display:none" id="backup-share-btn" onclick="exportBackup('share')">
-          <i class="ti ti-share"></i> Exporter
-        </button>
-      </div>
-
-      <!-- Import -->
-      <div style="border-top:1px solid var(--border);padding-top:14px">
-        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Restaurer une sauvegarde</div>
-        <label class="btn" style="cursor:pointer;width:100%;justify-content:center;box-sizing:border-box">
-          <i class="ti ti-file-import"></i> Choisir un fichier…
-          <input type="file" id="backup-file-input" accept=".json" style="display:none" onchange="importBackup(this)">
-        </label>
-        <p class="modal-error" id="backup-import-error" style="margin-top:8px;display:none"></p>
-      </div>
+      <button class="btn primary" style="width:100%;justify-content:center" onclick="openBackupModal()">
+        <i class="ti ti-database-export"></i> Sauvegarde & restauration
+      </button>
     </div>
 
   </div>
@@ -1555,24 +1658,31 @@ const NotifBackend = {
   // Affiche une notification immédiatement (ou dans les ~secondes)
   async show(tag, title, body, opts = {}) {
     if (IS_PACKAGED_APP) {
-      if (!this._ln) return;
+      if (!this._ln) { console.warn('[NotifBackend] LocalNotifications plugin non disponible'); return; }
       try {
         await this._ln.schedule({ notifications: [{
           id: this._idFromTag(tag), title, body,
-          smallIcon: 'ic_stat_notify', // icône monochrome — voir notes de déploiement
+          smallIcon: 'ic_stat_notify',
           extra: { url: opts.data?.url || './' },
         }] });
-      } catch(_) {}
-      return;
+        return;
+      } catch(e) { console.error('[NotifBackend] schedule() échoué :', e); return; }
     }
+    // Web : Service Worker en priorité, new Notification en repli
     try {
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.getRegistration();
-        if (reg) { await reg.showNotification(title, { body, tag, ...opts }); return; }
+        if (reg) {
+          await reg.showNotification(title, { body, tag, ...opts });
+          return;
+        }
       }
-    } catch(_) {}
-    const { actions:_a, ...safeOpts } = opts;
-    try { new Notification(title, { body, tag, ...safeOpts }); } catch(_) {}
+    } catch(e) { console.warn('[NotifBackend] showNotification SW échoué :', e); }
+    // Repli direct (sans actions, non supportées par new Notification)
+    try {
+      const { actions:_a, ...safeOpts } = opts;
+      new Notification(title, { body, tag, ...safeOpts });
+    } catch(e) { console.error('[NotifBackend] new Notification échoué :', e); toast('⚠ Notification échouée — vérifie les permissions navigateur'); }
   },
 
   // Programme une notification à une date précise (utilisé pour l'arrière-plan APK)
@@ -1683,6 +1793,9 @@ const Notif = {
           t=document.getElementById('notif-today'),i=document.getElementById('notif-imminent');
     if(d)d.checked=this.settings.deadline; if(n)n.checked=this.settings.noAtelier;
     if(t)t.checked=this.settings.today;    if(i)i.checked=this.settings.imminent;
+
+    const badge = document.getElementById('notif-status-badge');
+    if (badge) badge.textContent = master.checked ? 'Activées' : 'Désactivées';
   },
 
   async toggleMaster(checked) {
@@ -1849,10 +1962,11 @@ const Notif = {
         const label   = e._courseName || e._title || 'Événement';
         const timeStr = fmtTime(e._date);
         const end     = e._dateEnd ? ` – ${fmtTime(e._dateEnd)}` : '';
+        const tapUrl  = isSess ? `bsa://teams?url=${encodeURIComponent(e._teamsUrl)}` : 'bsa://tab/sessions';
         NotifBackend.scheduleAt(
           `imminent-${id}`, `🔔 Dans 15 min — ${label}`,
           `${timeStr}${end}${e._dateEnd?` · ${Math.round((e._dateEnd-e._date)/60000)} min`:''}`,
-          when, { data:{ url: isSess ? e._teamsUrl : './' } }
+          when, { data:{ url: tapUrl } }
         );
       });
     }
@@ -1955,8 +2069,8 @@ const Notif = {
           `imminent-${id}`,
           `🔔 Dans ${mins} min — ${label}`,
           `${timeStr}${end}${e._dateEnd?` · ${Math.round((e._dateEnd-e._date)/60000)} min`:''}`,
-          { actions, requireInteraction:true, vibrate:[300,100,300],
-            data:{ url: isSess ? e._teamsUrl : './' } }
+        { actions, requireInteraction:true, vibrate:[300,100,300],
+            data:{ url: isSess ? (IS_PACKAGED_APP ? `bsa://teams?url=${encodeURIComponent(e._teamsUrl)}` : e._teamsUrl) : (IS_PACKAGED_APP ? 'bsa://tab/sessions' : './') } }
         );
       });
     }
@@ -2060,6 +2174,53 @@ function apiFetch(url, options = {}) {
   const merged = { ...options, headers: { ...(options.headers || {}), ...authHdrs } };
   return fetch(url, merged);
 }
+
+// ── Deep linking (APK uniquement) ───────────────────────────────────
+// Schéma custom : bsa://tab/NOM  (ex: bsa://tab/devoirs)
+//                 bsa://teams?url=https%3A%2F%2F...  (ouvre Teams dans le navigateur)
+// Utilisé par : notifications au tap, widgets au tap.
+const DeepLink = {
+  _handlers: {
+    tab: (parts) => {
+      const name = parts[1];
+      if (['agenda','devoirs','sessions','prog','groupe','notes'].includes(name)) {
+        document.getElementById('setup-card').style.display    = 'none';
+        document.getElementById('settings-panel').style.display = 'none';
+        document.getElementById('dashboard').style.display      = '';
+        switchTab(name);
+      }
+    },
+    teams: (parts, searchParams) => {
+      const url = searchParams.get('url');
+      if (url) window.open(url, '_blank');
+    },
+  },
+
+  handle(url) {
+    if (!url) return;
+    try {
+      const u = new URL(url);
+      const host  = u.host || u.hostname;
+      const parts = [host, ...u.pathname.split('/').filter(Boolean)];
+      const handler = this._handlers[parts[0]];
+      if (handler) handler(parts, u.searchParams);
+    } catch(_) {}
+  },
+
+  async init() {
+    if (!IS_PACKAGED_APP) return;
+    const CapApp = window.Capacitor?.Plugins?.App;
+    if (!CapApp) return;
+    CapApp.addListener('appUrlOpen', (event) => { DeepLink.handle(event.url); });
+    try {
+      const launch = await CapApp.getLaunchUrl();
+      if (launch?.url) DeepLink.handle(launch.url);
+    } catch(_) {}
+  },
+
+  tabUrl(tabName)    { return `bsa://tab/${tabName}`; },
+  teamsUrl(teamsLink){ return `bsa://teams?url=${encodeURIComponent(teamsLink)}`; },
+};
 
 const CORS_PROXIES = [
   u => ({ url:`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(u)}`,            isJson:false }),
@@ -2261,6 +2422,7 @@ const Auth = {
   readOnly:   false,
   shareToken: null,
   _cache:     null,      // rendu map cache for connected/share mode
+  _exportUrls: { full: '', safe: '' }, // URLs des flux ICS exportés (connecté uniquement)
   get _apiBase() {
     // Web : toujours le même serveur (chemin relatif, comportement
     // historique inchangé), SAUF quand l'utilisateur s'est connecté à un
@@ -2413,6 +2575,7 @@ const Auth = {
         pbsSyncConfig('connected', null); // PBS arrière-plan
         // Même comportement que post-login : masquer l'URL et afficher le lien de partage
         Auth._showShareInfo(cfg);
+        Auth._showExportInfo(cfg);
         if (cfg.ics_url) Auth._setIcsUrlFields(cfg.ics_url);
         // Nom personnalisé
         if (cfg.dashboard_name) {
@@ -2491,10 +2654,15 @@ const Auth = {
     Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
     groupTagsCache = (d.state?.group_tags && typeof d.state.group_tags === 'object') ? d.state.group_tags : {};
     Auth._gradesCache = (d.state?.grades && typeof d.state.grades === 'object') ? d.state.grades : {};
+    Auth._serverStateLoaded = true; // flag : état chargé depuis le serveur, sauvegardes autorisées
   },
 
   async _saveServerState() {
     if (Auth.mode !== 'connected') return;
+    // Protection critique : ne jamais sauvegarder si l'état serveur n'a pas
+    // encore été chargé — on risquerait d'écraser les données existantes
+    // (notamment grades) avec un cache vide/null issu d'une reconnexion partielle.
+    if (!Auth._serverStateLoaded) return;
     await apiFetch(Auth._apiBase, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2589,6 +2757,78 @@ const Auth = {
     }
   },
 
+  // ── Exporter l'agenda (lien abonnement privé + lien abonnement public) ──
+  _setExportTokenUI(variant, token) {
+    const enabled  = document.getElementById(`export-${variant}-section`);
+    const disabled = document.getElementById(`export-${variant}-disabled-section`);
+    const box      = document.getElementById(`export-${variant}-url-box`);
+    if (!enabled || !disabled || !box) return;
+    if (token) {
+      const base = new URL(Auth._apiBase, location.origin).href;
+      const url  = `${base}?action=export_ics&token=${token}`;
+      box.textContent = url;
+      Auth._exportUrls[variant] = url;
+      enabled.style.display  = '';
+      disabled.style.display = 'none';
+    } else {
+      Auth._exportUrls[variant] = '';
+      enabled.style.display  = 'none';
+      disabled.style.display = '';
+    }
+  },
+
+  _showExportInfo(cfg) {
+    const dv = document.getElementById('export-public-devoirs');
+    const se = document.getElementById('export-public-sessions');
+    const at = document.getElementById('export-public-ateliers');
+    if (dv) dv.checked = cfg.export_public_devoirs  !== false;
+    if (se) se.checked = cfg.export_public_sessions !== false;
+    if (at) at.checked = cfg.export_public_ateliers !== false;
+    Auth._setExportTokenUI('full', cfg.export_token_full || '');
+    Auth._setExportTokenUI('safe', cfg.export_token_safe || '');
+  },
+
+  copyExportUrl(variant) {
+    const url = Auth._exportUrls[variant];
+    if (url) navigator.clipboard.writeText(url).then(() => toast('✓ URL copiée'));
+  },
+
+  async regenExportToken(variant) {
+    const label = variant === 'full' ? 'abonnement privé' : 'abonnement public';
+    if (Auth._exportUrls[variant] && !confirm(`Générer un nouveau lien ${label} ? L'ancien sera immédiatement invalide.`)) return;
+    const r = await apiFetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'regen_export_token', variant }),
+    });
+    const d = await r.json();
+    if (d.ok) { Auth._setExportTokenUI(variant, d.token); toast(`✓ Nouveau lien ${label} généré`); }
+    else toast(`⚠ ${d.error || 'Erreur'}`);
+  },
+
+  async disableExportToken(variant) {
+    if (!confirm('Désactiver ce lien ? Il sera immédiatement invalide.')) return;
+    await apiFetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'disable_export_token', variant }),
+    });
+    Auth._setExportTokenUI(variant, '');
+    toast('Lien désactivé');
+  },
+
+  async saveExportPrefs() {
+    const body = {
+      action: 'save_export_prefs',
+      public_devoirs:  !!document.getElementById('export-public-devoirs')?.checked,
+      public_sessions: !!document.getElementById('export-public-sessions')?.checked,
+      public_ateliers: !!document.getElementById('export-public-ateliers')?.checked,
+    };
+    await apiFetch(Auth._apiBase, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+    }).catch(()=>{});
+    toast('✓ Préférence enregistrée');
+  },
+
   // ── Login modal ─────────────────────────────────────────
   showLogin() {
     document.getElementById('login-modal').style.display = '';
@@ -2618,6 +2858,7 @@ const Auth = {
         pbsSyncConfig('connected', null); // PBS : basculer vers mode connecté
         const cfg = await (await apiFetch(`${Auth._apiBase}?action=get_config`)).json();
         Auth._showShareInfo(cfg);
+        Auth._showExportInfo(cfg);
 
         // URL ICS : utiliser celle du serveur, ou sauvegarder celle du localStorage si le serveur n'en a pas
         let serverIcsUrl = d.ics_url || '';
@@ -2679,6 +2920,8 @@ const Auth = {
     Auth._updateUI();
     const sec = document.getElementById('auth-section');
     if (sec) sec.style.display = 'none';
+    Auth._setExportTokenUI('full', '');
+    Auth._setExportTokenUI('safe', '');
 
     // Afficher immédiatement l'état vidé, avant de tenter de recharger des données invité
     renderDevoirs(); renderSessions(); renderGroupTab(); renderProgression(); renderStats(); renderNotes(); updateNotesTab();
@@ -3185,62 +3428,93 @@ function updateNotesTab() {
 /* ══════════════════════════════════════════════════════════════
    Sauvegarde & restauration
 ══════════════════════════════════════════════════════════════ */
-function _backupIncludes(id) {
-  return document.getElementById(id)?.checked ?? true;
+const BACKUP_FIELDS = [
+  { key: 'ics_url',         label: 'URL ICS (calendrier Brightspace)' },
+  { key: 'private_ics_url', label: 'URL ICS privée (ateliers)' },
+  { key: 'rendus',          label: 'Rendus' },
+  { key: 'grades',          label: 'Notes' },
+  { key: 'group_tags',      label: 'Attributions ateliers' },
+  { key: 'theme',           label: 'Thème' },
+  { key: 'filter_prefs',    label: 'Préférences de filtres' },
+  { key: 'notif_prefs',     label: 'Préférences de notifications' },
+];
+const BACKUP_FIELD_PREFS_KEY = 'bsa_backup_field_prefs_v1';
+
+function openBackupModal() {
+  loadBackupFieldPrefs();
+  document.getElementById('backup-select-view').style.display = '';
+  document.getElementById('backup-import-panel').style.display = 'none';
+  document.getElementById('backup-import-error').style.display = 'none';
+  document.getElementById('backup-modal').style.display = '';
+}
+function closeBackupModal() {
+  document.getElementById('backup-modal').style.display = 'none';
+  _pendingBackup = null;
+}
+function openNotifModal() {
+  document.getElementById('notif-modal').style.display = '';
+}
+function closeNotifModal() {
+  document.getElementById('notif-modal').style.display = 'none';
+}
+function openExportModal() {
+  document.getElementById('export-ics-modal').style.display = '';
+}
+function closeExportModal() {
+  document.getElementById('export-ics-modal').style.display = 'none';
+}
+function saveBackupFieldPrefs() {
+  const prefs = {};
+  BACKUP_FIELDS.forEach(f => { prefs[f.key] = document.getElementById(`bk-${f.key}`)?.checked ?? true; });
+  try { localStorage.setItem(BACKUP_FIELD_PREFS_KEY, JSON.stringify(prefs)); } catch(_) {}
+}
+function loadBackupFieldPrefs() {
+  let prefs = {};
+  try { prefs = JSON.parse(localStorage.getItem(BACKUP_FIELD_PREFS_KEY) || '{}'); } catch(_) {}
+  BACKUP_FIELDS.forEach(f => {
+    const el = document.getElementById(`bk-${f.key}`);
+    if (el) el.checked = prefs[f.key] !== undefined ? prefs[f.key] : true;
+  });
+}
+function _backupIncludes(key) {
+  return document.getElementById(`bk-${key}`)?.checked ?? true;
 }
 
 async function exportBackup(method) {
   const backup = { _version: 1, _date: new Date().toISOString(), _mode: Auth.mode };
 
-  // ICS URLs
-  if (_backupIncludes('backup-include-ics')) {
-    backup.ics_url         = localStorage.getItem(STORAGE_KEY)     || '';
-    backup.private_ics_url = localStorage.getItem(PRIVATE_ICS_KEY) || '';
+  if (_backupIncludes('ics_url') || _backupIncludes('private_ics_url')) {
+    backup.ics_url         = _backupIncludes('ics_url')         ? (localStorage.getItem(STORAGE_KEY)     || '') : undefined;
+    backup.private_ics_url = _backupIncludes('private_ics_url') ? (localStorage.getItem(PRIVATE_ICS_KEY) || '') : undefined;
     if (Auth.mode === 'connected') {
       backup.ics_url         = '';  // stockée côté serveur, non exportable
       backup.private_ics_url = '';
     }
   }
 
-  // Rendus
-  if (_backupIncludes('backup-include-rendus')) {
-    if (Auth.mode === 'connected') {
-      backup.rendus = Auth._cache || {};
-    } else {
-      try { backup.rendus = JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { backup.rendus = {}; }
-    }
+  if (_backupIncludes('rendus')) {
+    if (Auth.mode === 'connected') backup.rendus = Auth._cache || {};
+    else try { backup.rendus = JSON.parse(localStorage.getItem(RENDU_KEY) || '{}'); } catch(_) { backup.rendus = {}; }
   }
 
-  // Notes
-  if (_backupIncludes('backup-include-grades')) {
-    if (Auth.mode === 'connected') {
-      backup.grades = Auth._gradesCache || {};
-    } else {
-      try { backup.grades = JSON.parse(localStorage.getItem(GRADES_KEY) || '{}'); } catch(_) { backup.grades = {}; }
-    }
+  if (_backupIncludes('grades')) {
+    if (Auth.mode === 'connected') backup.grades = Auth._gradesCache || {};
+    else try { backup.grades = JSON.parse(localStorage.getItem(GRADES_KEY) || '{}'); } catch(_) { backup.grades = {}; }
   }
 
-  // Attributions ateliers
-  if (_backupIncludes('backup-include-ateliers')) {
-    if (Auth.mode === 'connected') {
-      backup.group_tags = groupTagsCache || {};
-    } else {
-      try { backup.group_tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}'); } catch(_) { backup.group_tags = {}; }
-    }
+  if (_backupIncludes('group_tags')) {
+    if (Auth.mode === 'connected') backup.group_tags = groupTagsCache || {};
+    else try { backup.group_tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}'); } catch(_) { backup.group_tags = {}; }
   }
 
-  // Préférences
-  if (_backupIncludes('backup-include-prefs')) {
-    backup.theme        = localStorage.getItem(THEME_KEY)        || '';
-    backup.filter_prefs = localStorage.getItem(FILTER_PREFS_KEY) || '';
-    backup.notif_prefs  = localStorage.getItem(NOTIF_KEY)        || '';
-  }
+  if (_backupIncludes('theme'))        backup.theme        = localStorage.getItem(THEME_KEY)        || '';
+  if (_backupIncludes('filter_prefs')) backup.filter_prefs = localStorage.getItem(FILTER_PREFS_KEY) || '';
+  if (_backupIncludes('notif_prefs'))  backup.notif_prefs  = localStorage.getItem(NOTIF_KEY)        || '';
 
   const json     = JSON.stringify(backup, null, 2);
   const filename = `brightspace-agenda-backup-${new Date().toISOString().slice(0,10)}.json`;
 
   if (method === 'share' && IS_PACKAGED_APP && window.Capacitor?.Plugins?.Share) {
-    // APK : Share sheet Android
     try {
       const { Filesystem, Directory } = window.Capacitor.Plugins;
       await Filesystem.writeFile({ path: filename, data: btoa(unescape(encodeURIComponent(json))), directory: Directory.Cache });
@@ -3250,7 +3524,6 @@ async function exportBackup(method) {
     return;
   }
 
-  // Web / APK download
   const blob = new Blob([json], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -3259,7 +3532,10 @@ async function exportBackup(method) {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('✓ Sauvegarde téléchargée');
+  closeBackupModal();
 }
+
+let _pendingBackup = null;
 
 function importBackup(input) {
   const file = input.files?.[0];
@@ -3283,38 +3559,71 @@ function importBackup(input) {
       return;
     }
 
-    if (!confirm('⚠️ Ceci remplacera toutes tes données actuelles.\n\nContinuer ?')) {
+    _pendingBackup = backup;
+
+    const dateStr = backup._date ? new Date(backup._date).toLocaleString('fr-FR', { dateStyle:'medium', timeStyle:'short' }) : 'date inconnue';
+    document.getElementById('backup-import-meta').innerHTML =
+      `<i class="ti ti-calendar-event" style="font-size:11px"></i> Sauvegarde du ${dateStr}`;
+
+    // Ne proposer que les champs présents dans le fichier ET cochés dans la sélection précédente
+    const optsEl = document.getElementById('backup-import-options');
+    const present = BACKUP_FIELDS.filter(f => backup[f.key] !== undefined && backup[f.key] !== '');
+    if (!present.length) {
+      errEl.textContent = 'Ce fichier ne contient aucune donnée exploitable.';
+      errEl.style.display = '';
       input.value = '';
+      _pendingBackup = null;
       return;
     }
+    optsEl.innerHTML = present.map(f => {
+      const wasChecked = document.getElementById(`bk-${f.key}`)?.checked ?? true;
+      return `<label class="past-label" style="font-size:12px"><input type="checkbox" id="bi-${f.key}" ${wasChecked?'checked':''}> ${f.label}</label>`;
+    }).join('');
 
-    // Restaurer
-    if (backup.ics_url         !== undefined) try { localStorage.setItem(STORAGE_KEY,     backup.ics_url); } catch(_) {}
-    if (backup.private_ics_url !== undefined) try { localStorage.setItem(PRIVATE_ICS_KEY, backup.private_ics_url); } catch(_) {}
-    if (backup.rendus          !== undefined) {
-      if (Auth.mode === 'connected') { Auth._cache = backup.rendus; Auth._saveServerState(); }
-      else try { localStorage.setItem(RENDU_KEY, JSON.stringify(backup.rendus)); } catch(_) {}
-    }
-    if (backup.grades          !== undefined) {
-      if (Auth.mode === 'connected') { Auth._gradesCache = backup.grades; Auth._saveServerState(); }
-      else try { localStorage.setItem(GRADES_KEY, JSON.stringify(backup.grades)); } catch(_) {}
-    }
-    if (backup.group_tags      !== undefined) {
-      if (Auth.mode === 'connected') { groupTagsCache = backup.group_tags; Auth._saveServerState(); }
-      else try { localStorage.setItem(GROUP_TAGS_KEY, JSON.stringify(backup.group_tags)); } catch(_) {}
-    }
-    if (backup.theme           !== undefined && backup.theme) try { localStorage.setItem(THEME_KEY, backup.theme); } catch(_) {}
-    if (backup.filter_prefs    !== undefined && backup.filter_prefs) try { localStorage.setItem(FILTER_PREFS_KEY, backup.filter_prefs); } catch(_) {}
-    if (backup.notif_prefs     !== undefined && backup.notif_prefs) try { localStorage.setItem(NOTIF_KEY, backup.notif_prefs); } catch(_) {}
-
-    input.value = '';
-    toast('✓ Données restaurées — rechargement…');
-    setTimeout(() => location.reload(), 1200);
+    document.getElementById('backup-select-view').style.display = 'none';
+    document.getElementById('backup-import-panel').style.display = '';
   };
   reader.readAsText(file);
 }
 
-// Afficher le bouton "Exporter" (share sheet) uniquement sur APK
+function cancelImportBackup() {
+  _pendingBackup = null;
+  document.getElementById('backup-import-panel').style.display = 'none';
+  document.getElementById('backup-select-view').style.display = '';
+  document.getElementById('backup-file-input').value = '';
+}
+
+function confirmImportBackup() {
+  if (!_pendingBackup) return;
+  const backup  = _pendingBackup;
+  const wantKey = (key) => document.getElementById(`bi-${key}`)?.checked ?? false;
+
+  if (!confirm('⚠️ Ceci remplacera les données sélectionnées.\n\nContinuer ?')) return;
+
+  if (wantKey('ics_url')         && backup.ics_url         !== undefined) try { localStorage.setItem(STORAGE_KEY,     backup.ics_url); } catch(_) {}
+  if (wantKey('private_ics_url') && backup.private_ics_url !== undefined) try { localStorage.setItem(PRIVATE_ICS_KEY, backup.private_ics_url); } catch(_) {}
+  if (wantKey('rendus')          && backup.rendus          !== undefined) {
+    if (Auth.mode === 'connected') { Auth._cache = backup.rendus; Auth._saveServerState(); }
+    else try { localStorage.setItem(RENDU_KEY, JSON.stringify(backup.rendus)); } catch(_) {}
+  }
+  if (wantKey('grades')          && backup.grades          !== undefined) {
+    if (Auth.mode === 'connected') { Auth._gradesCache = backup.grades; Auth._saveServerState(); }
+    else try { localStorage.setItem(GRADES_KEY, JSON.stringify(backup.grades)); } catch(_) {}
+  }
+  if (wantKey('group_tags')      && backup.group_tags      !== undefined) {
+    if (Auth.mode === 'connected') { groupTagsCache = backup.group_tags; Auth._saveServerState(); }
+    else try { localStorage.setItem(GROUP_TAGS_KEY, JSON.stringify(backup.group_tags)); } catch(_) {}
+  }
+  if (wantKey('theme')           && backup.theme)        try { localStorage.setItem(THEME_KEY, backup.theme); } catch(_) {}
+  if (wantKey('filter_prefs')    && backup.filter_prefs) try { localStorage.setItem(FILTER_PREFS_KEY, backup.filter_prefs); } catch(_) {}
+  if (wantKey('notif_prefs')     && backup.notif_prefs)  try { localStorage.setItem(NOTIF_KEY, backup.notif_prefs); } catch(_) {}
+
+  _pendingBackup = null;
+  document.getElementById('backup-file-input').value = '';
+  toast('✓ Données restaurées — rechargement…');
+  setTimeout(() => location.reload(), 1200);
+}
+
 function _initBackupUI() {
   if (IS_PACKAGED_APP && window.Capacitor?.Plugins?.Share) {
     const btn = document.getElementById('backup-share-btn');
@@ -3781,6 +4090,72 @@ async function loadCalendar() {
 
 function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processICS(val);}}
 
+// ── Widget payload ──────────────────────────────────────────────────
+// Seul point de contact entre index.html et les widgets Android natifs.
+// Si la structure interne de allDevoirs/allSessions change, seule cette
+// fonction doit être mise à jour — le Kotlin et les XML ne bougent pas.
+function buildWidgetPayload() {
+  const now     = new Date();
+  const fmtTime = d => d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const getDays_ = d => Math.ceil((new Date(d.getFullYear(),d.getMonth(),d.getDate()) -
+                                   new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
+
+  const upcomingEvents = [
+    ...activeSessions().filter(s=>s._date&&s._date>now).map(s=>({
+      title: s._courseName||s._title||'Session', type:'session',
+      time: fmtTime(s._date), in_min: Math.round((s._date-now)/60000),
+      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+    })),
+    ...activeGroupEvents().filter(e=>e._date&&e._date>now&&!detectSubgroup(e)).map(e=>({
+      title: (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+      time: fmtTime(e._date), in_min: Math.round((e._date-now)/60000),
+      tap_url: 'bsa://tab/groupe',
+    })),
+  ].sort((a,b)=>a.in_min-b.in_min);
+
+  const pendingDevoirs = allDevoirs
+    .filter(d=>d._date&&!effectivelyRendu(d))
+    .sort((a,b)=>a._date-b._date)
+    .map(d=>({ title:d._title, course:d._courseName||'', in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
+
+  const todayEvents = [
+    ...activeSessions().filter(s=>s._date&&getDays_(s._date)===0).sort((a,b)=>a._date-b._date).map(s=>({
+      time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
+      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+    })),
+    ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===0&&!detectSubgroup(e)).sort((a,b)=>a._date-b._date).map(e=>({
+      time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+      tap_url:'bsa://tab/groupe',
+    })),
+  ].sort((a,b)=>a.time.localeCompare(b.time));
+
+  const matieres = {};
+  allDevoirs.forEach(d=>{ const k=d._courseName||'Autre'; if(!matieres[k])matieres[k]={name:k,done:0,total:0}; matieres[k].total++; if(effectivelyRendu(d))matieres[k].done++; });
+  const matieresArr = Object.values(matieres).filter(m=>m.total>0);
+  const totalDone    = allDevoirs.filter(d=>effectivelyRendu(d)).length;
+  const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
+  const totalAll     = allDevoirs.length;
+
+  return JSON.stringify({
+    v: 2, updated_at: now.toISOString(),
+    next_event: upcomingEvents[0] || null,
+    today: todayEvents.slice(0, 5),
+    devoirs: { pending:totalPending, done:totalDone,
+               next_title:pendingDevoirs[0]?.title||null, next_in_days:pendingDevoirs[0]?.in_days??null,
+               list:pendingDevoirs.slice(0,5) },
+    progression: { total:totalAll, done:totalDone,
+                   percent:totalAll>0?Math.round(totalDone/totalAll*100):0,
+                   matieres:matieresArr.slice(0,4) },
+  });
+}
+
+async function updateWidgets() {
+  if (!IS_PACKAGED_APP) return;
+  const bridge = window.Capacitor?.Plugins?.CapacitorWidgetBridge;
+  if (!bridge) return;
+  try { await bridge.sendWidgetData({ data: buildWidgetPayload() }); } catch(_) {}
+}
+
 function processICS(txt) {
   const all=parseICS(txt);
 
@@ -3831,7 +4206,7 @@ function processICS(txt) {
   PWA.markFreshData();  // horodater pour la bannière offline
   toast(`✓ ${allDevoirs.length} devoirs · ${allSessions.length} sessions`);
   Notif.check();
-  if (IS_PACKAGED_APP) Notif.scheduleAllUpcoming();
+  if (IS_PACKAGED_APP) { Notif.scheduleAllUpcoming(); updateWidgets(); }
 
   // In share mode, refresh state from server once more in case of race condition
   if (Auth.mode === 'share' && Auth.shareToken) {
@@ -4104,7 +4479,7 @@ function processGroupICS(txt){
   renderNextSessionChip(); // le prochain événement peut être un atelier
   renderAgenda(); // vue semaine (ateliers désormais inclus) + charge + planning
   Notif.check();
-  if (IS_PACKAGED_APP) Notif.scheduleAllUpcoming();
+  if (IS_PACKAGED_APP) { Notif.scheduleAllUpcoming(); updateWidgets(); }
   toast(`✓ ${allGroupEvents.length} événements groupe chargés`);
 }
 
@@ -5315,6 +5690,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try { const saved=localStorage.getItem(STORAGE_KEY); if(saved){ document.getElementById('ics-url').value=saved; document.getElementById('ics-url-setup').value=saved; } } catch(_) {}
   // Auth detection (guest / connected / share)
   const continueStartup = await Auth.init();
+  await DeepLink.init(); // deep linking : tap notifs + tap widgets → bon onglet
   loadFilterPrefs(); // restaurer les préférences de filtres
   Notif.load();
   _initBackupUI();
