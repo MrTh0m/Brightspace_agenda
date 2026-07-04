@@ -4100,6 +4100,7 @@ function buildWidgetPayload() {
   const getDays_ = d => Math.ceil((new Date(d.getFullYear(),d.getMonth(),d.getDate()) -
                                    new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
 
+  // ── Données existantes ───────────────────────────────────
   const upcomingEvents = [
     ...activeSessions().filter(s=>s._date&&s._date>now).map(s=>({
       title: s._courseName||s._title||'Session', type:'session',
@@ -4136,8 +4137,76 @@ function buildWidgetPayload() {
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
 
+  // ── Vue semaine fixe (lun→dim de la semaine en cours) ────
+  const monday = new Date(now);
+  monday.setHours(0,0,0,0);
+  monday.setDate(now.getDate() - ((now.getDay()+6)%7)); // lundi de cette semaine
+  const DAYS_FR = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const weekFixed = Array.from({length:7}, (_,i) => {
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const dayDiff = getDays_(d);
+    const sessions = activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
+      .map(s=>({ time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
+                 tap_url: s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' }));
+    const ateliers = activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
+      .map(e=>({ time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', tap_url:'bsa://tab/groupe' }));
+    const devoirs = allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
+      .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' }));
+    return {
+      label: DAYS_FR[i],
+      date: `${d.getDate()}/${d.getMonth()+1}`,
+      is_today: dayDiff === 0,
+      events: [...sessions,...ateliers,...devoirs].slice(0,3),
+      count: sessions.length + ateliers.length + devoirs.length,
+    };
+  });
+
+  // ── Vue 7 jours glissants (aujourd'hui + 6 jours) ────────
+  // Structure identique à week_fixed pour que les deux widgets soient interchangeables
+  const DAYS_ALL = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const weekSliding = Array.from({length:7}, (_,i) => {
+    const d = new Date(now); d.setHours(0,0,0,0); d.setDate(now.getDate()+i);
+    const dayDiff = i;
+    const dayLabel = i===0?'Auj':i===1?'Dem':DAYS_ALL[d.getDay()];
+    const sessions = activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
+      .sort((a,b)=>a._date-b._date)
+      .map(s=>({ time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
+                 tap_url: s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' }));
+    const ateliers = activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
+      .sort((a,b)=>a._date-b._date)
+      .map(e=>({ time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', tap_url:'bsa://tab/groupe' }));
+    const devoirs = allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
+      .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' }));
+    return {
+      label: dayLabel,
+      date: `${d.getDate()}/${d.getMonth()+1}`,
+      is_today: dayDiff === 0,
+      events: [...sessions,...ateliers,...devoirs].slice(0,3),
+      count: sessions.length + ateliers.length + devoirs.length,
+    };
+  });
+
+  // ── Charge par semaine (8 semaines, comme renderWeekChart) ─
+  const inWindow = allDevoirs.filter(d=>getDays_(d._date)>=-7&&getDays_(d._date)<=56);
+  const byWeek = {};
+  inWindow.forEach(ev => {
+    const w = isoWeek(ev._date);
+    if (!byWeek[w]) byWeek[w] = { week:w, total:0, done:0 };
+    byWeek[w].total++;
+    if (effectivelyRendu(ev)) byWeek[w].done++;
+  });
+  const chargeWeeks = Object.values(byWeek).sort((a,b)=>a.week.localeCompare(b.week)).slice(0,8);
+  const maxCharge = Math.max(...chargeWeeks.map(w=>w.total), 1);
+  const thisWeekIso = currentIsoWeek();
+  chargeWeeks.forEach(w => {
+    w.pct_total = Math.round(w.total/maxCharge*100);
+    w.pct_done  = w.total>0 ? Math.round(w.done/w.total*100) : 0;
+    w.is_current = w.week === thisWeekIso;
+    w.pending = w.total - w.done;
+  });
+
   return JSON.stringify({
-    v: 2, updated_at: now.toISOString(),
+    v: 3, updated_at: now.toISOString(),
     next_event: upcomingEvents[0] || null,
     today: todayEvents.slice(0, 5),
     devoirs: { pending:totalPending, done:totalDone,
@@ -4146,14 +4215,35 @@ function buildWidgetPayload() {
     progression: { total:totalAll, done:totalDone,
                    percent:totalAll>0?Math.round(totalDone/totalAll*100):0,
                    matieres:matieresArr.slice(0,4) },
+    week_fixed:   weekFixed,
+    week_sliding: weekSliding,
+    charge_weeks: chargeWeeks,
   });
 }
 
+// Noms des classes provider Android — doivent matcher exactement le package Kotlin
+const WIDGET_PROVIDER_CLASSES = [
+  'fr.thomasetsandie.emmgo.agenda.NextEventWidget',
+  'fr.thomasetsandie.emmgo.agenda.AgendaWidget',
+  'fr.thomasetsandie.emmgo.agenda.DevoirsWidget',
+  'fr.thomasetsandie.emmgo.agenda.ProgressionWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekFixedWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekSlidingWidget',
+  'fr.thomasetsandie.emmgo.agenda.ChargeWidget',
+];
+// Nom du fichier SharedPreferences — DOIT être identique côté Kotlin (PREFS_NAME)
+const WIDGET_PREFS_GROUP = 'bsa_widget_prefs';
+
 async function updateWidgets() {
   if (!IS_PACKAGED_APP) return;
-  const bridge = window.Capacitor?.Plugins?.CapacitorWidgetBridge;
-  if (!bridge) return;
-  try { await bridge.sendWidgetData({ data: buildWidgetPayload() }); } catch(_) {}
+  const bridge = window.Capacitor?.Plugins?.WidgetBridgePlugin;
+  if (!bridge) { console.warn('[Widgets] WidgetBridgePlugin non disponible'); return; }
+  try {
+    await bridge.setRegisteredWidgets({ widgets: WIDGET_PROVIDER_CLASSES });
+    await bridge.setItem({ key: 'bsa_widget_data', group: WIDGET_PREFS_GROUP, value: buildWidgetPayload() });
+    await bridge.reloadAllTimelines();
+    console.log('[Widgets] updateWidgets() OK');
+  } catch(e) { console.error('[Widgets] updateWidgets() échoué :', e); }
 }
 
 function processICS(txt) {
