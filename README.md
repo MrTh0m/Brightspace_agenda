@@ -6,6 +6,8 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 🔗 **[github.com/MrTh0m/Brightspace_agenda](https://github.com/MrTh0m/Brightspace_agenda)**
 📄 **Licence MIT** — libre d'utilisation, modification et redistribution.
 
+![Tableau de bord Brightspace Agenda](screenshots/dashboard.png)
+
 ---
 
 ## 📁 Fichiers
@@ -27,10 +29,35 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 
 ## 🔐 Modes de fonctionnement
 
-### Mode invité (aucune configuration requise)
+L'écran d'accueil (premier lancement, ou aucun calendrier configuré) propose désormais **3 onglets** :
+**Local** · **Lecture seule** · **Connecté**. Un bouton **↻ Changer de mode** dans ⚙ Paramètres permet de
+revenir à cet écran à tout moment pour basculer d'un mode à l'autre.
+
+<table>
+<tr>
+<td><img src="screenshots/setup-local.png" alt="Écran d'accueil — onglet Local" width="260"></td>
+<td><img src="screenshots/setup-share.png" alt="Écran d'accueil — onglet Lecture seule" width="260"></td>
+<td><img src="screenshots/setup-connected.png" alt="Écran d'accueil — onglet Connecté" width="260"></td>
+</tr>
+<tr>
+<td align="center"><sub>Local</sub></td>
+<td align="center"><sub>Lecture seule</sub></td>
+<td align="center"><sub>Connecté</sub></td>
+</tr>
+</table>
+
+### Mode Local (anciennement « invité », aucune configuration serveur requise)
 - URL ICS et état stockés dans le `localStorage` du navigateur
 - Utilise `proxy.php` pour récupérer le calendrier Brightspace (proxies publics en cascade)
-- Tous les onglets disponibles, y compris **Ateliers** (URL ICS privée optionnelle, stockée localement)
+- **Alternative au proxy** : coller directement le contenu brut du fichier `.ics` dans un champ dédié
+  (utile si le proxy est bloqué ou l'URL Brightspace inaccessible depuis le navigateur)
+- URL ICS groupe (privée) optionnelle, stockée localement
+- Tous les onglets disponibles, y compris **Ateliers**
+- Badge d'entête : **Invité**
+
+<img src="screenshots/settings-local.png" alt="Panneau Mode Local dans les Paramètres" width="360">
+
+<sub>Panneau ⚙ Paramètres en mode Local : URL ICS Brightspace, collage direct du contenu .ics, URL ICS privée, notifications et sauvegarde/restauration.</sub>
 
 ### Mode connecté (1 compte, persistance serveur)
 - Login par mot de passe (bcrypt PHP)
@@ -50,8 +77,11 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
   - Chaque lien a son propre token, régénérable/désactivable indépendamment
   - Les événements masqués/ignorés (onglet Ateliers) sont exclus des deux flux
 
-### Mode lecture seule — lien de partage
-- URL : `https://ton-domaine/index.html?share=TOKEN`
+### Mode Lecture seule — lien de partage
+- Depuis l'écran d'accueil, onglet **Lecture seule** : colle le lien complet (`https://…?share=TOKEN`)
+  ou le token brut, avec détection automatique du serveur si un lien complet est collé (sinon URL du
+  serveur éditable manuellement, vide = ce serveur)
+- URL directe possible : `https://ton-domaine/index.html?share=TOKEN`
 - Accès en lecture seule à tous les onglets, dont **Ateliers** (attributions visibles, sans édition)
 - URLs privées Brightspace et groupe jamais exposées
 - ⚙ Paramètres accessible pour configurer les **notifications** (réglages propres à l'appareil)
@@ -84,6 +114,8 @@ sudo systemctl restart apache2
 - **iOS** : Safari → bouton partage → "Sur l'écran d'accueil"
 - **Desktop** : Chrome → icône d'installation dans la barre d'adresse
 
+![Barre d'entête avec bouton Installer l'app](screenshots/topbar-install.png)
+
 Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 
 ---
@@ -98,6 +130,20 @@ Mode offline : Service Worker cache le dernier ICS et l'état des rendus.
 - **Bouton ↑ retour en haut** (flottant, apparaît après 300 px)
 - **Badges semaine/total** sur les onglets Devoirs et Ateliers (ex. `3/12`) : le premier nombre exclut les éléments de la semaine déjà rendus ou passés
 - Thème clair / sombre / système · Design responsive mobile et desktop
+
+### Tableau de bord (cartes de stats, au-dessus des onglets)
+Recalculé à chaque chargement, visible dans tous les modes :
+
+| Carte | Contenu |
+|---|---|
+| **À venir** | Devoirs futurs non rendus · sous-texte `rendus/total` |
+| **Individuels** | Devoirs individuels restants · sous-texte `restants · total` |
+| **Collectifs** | Devoirs collectifs restants · sous-texte `restants · total` |
+| **Urgents ≤7j** | Devoirs à venir dont l'échéance est ≤ 7 jours (rouge si > 0, vert sinon) |
+| **Rendus** | Total rendus · sous-texte `sur total · pourcentage` |
+
+Sous les cartes, la **chip "Prochaine live session" / "Prochain atelier"** (libellé dynamique selon
+lequel des deux est le plus proche dans le temps) reste affichée et cliquable vers l'onglet Live Sessions.
 
 ### Onglet Agenda *(premier onglet, toujours visible)*
 - **Vue semaine** combinée : devoirs, live sessions et ateliers sur la même grille ou liste
