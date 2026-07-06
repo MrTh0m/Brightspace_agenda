@@ -4100,36 +4100,54 @@ function buildWidgetPayload() {
   const getDays_ = d => Math.ceil((new Date(d.getFullYear(),d.getMonth(),d.getDate()) -
                                    new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
 
-  // ── Données existantes ───────────────────────────────────
+  // ── Prochain événement enrichi ────────────────────────────
   const upcomingEvents = [
     ...activeSessions().filter(s=>s._date&&s._date>now).map(s=>({
-      title: s._courseName||s._title||'Session', type:'session',
-      time: fmtTime(s._date), in_min: Math.round((s._date-now)/60000),
-      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+      title:      s._courseName||s._title||'Session',
+      type:       'session', type_label: 'Live Session',
+      code:       s._courseCode||'',
+      instructor: getInstructors(s)||'',
+      time:       fmtTime(s._date),
+      time_end:   s._dateEnd ? fmtTime(s._dateEnd) : '',
+      in_min:     Math.round((s._date-now)/60000),
+      tap_url:    s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
     })),
     ...activeGroupEvents().filter(e=>e._date&&e._date>now&&!detectSubgroup(e)).map(e=>({
-      title: (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
-      time: fmtTime(e._date), in_min: Math.round((e._date-now)/60000),
-      tap_url: 'bsa://tab/groupe',
+      title:      (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier',
+      type:       'atelier', type_label: 'Atelier',
+      code:       getGroupTag(e._uid)?.subject||'',
+      instructor: getInstructors(e)||'',
+      time:       fmtTime(e._date),
+      time_end:   e._dateEnd ? fmtTime(e._dateEnd) : '',
+      in_min:     Math.round((e._date-now)/60000),
+      tap_url:    'bsa://tab/groupe',
     })),
   ].sort((a,b)=>a.in_min-b.in_min);
 
+  // ── Devoirs enrichis avec matière ────────────────────────
   const pendingDevoirs = allDevoirs
     .filter(d=>d._date&&!effectivelyRendu(d))
     .sort((a,b)=>a._date-b._date)
-    .map(d=>({ title:d._title, course:d._courseName||'', in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
+    .map(d=>({ title:d._title, course:d._courseName||'', code:d._courseCode||'',
+                in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
 
+  // ── Agenda du jour enrichi : heure fin, code, intervenant ─
   const todayEvents = [
     ...activeSessions().filter(s=>s._date&&getDays_(s._date)===0).sort((a,b)=>a._date-b._date).map(s=>({
-      time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
-      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+      time:fmtTime(s._date), time_end:s._dateEnd?fmtTime(s._dateEnd):'',
+      title:s._courseName||s._title||'Session', type:'session', type_label:'Live Session',
+      code:s._courseCode||'', instructor:getInstructors(s)||'',
+      tap_url:s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions',
     })),
     ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===0&&!detectSubgroup(e)).sort((a,b)=>a._date-b._date).map(e=>({
-      time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+      time:fmtTime(e._date), time_end:e._dateEnd?fmtTime(e._dateEnd):'',
+      title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', type_label:'Atelier',
+      code:getGroupTag(e._uid)?.subject||'', instructor:getInstructors(e)||'',
       tap_url:'bsa://tab/groupe',
     })),
   ].sort((a,b)=>a.time.localeCompare(b.time));
 
+  // ── Progression ───────────────────────────────────────────
   const matieres = {};
   allDevoirs.forEach(d=>{ const k=d._courseName||'Autre'; if(!matieres[k])matieres[k]={name:k,done:0,total:0}; matieres[k].total++; if(effectivelyRendu(d))matieres[k].done++; });
   const matieresArr = Object.values(matieres).filter(m=>m.total>0);
@@ -4137,56 +4155,41 @@ function buildWidgetPayload() {
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
 
-  // ── Vue semaine fixe (lun→dim de la semaine en cours) ────
-  const monday = new Date(now);
-  monday.setHours(0,0,0,0);
-  monday.setDate(now.getDate() - ((now.getDay()+6)%7)); // lundi de cette semaine
-  const DAYS_FR = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const weekFixed = Array.from({length:7}, (_,i) => {
-    const d = new Date(monday); d.setDate(monday.getDate()+i);
-    const dayDiff = getDays_(d);
-    const sessions = activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
-      .map(s=>({ time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
-                 tap_url: s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' }));
-    const ateliers = activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
-      .map(e=>({ time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', tap_url:'bsa://tab/groupe' }));
-    const devoirs = allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
-      .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' }));
-    return {
-      label: DAYS_FR[i],
-      date: `${d.getDate()}/${d.getMonth()+1}`,
-      is_today: dayDiff === 0,
-      events: [...sessions,...ateliers,...devoirs].slice(0,3),
-      count: sessions.length + ateliers.length + devoirs.length,
-    };
-  });
-
-  // ── Vue 7 jours glissants (aujourd'hui + 6 jours) ────────
-  // Structure identique à week_fixed pour que les deux widgets soient interchangeables
+  // ── Semaine fixe + 7j glissants — heure fin incluse ──────
+  const monday = new Date(now); monday.setHours(0,0,0,0);
+  monday.setDate(now.getDate() - ((now.getDay()+6)%7));
+  const DAYS_FR  = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const DAYS_ALL = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+
+  const makeDay = (dayDiff, label, date, isToday) => {
+    const evs = [
+      ...activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
+        .sort((a,b)=>a._date-b._date)
+        .map(s=>({ time:fmtTime(s._date), time_end:s._dateEnd?fmtTime(s._dateEnd):'',
+                   title:s._courseName||s._title||'Session', type:'session',
+                   tap_url:s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' })),
+      ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
+        .sort((a,b)=>a._date-b._date)
+        .map(e=>({ time:fmtTime(e._date), time_end:e._dateEnd?fmtTime(e._dateEnd):'',
+                   title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+                   tap_url:'bsa://tab/groupe' })),
+      ...allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
+        .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' })),
+    ];
+    return { label, date, is_today:isToday, events:evs.slice(0,3), count:evs.length };
+  };
+
+  const weekFixed   = Array.from({length:7}, (_,i) => {
+    const d = new Date(monday); d.setDate(monday.getDate()+i); const dd = getDays_(d);
+    return makeDay(dd, DAYS_FR[i], `${d.getDate()}/${d.getMonth()+1}`, dd===0);
+  });
   const weekSliding = Array.from({length:7}, (_,i) => {
     const d = new Date(now); d.setHours(0,0,0,0); d.setDate(now.getDate()+i);
-    const dayDiff = i;
-    const dayLabel = i===0?'Auj':i===1?'Dem':DAYS_ALL[d.getDay()];
-    const sessions = activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
-      .sort((a,b)=>a._date-b._date)
-      .map(s=>({ time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
-                 tap_url: s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' }));
-    const ateliers = activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
-      .sort((a,b)=>a._date-b._date)
-      .map(e=>({ time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', tap_url:'bsa://tab/groupe' }));
-    const devoirs = allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
-      .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' }));
-    return {
-      label: dayLabel,
-      date: `${d.getDate()}/${d.getMonth()+1}`,
-      is_today: dayDiff === 0,
-      events: [...sessions,...ateliers,...devoirs].slice(0,3),
-      count: sessions.length + ateliers.length + devoirs.length,
-    };
+    const lbl = i===0?'Auj':i===1?'Dem':DAYS_ALL[d.getDay()];
+    return makeDay(i, lbl, `${d.getDate()}/${d.getMonth()+1}`, i===0);
   });
 
-  // ── Charge par semaine (8 semaines, comme renderWeekChart) ─
+    // ── Charge par semaine (8 semaines, comme renderWeekChart) ─
   const inWindow = allDevoirs.filter(d=>getDays_(d._date)>=-7&&getDays_(d._date)<=56);
   const byWeek = {};
   inWindow.forEach(ev => {
