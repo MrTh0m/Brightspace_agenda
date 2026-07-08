@@ -64,6 +64,141 @@ function curlFetch($url) {
     return false;
 }
 
+// ── Export ICS — flux abonnables (complet vs partage sans liens) ──────
+// Déplie les lignes RFC5545 (une propriété continuée sur la ligne suivante
+// commence par un espace/tab).
+function icsUnfoldLines($raw) {
+    $raw   = str_replace(["\r\n", "\r"], "\n", $raw);
+    $lines = explode("\n", $raw);
+    $out = [];
+    foreach ($lines as $line) {
+        if ($line === '') continue;
+        if (($line[0] === ' ' || $line[0] === "\t") && count($out)) {
+            $out[count($out) - 1] .= substr($line, 1);
+        } else {
+            $out[] = $line;
+        }
+    }
+    return $out;
+}
+
+// Replie une ligne à 75 octets max, continuation précédée d'un espace.
+function icsFoldLine($line) {
+    if (strlen($line) <= 75) return $line;
+    $out = ''; $rest = $line; $first = true;
+    while (strlen($rest) > 0) {
+        $chunkLen = $first ? 75 : 74;
+        $out .= ($first ? '' : "\r\n ") . substr($rest, 0, $chunkLen);
+        $rest = substr($rest, $chunkLen);
+        $first = false;
+    }
+    return $out;
+}
+
+// Extrait les blocs VEVENT et VTIMEZONE (lignes dépliées) d'un flux ICS brut.
+function icsExtractBlocks($raw) {
+    $lines = icsUnfoldLines($raw);
+    $events = []; $timezones = []; $cur = null; $curType = null;
+    foreach ($lines as $line) {
+        if ($line === 'BEGIN:VEVENT')    { $cur = [$line]; $curType = 'VEVENT';    continue; }
+        if ($line === 'BEGIN:VTIMEZONE') { $cur = [$line]; $curType = 'VTIMEZONE'; continue; }
+        if ($cur !== null) {
+            $cur[] = $line;
+            if ($line === 'END:VEVENT'    && $curType === 'VEVENT')    { $events[]    = $cur; $cur = null; }
+            if ($line === 'END:VTIMEZONE' && $curType === 'VTIMEZONE') { $timezones[] = $cur; $cur = null; }
+        }
+    }
+    return ['events' => $events, 'timezones' => $timezones];
+}
+
+// Lit la valeur d'une propriété (ex. UID) dans un bloc VEVENT déplié.
+function icsGetProp(array $lines, $prop) {
+    foreach ($lines as $line) {
+        if (preg_match('/^' . preg_quote($prop, '/') . '(;[^:]*)?:(.*)$/i', $line, $m)) {
+            return $m[2];
+        }
+    }
+    return '';
+}
+
+// Préfixe l'UID d'un bloc VEVENT — évite les collisions quand on fusionne
+// plusieurs calendriers sources dans un même flux exporté.
+function icsPrefixUid(array $lines, $prefix) {
+    foreach ($lines as &$line) {
+        if (preg_match('/^UID(;[^:]*)?:(.*)$/', $line, $m)) {
+            $line = 'UID' . $m[1] . ':' . $prefix . $m[2];
+        }
+    }
+    return $lines;
+}
+
+// Classification devoir / live session — même logique que isDevoir()/isSession() côté client (index.html),
+// portée en PHP pour pouvoir filtrer le flux public par type.
+function icsIsDevoir(array $ev) {
+    $s = mb_strtolower(icsGetProp($ev, 'SUMMARY'), 'UTF-8');
+    $d = mb_strtolower(icsGetProp($ev, 'DESCRIPTION'), 'UTF-8');
+    if (strpos($s, 'assessment') !== false || strpos($s, 'co-construction') !== false) return true;
+    if (strpos($d, 'assessment') !== false || strpos($d, 'co-construction') !== false) return true;
+    if (preg_match('/à\s?échéance\s*$/u', $s)) return true;
+    return false;
+}
+function icsIsSession(array $ev) {
+    $s = mb_strtolower(icsGetProp($ev, 'SUMMARY'), 'UTF-8');
+    $l = mb_strtolower(icsGetProp($ev, 'LOCATION'), 'UTF-8');
+    if (strpos($s, 'live session') !== false || strpos($s, 'cours distanciel') !== false) return true;
+    if (strpos($l, 'live session') !== false || strpos($l, 'cours distanciel') !== false) return true;
+    if (strpos($l, 'teams.microsoft') !== false || strpos($l, 'teams.live.com') !== false) return true;
+    if (strpos($l, 'virtual-room.em-lyon.com') !== false) return true;
+    if (preg_match('/^\d{4}_[A-Z0-9]+_\d{4}-\d{2}\s+.+/i', icsGetProp($ev, 'SUMMARY'))) return true;
+    if (strpos(mb_strtolower(implode(' ', $ev), 'UTF-8'), 'virtual-room.em-lyon') !== false) return true;
+    return false;
+}
+
+// Nettoie un bloc VEVENT pour la version "à partager" : retire tout lien
+// (Teams/virtual-room, casier/event Brightspace) et les propriétés qui en
+// contiennent nativement. La DESCRIPTION est entièrement vidée (le corps
+// peut contenir des infos de connexion en texte brut — code, ID de réunion,
+// etc. — qu'un simple retrait des URLs ne suffit pas à protéger).
+function icsSanitizeVevent(array $lines) {
+    $out = [];
+    $urlRe = '#https?://[^\s"\'<>\)\]]+#i';
+    foreach ($lines as $line) {
+        if (preg_match('/^(URL|CONFERENCE)(;[^:]*)?:/i', $line)) continue;      // lien direct
+        if (preg_match('/^X-ALT-DESC(;[^:]*)?:/i', $line))       continue;      // description HTML (liens intégrés)
+        if (preg_match('/^DESCRIPTION(;[^:]*)?:/i', $line))      continue;      // corps vidé entièrement
+        if (preg_match('/^LOCATION(;[^:]*)?:(.*)$/i', $line, $m)) {
+            $val = preg_replace($urlRe, '', $m[2]);
+            $val = preg_replace('/[ \t]{2,}/', ' ', $val);
+            $val = rtrim($val, " \\,;");
+            if (trim(str_replace('\\,', ',', $val)) === '') continue; // lieu devenu vide
+            $out[] = 'LOCATION' . $m[1] . ':' . $val;
+            continue;
+        }
+        $out[] = $line;
+    }
+    return $out;
+}
+
+// Assemble un VCALENDAR complet à partir de blocs VEVENT/VTIMEZONE bruts.
+function icsBuildCalendar(array $eventBlocks, array $tzBlocks, $calName) {
+    $lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0',
+        'PRODID:-//Brightspace Agenda//Export ICS//FR',
+        'CALSCALE:GREGORIAN',
+        'X-WR-CALNAME:' . $calName,
+    ];
+    $seen = [];
+    foreach ($tzBlocks as $tz) {
+        $key = implode('|', $tz);
+        if (isset($seen[$key])) continue;
+        $seen[$key] = true;
+        foreach ($tz as $l) $lines[] = $l;
+    }
+    foreach ($eventBlocks as $ev) foreach ($ev as $l) $lines[] = $l;
+    $lines[] = 'END:VCALENDAR';
+    return implode("\r\n", array_map('icsFoldLine', $lines)) . "\r\n";
+}
+
 // Ensure data dir
 if (!is_dir(DATA_DIR)) {
     @mkdir(DATA_DIR, 0755, true);
@@ -99,6 +234,11 @@ switch ($action) {
             $data['ics_url']             = $config['ics_url']             ?? '';
             $data['private_ics_url']     = $config['private_ics_url']     ?? '';
             $data['dashboard_name']      = $config['dashboard_name']      ?? '';
+            $data['export_public_devoirs']  = array_key_exists('export_public_devoirs',  $config) ? !empty($config['export_public_devoirs'])  : true;
+            $data['export_public_sessions'] = array_key_exists('export_public_sessions', $config) ? !empty($config['export_public_sessions']) : true;
+            $data['export_public_ateliers'] = array_key_exists('export_public_ateliers', $config) ? !empty($config['export_public_ateliers']) : true;
+            $data['export_token_full']    = $config['export_token_full']  ?? '';
+            $data['export_token_safe']    = $config['export_token_safe']  ?? '';
         }
         respond($data);
 
@@ -119,7 +259,12 @@ switch ($action) {
         respond(['ok'=>true, 'logged_in'=>true,
             'ics_url'         => $config['ics_url']         ?? '',
             'private_ics_url' => $config['private_ics_url'] ?? '',
-            'dashboard_name'  => $config['dashboard_name']  ?? '']);
+            'dashboard_name'  => $config['dashboard_name']  ?? '',
+            'export_public_devoirs'  => array_key_exists('export_public_devoirs',  $config) ? !empty($config['export_public_devoirs'])  : true,
+            'export_public_sessions' => array_key_exists('export_public_sessions', $config) ? !empty($config['export_public_sessions']) : true,
+            'export_public_ateliers' => array_key_exists('export_public_ateliers', $config) ? !empty($config['export_public_ateliers']) : true,
+            'export_token_full'    => $config['export_token_full'] ?? '',
+            'export_token_safe'    => $config['export_token_safe'] ?? '']);
 
     // Sauvegarder le nom personnalisé du dashboard
     case 'save_dashboard_name':
@@ -184,6 +329,102 @@ switch ($action) {
         echo $body;
         exit;
 
+    // Préférences du lien public : quels types d'événements y sont visibles
+    // (le lien privé, lui, inclut toujours tout — pas de réglage ici)
+    case 'save_export_prefs':
+        requireAuth();
+        $config['export_public_devoirs']  = !empty($input['public_devoirs']);
+        $config['export_public_sessions'] = !empty($input['public_sessions']);
+        $config['export_public_ateliers'] = !empty($input['public_ateliers']);
+        writeJson(CONFIG_FILE, $config);
+        respond(['ok'=>true]);
+
+    // Génère (ou régénère) le token d'un flux ICS exporté : 'full' ou 'safe'
+    case 'regen_export_token':
+        requireAuth();
+        $variant = $input['variant'] ?? '';
+        if (!in_array($variant, ['full', 'safe'], true)) respond(['error'=>'Variante invalide'], 400);
+        $config['export_token_' . $variant] = bin2hex(random_bytes(16));
+        writeJson(CONFIG_FILE, $config);
+        respond(['ok'=>true, 'variant'=>$variant, 'token'=>$config['export_token_' . $variant]]);
+
+    // Désactive un flux ICS exporté : 'full' ou 'safe'
+    case 'disable_export_token':
+        requireAuth();
+        $variant = $input['variant'] ?? '';
+        if (!in_array($variant, ['full', 'safe'], true)) respond(['error'=>'Variante invalide'], 400);
+        $config['export_token_' . $variant] = '';
+        writeJson(CONFIG_FILE, $config);
+        respond(['ok'=>true]);
+
+    // Flux ICS abonnable — public, authentifié uniquement par le token dans
+    // l'URL (comme un lien de partage). Le token détermine lui-même la
+    // variante ('full' = tout, y compris Teams ; 'safe' = sans aucun lien).
+    // Régénéré à chaque requête à partir des calendriers sources : les
+    // ajouts/suppressions/modifications suivent automatiquement au fil des
+    // rafraîchissements périodiques de l'app calendrier abonnée.
+    case 'export_ics':
+        $token = $_GET['token'] ?? ($input['token'] ?? '');
+        if (empty($token)) respond(['error'=>'Token manquant'], 400);
+        $variant = null;
+        if (!empty($config['export_token_full']) && hash_equals($config['export_token_full'], $token)) {
+            $variant = 'full';
+        } elseif (!empty($config['export_token_safe']) && hash_equals($config['export_token_safe'], $token)) {
+            $variant = 'safe';
+        }
+        if (!$variant) respond(['error'=>'Lien invalide ou désactivé'], 401);
+
+        // Le lien privé inclut toujours tout. Le lien public respecte les préférences
+        // (par défaut tout inclus si jamais configuré, comportement rétro-compatible).
+        $includeDevoirs  = $variant === 'full' ? true : ($config['export_public_devoirs']  ?? true);
+        $includeSessions = $variant === 'full' ? true : ($config['export_public_sessions'] ?? true);
+        $includeAteliers = $variant === 'full' ? true : ($config['export_public_ateliers'] ?? true);
+
+        $sources = [];
+        if (!empty($config['ics_url'])) $sources[] = ['url'=>$config['ics_url'], 'prefix'=>'', 'kind'=>'personal'];
+        if ($includeAteliers && !empty($config['private_ics_url'])) {
+            $sources[] = ['url'=>$config['private_ics_url'], 'prefix'=>'grp-', 'kind'=>'group'];
+        }
+        if (empty($sources)) respond(['error'=>'Aucun calendrier source configuré'], 404);
+
+        // Événements masqués/ignorés par l'utilisateur (onglet Ateliers) — à exclure de l'export
+        $state      = readJson(STATE_FILE, []);
+        $groupTags  = $state['group_tags'] ?? [];
+        $ignoredMap = [];
+        foreach ($groupTags as $uid => $tag) {
+            if (!empty($tag['ignored'])) $ignoredMap[$uid] = true;
+        }
+
+        $allEvents = []; $allTz = [];
+        foreach ($sources as $src) {
+            $raw = curlFetch($src['url']);
+            if (!$raw) continue;
+            $blocks = icsExtractBlocks($raw);
+            foreach ($blocks['events'] as $ev) {
+                $uid = icsGetProp($ev, 'UID');
+                if ($uid !== '' && isset($ignoredMap[$uid])) continue; // événement masqué → exclu
+
+                if ($src['kind'] === 'personal') {
+                    if (!$includeDevoirs  && icsIsDevoir($ev))  continue;
+                    if (!$includeSessions && icsIsSession($ev)) continue;
+                }
+
+                if ($src['prefix'] !== '') $ev = icsPrefixUid($ev, $src['prefix']);
+                if ($variant === 'safe') $ev = icsSanitizeVevent($ev);
+                $allEvents[] = $ev;
+            }
+            foreach ($blocks['timezones'] as $tz) $allTz[] = $tz;
+        }
+
+        $baseName = !empty($config['dashboard_name']) ? $config['dashboard_name'] : 'Brightspace Agenda';
+        $calName  = $baseName . ($variant === 'full' ? ' - Complet' : ' - Partage');
+
+        header('Content-Type: text/calendar; charset=utf-8');
+        header('Content-Disposition: inline; filename="brightspace-agenda-' . $variant . '.ics"');
+        header('Cache-Control: public, max-age=900');
+        echo icsBuildCalendar($allEvents, $allTz, $calName);
+        exit;
+
     case 'get_state':
         $shareToken = $_GET['share'] ?? ($input['share'] ?? '');
         $readOnly   = !isLoggedIn();
@@ -234,9 +475,10 @@ switch ($action) {
             $config['private_ics_url'] ?? '',
         ]);
 
-        // groupTagsCache depuis state.json pour typage et filtre ignored
+        // group_tags + rendus depuis state.json, pour typage/filtre ignored et statut rendu
         $state      = readJson(STATE_FILE, []);
-        $groupTags  = $state['groupTagsCache'] ?? [];
+        $groupTags  = $state['group_tags'] ?? [];
+        $rendusMap  = $state['rendus']     ?? [];
         $ignoredMap = [];
         foreach ($groupTags as $uid => $tag) {
             if (!empty($tag['ignored'])) $ignoredMap[$uid] = true;
