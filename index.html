@@ -2845,12 +2845,15 @@ const Auth = {
 
   async disableExportToken(variant) {
     if (!confirm('Désactiver ce lien ? Il sera immédiatement invalide.')) return;
-    await apiFetch(Auth._apiBase, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'disable_export_token', variant }),
-    });
-    Auth._setExportTokenUI(variant, '');
-    toast('Lien désactivé');
+    try {
+      const r = await apiFetch(Auth._apiBase, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'disable_export_token', variant }),
+      });
+      const d = await r.json();
+      if (d.ok) { Auth._setExportTokenUI(variant, ''); toast('Lien désactivé'); }
+      else toast(`⚠ ${d.error || 'Erreur'}`);
+    } catch (_) { toast('⚠ Erreur réseau'); }
   },
 
   async saveExportPrefs() {
@@ -2860,11 +2863,15 @@ const Auth = {
       public_sessions: !!document.getElementById('export-public-sessions')?.checked,
       public_ateliers: !!document.getElementById('export-public-ateliers')?.checked,
     };
-    await apiFetch(Auth._apiBase, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body),
-    }).catch(()=>{});
-    toast('✓ Préférence enregistrée');
+    try {
+      const r = await apiFetch(Auth._apiBase, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body),
+      });
+      const d = await r.json();
+      if (d.ok) toast('✓ Préférence enregistrée');
+      else toast(`⚠ ${d.error || 'Erreur'}`);
+    } catch (_) { toast('⚠ Erreur réseau'); }
   },
 
   // ── Login modal ─────────────────────────────────────────
@@ -3333,7 +3340,7 @@ function saveGradeField(uid, field, value) {
 ══════════════════════════════════════════════════════════════ */
 let notesFilterCourse = 'all';
 let notesFilterType   = 'all';
-let notesFilterPending = false;
+let notesShowArchived = false; // matières archivées masquées par défaut dans l'onglet Notes
 let notesExpandedCourses  = new Set(); // matières dépliées manuellement (repliées par défaut, toutes)
 let notesExpandedSections = new Set(); // sous-sections "matière::individuel" / "matière::collectif" dépliées manuellement
 let notesAllExpanded = false; // état du bouton "Tout déplier / Tout replier"
@@ -3398,7 +3405,7 @@ function renderNotes() {
       <button class="chip ${notesFilterType==='individuel'?'active':''}" onclick="notesFilterType='individuel';renderNotes()"><i class="ti ti-user"></i> Individuels</button>
       <button class="chip ${notesFilterType==='collectif'?'active':''}" onclick="notesFilterType='collectif';renderNotes()"><i class="ti ti-users"></i> Collectifs</button>
       <div class="filter-toggles">
-        <label class="past-label"><input type="checkbox" id="notes-filter-pending" ${notesFilterPending?'checked':''} onchange="notesFilterPending=this.checked;renderNotes()"> En attente</label>
+        <label class="past-label"><input type="checkbox" id="notes-show-archived" ${notesShowArchived?'checked':''} onchange="notesShowArchived=this.checked;renderNotes()"> Matières archivées</label>
         <button class="chip" onclick="notesToggleAll()">
           <i class="ti ti-${notesAllExpanded?'chevrons-up':'chevrons-down'}"></i> ${notesAllExpanded?'Tout replier':'Tout déplier'}
         </button>
@@ -3411,8 +3418,9 @@ function renderNotes() {
     return;
   }
 
-  // Filtre cours (sticky ligne 2)
-  const courseSet = [...new Set(graded.map(d => d._courseName || d._courseCode || 'Sans matière'))].sort((a,b)=>a.localeCompare(b,'fr'));
+  // Filtre cours (sticky ligne 2) — exclut les matières archivées sauf si la case est cochée
+  const chipSource = notesShowArchived ? graded : graded.filter(d => !isArchivedCourse(d._courseName || d._courseCode || 'Sans matière'));
+  const courseSet = [...new Set(chipSource.map(d => d._courseName || d._courseCode || 'Sans matière'))].sort((a,b)=>a.localeCompare(b,'fr'));
   window._notesCourseIndex = courseSet;
   if (fc) {
     const courseChips = courseSet.map((c, i) =>
@@ -3426,9 +3434,9 @@ function renderNotes() {
 
   const filtered = graded.filter(d => {
     const cn = d._courseName || d._courseCode || 'Sans matière';
+    if (!notesShowArchived && isArchivedCourse(cn)) return false;
     if (notesFilterCourse !== 'all' && cn !== notesFilterCourse) return false;
     if (notesFilterType   !== 'all' && d._type !== notesFilterType) return false;
-    if (notesFilterPending) { const g=getGrade(d.UID); if (g&&g.pts!==''&&g.total!=='') return false; }
     return true;
   });
 
