@@ -301,8 +301,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .note-inputs .grade-sep { font-size:14px;font-weight:600;color:var(--text3); }
 .note-comment { width:100%;min-height:40px;padding:5px 8px;background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-family:var(--font);resize:vertical;box-sizing:border-box;margin-top:2px; }
 .note-comment::placeholder { color:var(--text3); }
-/* Section type + moyenne */
-.notes-section-header { display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px; }
+/* Section type + moyenne (à l'intérieur de la bulle matière) */
+.notes-section-header { display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px;border-radius:8px;padding:4px 8px;margin-left:-8px;margin-right:-8px;transition:background .15s; }
+.notes-section-header:hover { background:var(--bg2); }
+.notes-section-header:first-child { margin-top:0; }
 .notes-section-label { font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:5px; }
 .notes-avg-pill { font-size:11px;font-weight:700;padding:2px 10px;border-radius:12px;background:var(--bg-blue);color:var(--c-blue); }
 /* grade-form inline (même pattern que tag-form) */
@@ -314,17 +316,30 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .grade-form-row .grade-sep { font-size:16px;color:var(--text3);font-weight:300; }
 .grade-form-preview { font-size:11px;margin-left:auto; }
 .grade-form-actions { display:flex;gap:6px; }
-/* Header matière sticky */
-.notes-course-header {
-  position:sticky;top:var(--notes-course-top,220px);z-index:140;
-  background:var(--bg);
-  display:flex;align-items:center;justify-content:space-between;gap:8px;
-  padding:8px 20px;margin:0 -20px 8px;
-  border-bottom:1px solid var(--border);border-top:1px solid var(--border);
+/* Bulle matière : toujours une carte autonome, repliée ou dépliée */
+.notes-course-card {
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);margin-bottom:10px;overflow:hidden;
+  transition:border-color .15s;
 }
+.notes-course-card:hover { border-color:var(--border2); }
+.notes-course-card.archived { opacity:.65; }
+.notes-course-header {
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:13px 16px;cursor:pointer;transition:background .15s;
+}
+.notes-course-header:hover { background:var(--bg2); }
+.notes-course-card.expanded .notes-course-header { border-bottom:1px solid var(--border); }
+.notes-course-body { padding:6px 16px 14px; }
 .notes-course-header-left { display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--text); }
 .notes-course-avg { font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;background:var(--bg-blue);color:var(--c-blue);white-space:nowrap; }
-@media(max-width:600px){ .notes-course-header { padding:8px 16px;margin:0 -16px 8px; } }
+.notes-archived-pill { font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border); }
+.notes-chevron-btn {
+  width:24px;height:24px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg2);color:var(--text3);font-size:13px;
+}
+@media(max-width:600px){ .notes-course-header { padding:11px 14px; } .notes-course-body { padding:6px 14px 12px; } }
 
 /* ── Actions ── */
 .card-actions { display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-items:stretch;min-width:120px; }
@@ -364,6 +379,15 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 .prog-card .pc-header { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px; }
 .prog-card .pc-title  { font-size:14px;font-weight:600;line-height:1.3; }
 .prog-card .pc-code   { font-size:11px;font-family:monospace;background:var(--bg-violet);color:var(--c-violet);padding:2px 7px;border-radius:5px;flex-shrink:0; }
+.prog-card.archived   { opacity:.6;background:var(--bg2); }
+.pc-archived-pill     { font-size:10px;font-weight:600;padding:1px 7px;border-radius:8px;background:var(--bg2);color:var(--text3);border:1px solid var(--border);margin-left:4px;vertical-align:middle; }
+.pc-archive-btn {
+  width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);
+  color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;
+  font-size:13px;transition:background .15s,color .15s;
+}
+.pc-archive-btn:hover { background:var(--c-orange);color:#fff;border-color:var(--c-orange); }
+.prog-archived-wrap   { margin-top:8px;margin-bottom:20px; }
 .prog-bar-wrap { background:var(--bg2);border-radius:6px;height:8px;overflow:hidden;margin-bottom:8px; }
 .prog-bar      { height:100%;border-radius:6px;transition:width .4s; }
 .prog-stats    { display:flex;gap:12px;font-size:11px;color:var(--text2);flex-wrap:wrap; }
@@ -602,8 +626,11 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   .past-label { flex-shrink: 0; font-size: 11px; white-space: nowrap; }
   .filter-toggles { gap: 10px; }
 
-  /* ── Cards : disposition verticale ── */
+  /* Cards : disposition verticale */
   .card-item  { flex-direction: column; gap: 8px; padding: 12px; }
+  /* Onglet Notes : le badge score reste à côté du contenu même sur mobile */
+  .card-item.note-card-item { flex-direction: row; align-items: flex-start; }
+  .card-item.note-card-item .note-badge { min-width:60px;padding:8px 10px; }
 
   /* Countdown : bannière horizontale */
   .countdown  {
@@ -795,6 +822,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-rendus" onchange="saveBackupFieldPrefs()"> Rendus</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-grades" onchange="saveBackupFieldPrefs()"> Notes</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-group_tags" onchange="saveBackupFieldPrefs()"> Attributions ateliers</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-archived_courses" onchange="saveBackupFieldPrefs()"> Matières archivées</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-theme" onchange="saveBackupFieldPrefs()"> Thème</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-filter_prefs" onchange="saveBackupFieldPrefs()"> Préférences de filtres</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-notif_prefs" onchange="saveBackupFieldPrefs()"> Préférences de notifications</label>
@@ -1472,6 +1500,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
 const STORAGE_KEY      = 'bsa_ics_url_v2';
 const RENDU_KEY        = 'bsa_rendu_v1';
 const GROUP_TAGS_KEY   = 'bsa_group_tags_v1';
+const ARCHIVED_COURSES_KEY = 'bsa_archived_courses_v1';
 const THEME_KEY        = 'bsa_theme';
 const PRIVATE_ICS_KEY  = 'bsa_private_ics_url_v1';
 const NOTIF_KEY        = 'bsa_notif_settings_v1';
@@ -1578,6 +1607,7 @@ function loadFilterPrefs(){
 // ── État onglet Groupe ──────────────────────────────────────────
 let allGroupEvents  = [];   // Événements du calendrier privé
 let groupTagsCache  = {};   // { uid: { subject, subjectName, devoirUid } }
+let archivedCoursesCache = {}; // { courseKey: true } — matières archivées manuellement (Progression)
 let groupViewMode   = 'grid';
 let groupWeekOff    = 0;    // 0 = semaine courante
 
@@ -2369,6 +2399,7 @@ const Onboarding = {
         Auth._cache = (raw2 && typeof raw2 === 'object' && !Array.isArray(raw2)) ? raw2 : {};
         const tags = sd.state?.group_tags;
         groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+        archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
         if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
         Auth._updateUI();
         pbsSyncConfig('share', token);
@@ -2470,6 +2501,7 @@ const Auth = {
             Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
             const tags = sd.state?.group_tags;
             groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+            archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
             if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
             Auth._updateUI();
             pbsSyncConfig('share', cfg.shareToken);
@@ -2546,6 +2578,7 @@ const Auth = {
               // Attributions matière/devoir des ateliers (lecture seule)
               const tags = sd.state?.group_tags;
               groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+              archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
               // Nom personnalisé défini par le propriétaire
               if (sd.dashboard_name) {
                 AppMeta.customName = sd.dashboard_name;
@@ -2635,6 +2668,10 @@ const Auth = {
       const tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}');
       if (tags && typeof tags === 'object') groupTagsCache = tags;
     } catch(_) {}
+    try {
+      const arch = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}');
+      if (arch && typeof arch === 'object') archivedCoursesCache = arch;
+    } catch(_) {}
     let url = '';
     try { url = localStorage.getItem(PRIVATE_ICS_KEY) || ''; } catch(_) {}
     if (url) {
@@ -2653,6 +2690,7 @@ const Auth = {
     const raw = d.state?.rendus;
     Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
     groupTagsCache = (d.state?.group_tags && typeof d.state.group_tags === 'object') ? d.state.group_tags : {};
+    archivedCoursesCache = (d.state?.archived_courses && typeof d.state.archived_courses === 'object') ? d.state.archived_courses : {};
     Auth._gradesCache = (d.state?.grades && typeof d.state.grades === 'object') ? d.state.grades : {};
     Auth._serverStateLoaded = true; // flag : état chargé depuis le serveur, sauvegardes autorisées
   },
@@ -2666,7 +2704,7 @@ const Auth = {
     await apiFetch(Auth._apiBase, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {} } }),
+      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
     });
   },
 
@@ -2909,7 +2947,7 @@ const Auth = {
     // Vider les données en mémoire du compte qui vient de se déconnecter — sans ça, devoirs,
     // sessions, ateliers et attributions resteraient visibles en mode invité jusqu'au prochain
     // rechargement complet de la page.
-    allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {}; Auth._gradesCache = {};
+    allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {}; archivedCoursesCache = {}; Auth._gradesCache = {};
 
     // Réinitialiser les champs URL : en mode connecté ils contiennent l'URL réelle masquée
     // dans dataset.realUrl, lue en priorité par getIcsUrl()/getPrivateIcsUrl().
@@ -3066,6 +3104,7 @@ const Auth = {
       Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
       const tags = sd.state?.group_tags;
       groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+      archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
       if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
       pbsSyncConfig('share', token);
       loadGroupCalendarShare();
@@ -3295,6 +3334,54 @@ function saveGradeField(uid, field, value) {
 let notesFilterCourse = 'all';
 let notesFilterType   = 'all';
 let notesFilterPending = false;
+let notesExpandedCourses  = new Set(); // matières dépliées manuellement (repliées par défaut, toutes)
+let notesExpandedSections = new Set(); // sous-sections "matière::individuel" / "matière::collectif" dépliées manuellement
+let notesAllExpanded = false; // état du bouton "Tout déplier / Tout replier"
+
+function notesIsCourseExpanded(name) { return notesExpandedCourses.has(name); }
+function notesToggleCourse(name) {
+  notesExpandedCourses.has(name) ? notesExpandedCourses.delete(name) : notesExpandedCourses.add(name);
+  renderNotes();
+}
+function notesIsSectionExpanded(key) { return notesExpandedSections.has(key); }
+function notesToggleSection(key) {
+  notesExpandedSections.has(key) ? notesExpandedSections.delete(key) : notesExpandedSections.add(key);
+  renderNotes();
+}
+// Bouton "Tout déplier / Tout replier" : agit sur toutes les matières actuellement listées
+function notesToggleAll() {
+  notesAllExpanded = !notesAllExpanded;
+  const names = window._notesCourseIndex || [];
+  if (notesAllExpanded) {
+    names.forEach(n => { notesExpandedCourses.add(n); notesExpandedSections.add(n+'::individuel'); notesExpandedSections.add(n+'::collectif'); });
+  } else {
+    notesExpandedCourses.clear();
+    notesExpandedSections.clear();
+  }
+  renderNotes();
+}
+function notesChevronBtn(expanded) {
+  return `<span class="notes-chevron-btn"><i class="ti ti-chevron-${expanded?'up':'down'}"></i></span>`;
+}
+
+// Ateliers marqués "Épreuve notée" (onglet Ateliers) → traités comme des devoirs dans l'onglet Notes.
+// Sert pour les soutenances / EMP / projets qui n'ont pas de devoir Brightspace associé.
+function notesGradedAteliers() {
+  return activeGroupEvents()
+    .filter(e => !detectSubgroup(e) && getGroupTag(e._uid)?.graded && !!getGrade(e._uid))
+    .map(e => {
+      const tag = getGroupTag(e._uid);
+      return {
+        UID: e._uid,
+        _title: e._title || 'Épreuve',
+        _date: e._date,
+        _type: tag.gradedType === 'individuel' ? 'individuel' : 'collectif',
+        _courseCode: tag.subject || '',
+        _courseName: tag.subjectName || tag.subject || 'Sans matière',
+        _isAtelier: true
+      };
+    });
+}
 
 function renderNotes() {
   const el  = document.getElementById('notes-content');
@@ -3302,7 +3389,7 @@ function renderNotes() {
   const fc  = document.getElementById('notes-filters-course');
   if (!el) return;
 
-  const graded = allDevoirs.filter(d => !!getGrade(d.UID));
+  const graded = [...allDevoirs.filter(d => !!getGrade(d.UID)), ...notesGradedAteliers()];
 
   // Filtre type (sticky ligne 1)
   if (ft) {
@@ -3312,12 +3399,15 @@ function renderNotes() {
       <button class="chip ${notesFilterType==='collectif'?'active':''}" onclick="notesFilterType='collectif';renderNotes()"><i class="ti ti-users"></i> Collectifs</button>
       <div class="filter-toggles">
         <label class="past-label"><input type="checkbox" id="notes-filter-pending" ${notesFilterPending?'checked':''} onchange="notesFilterPending=this.checked;renderNotes()"> En attente</label>
+        <button class="chip" onclick="notesToggleAll()">
+          <i class="ti ti-${notesAllExpanded?'chevrons-up':'chevrons-down'}"></i> ${notesAllExpanded?'Tout replier':'Tout déplier'}
+        </button>
       </div>`;
   }
 
   if (!graded.length) {
     if (fc) fc.style.display = 'none';
-    el.innerHTML = `<div class="state-box"><i class="ti ti-star big-icon"></i><p>Coche "Noté" sur un devoir pour le faire apparaître ici.</p></div>`;
+    el.innerHTML = `<div class="state-box"><i class="ti ti-star big-icon"></i><p>Coche "Noté" sur un devoir (ou marque un atelier comme "Épreuve notée") pour le faire apparaître ici.</p></div>`;
     return;
   }
 
@@ -3359,6 +3449,9 @@ function renderNotes() {
     if (!scored.length) return null;
     return (scored.reduce((acc,d) => { const g=getGrade(d.UID); return acc+parseFloat(g.pts)/parseFloat(g.total)*20; }, 0) / scored.length).toFixed(1);
   }
+  function scoredCountOf(devoirs) {
+    return devoirs.filter(d => { const g=getGrade(d.UID); return g&&g.pts!==''&&g.total!==''&&parseFloat(g.total)>0; }).length;
+  }
 
   function renderCard(d) {
     const g = getGrade(d.UID);
@@ -3366,6 +3459,9 @@ function renderNotes() {
     const typePill = d._type === 'individuel'
       ? `<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
       : `<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
+    const atelierPill = d._isAtelier
+      ? `<span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-presentation"></i> Soutenance</span>` : '';
+    const courseChip = d._courseCode ? `<span class="course-code">${d._courseCode}</span>` : '';
     let badgeStyle, badgeHtml;
     if (hasScore) {
       const pct  = parseFloat(g.pts) / parseFloat(g.total);
@@ -3374,44 +3470,65 @@ function renderNotes() {
       badgeStyle = `background:${bg};color:${fg};border:1px solid ${fg}22`;
       badgeHtml  = `<div class="nb-score">${g.pts}</div><div class="nb-total">/ ${g.total}</div>`;
     } else {
-      badgeStyle = 'background:var(--bg2);color:var(--text3);border:1px solid var(--border)';
-      badgeHtml  = `<div class="nb-score" style="font-size:13px">—</div><div class="nb-total">en attente</div>`;
+      // "à saisir" est toujours basé sur la date d'échéance du devoir (d._date), jamais sur
+      // une date de coche "Noté"/"Rendu" (ces cases n'ont pas d'horodatage propre).
+      const days  = getDays(d._date);
+      const stale = days < -14;
+      badgeStyle  = stale
+        ? 'background:var(--bg-orange);color:var(--c-orange);border:1px solid var(--c-orange)33'
+        : 'background:var(--bg2);color:var(--text3);border:1px solid var(--border)';
+      badgeHtml   = `<div class="nb-score" style="font-size:12px">${fmtShort(d._date)}</div><div class="nb-total">à saisir</div>`;
     }
     return `
-    <div class="card-item" style="margin-bottom:8px">
+    <div class="card-item note-card-item" style="margin-bottom:8px">
       <div class="note-badge" id="note-badge-${d.UID}" style="${badgeStyle};cursor:pointer" onclick="event.stopPropagation();toggleGradeForm('${d.UID.replace(/'/g,"\\'")}')">${badgeHtml}</div>
       <div class="card-body">
-        <div class="tags" style="margin-bottom:5px">${typePill}</div>
+        <div class="tags" style="margin-bottom:5px">${courseChip}${atelierPill}${typePill}</div>
         <div class="card-title">${d._title}</div>
         ${gradeFormHtml(d.UID)}
       </div>
     </div>`;
   }
 
-  function renderTypeSection(devoirs, label, icon, color) {
+  function renderTypeSection(devoirs, label, icon, color, sectionKey) {
     if (!devoirs.length) return '';
     const avg = calcAvg(devoirs);
-    const avgPill = avg !== null ? `<span class="notes-avg-pill">Moy. ${avg}/20</span>` : '';
+    const n   = scoredCountOf(devoirs);
+    const metricPill = avg !== null
+      ? `<span class="notes-avg-pill">Moy. ${avg}/20 <span style="opacity:.7;font-weight:500">· ${n}/${devoirs.length}</span></span>`
+      : `<span class="notes-avg-pill" style="background:var(--bg2);color:var(--text3)">${devoirs.length} note${devoirs.length>1?'s':''}</span>`;
+    const expanded = notesIsSectionExpanded(sectionKey);
     return `
-      <div class="notes-section-header">
+      <div class="notes-section-header" onclick="notesToggleSection('${sectionKey.replace(/'/g,"\\'")}')">
         <span class="notes-section-label" style="color:${color}"><i class="ti ti-${icon}"></i> ${label}</span>
-        ${avgPill}
+        <span style="display:flex;align-items:center;gap:8px">${metricPill}${notesChevronBtn(expanded)}</span>
       </div>
-      ${devoirs.map(renderCard).join('')}`;
+      ${expanded ? devoirs.map(renderCard).join('') : ''}`;
   }
 
   el.innerHTML = Object.values(byCourse).sort((a,b)=>a.name.localeCompare(b.name,'fr')).map(c => {
     const allCourse = [...c.individuels, ...c.collectifs];
     const avg = calcAvg(allCourse);
-    const avgHtml = avg !== null ? `<span class="notes-course-avg">${avg}/20</span>` : '';
+    const n   = scoredCountOf(allCourse);
+    const avgHtml = avg !== null
+      ? `<span class="notes-course-avg">${avg}/20 <span style="opacity:.75;font-weight:600">· ${n}/${allCourse.length}</span></span>`
+      : `<span class="notes-course-avg" style="background:var(--bg2);color:var(--text3)">${allCourse.length} note${allCourse.length>1?'s':''}</span>`;
     const codeSpan = c.code ? `<span class="course-code">${c.code}</span>` : '';
+    const archived = isArchivedCourse(c.name);
+    const expanded = notesIsCourseExpanded(c.name);
+    const archivedPill = archived ? `<span class="notes-archived-pill">Archivée</span>` : '';
+    const safeName = c.name.replace(/'/g,"\\'");
     return `
-    <div class="notes-course-header">
-      <div class="notes-course-header-left">${codeSpan}${c.name}</div>
-      ${avgHtml}
-    </div>
-    ${renderTypeSection(c.individuels,'Individuels','user','var(--c-indigo)')}
-    ${renderTypeSection(c.collectifs,'Collectifs','users','var(--c-green)')}`;
+    <div class="notes-course-card${archived?' archived':''}${expanded?' expanded':''}">
+      <div class="notes-course-header" onclick="notesToggleCourse('${safeName}')">
+        <div class="notes-course-header-left">${codeSpan}${c.name}${archivedPill}</div>
+        <div style="display:flex;align-items:center;gap:8px">${avgHtml}${notesChevronBtn(expanded)}</div>
+      </div>
+      ${expanded ? `<div class="notes-course-body">
+      ${renderTypeSection(c.individuels,'Individuels','user','var(--c-indigo)', c.name+'::individuel')}
+      ${renderTypeSection(c.collectifs,'Collectifs','users','var(--c-green)', c.name+'::collectif')}
+      </div>` : ''}
+    </div>`;
   }).join('');
 }
 
@@ -3434,6 +3551,7 @@ const BACKUP_FIELDS = [
   { key: 'rendus',          label: 'Rendus' },
   { key: 'grades',          label: 'Notes' },
   { key: 'group_tags',      label: 'Attributions ateliers' },
+  { key: 'archived_courses',label: 'Matières archivées' },
   { key: 'theme',           label: 'Thème' },
   { key: 'filter_prefs',    label: 'Préférences de filtres' },
   { key: 'notif_prefs',     label: 'Préférences de notifications' },
@@ -3505,6 +3623,10 @@ async function exportBackup(method) {
   if (_backupIncludes('group_tags')) {
     if (Auth.mode === 'connected') backup.group_tags = groupTagsCache || {};
     else try { backup.group_tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}'); } catch(_) { backup.group_tags = {}; }
+  }
+  if (_backupIncludes('archived_courses')) {
+    if (Auth.mode === 'connected') backup.archived_courses = archivedCoursesCache || {};
+    else try { backup.archived_courses = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}'); } catch(_) { backup.archived_courses = {}; }
   }
 
   if (_backupIncludes('theme'))        backup.theme        = localStorage.getItem(THEME_KEY)        || '';
@@ -3613,6 +3735,10 @@ function confirmImportBackup() {
   if (wantKey('group_tags')      && backup.group_tags      !== undefined) {
     if (Auth.mode === 'connected') { groupTagsCache = backup.group_tags; Auth._saveServerState(); }
     else try { localStorage.setItem(GROUP_TAGS_KEY, JSON.stringify(backup.group_tags)); } catch(_) {}
+  }
+  if (wantKey('archived_courses') && backup.archived_courses !== undefined) {
+    if (Auth.mode === 'connected') { archivedCoursesCache = backup.archived_courses; Auth._saveServerState(); }
+    else try { localStorage.setItem(ARCHIVED_COURSES_KEY, JSON.stringify(backup.archived_courses)); } catch(_) {}
   }
   if (wantKey('theme')           && backup.theme)        try { localStorage.setItem(THEME_KEY, backup.theme); } catch(_) {}
   if (wantKey('filter_prefs')    && backup.filter_prefs) try { localStorage.setItem(FILTER_PREFS_KEY, backup.filter_prefs); } catch(_) {}
@@ -3982,6 +4108,7 @@ async function wcApplyShare() {
     Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
     const tags = sd.state?.group_tags;
     groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
+    archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
     if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
     Auth._updateUI();
     pbsSyncConfig('share', token);
@@ -4100,54 +4227,35 @@ function buildWidgetPayload() {
   const getDays_ = d => Math.ceil((new Date(d.getFullYear(),d.getMonth(),d.getDate()) -
                                    new Date(now.getFullYear(),now.getMonth(),now.getDate())) / 86400000);
 
-  // ── Prochain événement enrichi ────────────────────────────
   const upcomingEvents = [
     ...activeSessions().filter(s=>s._date&&s._date>now).map(s=>({
-      title:      s._courseName||s._title||'Session',
-      type:       'session', type_label: 'Live Session',
-      code:       s._courseCode||'',
-      instructor: getInstructors(s)||'',
-      time:       fmtTime(s._date),
-      time_end:   s._dateEnd ? fmtTime(s._dateEnd) : '',
-      in_min:     Math.round((s._date-now)/60000),
-      tap_url:    s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+      title: s._courseName||s._title||'Session', type:'session',
+      time: fmtTime(s._date), in_min: Math.round((s._date-now)/60000),
+      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
     })),
     ...activeGroupEvents().filter(e=>e._date&&e._date>now&&!detectSubgroup(e)).map(e=>({
-      title:      (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier',
-      type:       'atelier', type_label: 'Atelier',
-      code:       getGroupTag(e._uid)?.subject||'',
-      instructor: getInstructors(e)||'',
-      time:       fmtTime(e._date),
-      time_end:   e._dateEnd ? fmtTime(e._dateEnd) : '',
-      in_min:     Math.round((e._date-now)/60000),
-      tap_url:    'bsa://tab/groupe',
+      title: (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+      time: fmtTime(e._date), in_min: Math.round((e._date-now)/60000),
+      tap_url: 'bsa://tab/groupe',
     })),
   ].sort((a,b)=>a.in_min-b.in_min);
 
-  // ── Devoirs enrichis avec matière ────────────────────────
   const pendingDevoirs = allDevoirs
     .filter(d=>d._date&&!effectivelyRendu(d))
     .sort((a,b)=>a._date-b._date)
-    .map(d=>({ title:d._title, course:d._courseName||'', code:d._courseCode||'',
-                in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
+    .map(d=>({ title:d._title, course:d._courseName||'', in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
 
-  // ── Agenda du jour enrichi : heure fin, code, intervenant ─
   const todayEvents = [
     ...activeSessions().filter(s=>s._date&&getDays_(s._date)===0).sort((a,b)=>a._date-b._date).map(s=>({
-      time:fmtTime(s._date), time_end:s._dateEnd?fmtTime(s._dateEnd):'',
-      title:s._courseName||s._title||'Session', type:'session', type_label:'Live Session',
-      code:s._courseCode||'', instructor:getInstructors(s)||'',
-      tap_url:s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions',
+      time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
+      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
     })),
     ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===0&&!detectSubgroup(e)).sort((a,b)=>a._date-b._date).map(e=>({
-      time:fmtTime(e._date), time_end:e._dateEnd?fmtTime(e._dateEnd):'',
-      title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', type_label:'Atelier',
-      code:getGroupTag(e._uid)?.subject||'', instructor:getInstructors(e)||'',
+      time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
       tap_url:'bsa://tab/groupe',
     })),
   ].sort((a,b)=>a.time.localeCompare(b.time));
 
-  // ── Progression ───────────────────────────────────────────
   const matieres = {};
   allDevoirs.forEach(d=>{ const k=d._courseName||'Autre'; if(!matieres[k])matieres[k]={name:k,done:0,total:0}; matieres[k].total++; if(effectivelyRendu(d))matieres[k].done++; });
   const matieresArr = Object.values(matieres).filter(m=>m.total>0);
@@ -4155,61 +4263,8 @@ function buildWidgetPayload() {
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
 
-  // ── Semaine fixe + 7j glissants — heure fin incluse ──────
-  const monday = new Date(now); monday.setHours(0,0,0,0);
-  monday.setDate(now.getDate() - ((now.getDay()+6)%7));
-  const DAYS_FR  = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-  const DAYS_ALL = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
-
-  const makeDay = (dayDiff, label, date, isToday) => {
-    const evs = [
-      ...activeSessions().filter(s=>s._date&&getDays_(s._date)===dayDiff)
-        .sort((a,b)=>a._date-b._date)
-        .map(s=>({ time:fmtTime(s._date), time_end:s._dateEnd?fmtTime(s._dateEnd):'',
-                   title:s._courseName||s._title||'Session', type:'session',
-                   tap_url:s._teamsUrl?`bsa://teams?url=${encodeURIComponent(s._teamsUrl)}`:'bsa://tab/sessions' })),
-      ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===dayDiff&&!detectSubgroup(e))
-        .sort((a,b)=>a._date-b._date)
-        .map(e=>({ time:fmtTime(e._date), time_end:e._dateEnd?fmtTime(e._dateEnd):'',
-                   title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
-                   tap_url:'bsa://tab/groupe' })),
-      ...allDevoirs.filter(d=>d._date&&getDays_(d._date)===dayDiff&&!effectivelyRendu(d))
-        .map(d=>({ title:d._title, type:'devoir', tap_url:'bsa://tab/devoirs' })),
-    ];
-    return { label, date, is_today:isToday, events:evs.slice(0,3), count:evs.length };
-  };
-
-  const weekFixed   = Array.from({length:7}, (_,i) => {
-    const d = new Date(monday); d.setDate(monday.getDate()+i); const dd = getDays_(d);
-    return makeDay(dd, DAYS_FR[i], `${d.getDate()}/${d.getMonth()+1}`, dd===0);
-  });
-  const weekSliding = Array.from({length:7}, (_,i) => {
-    const d = new Date(now); d.setHours(0,0,0,0); d.setDate(now.getDate()+i);
-    const lbl = i===0?'Auj':i===1?'Dem':DAYS_ALL[d.getDay()];
-    return makeDay(i, lbl, `${d.getDate()}/${d.getMonth()+1}`, i===0);
-  });
-
-    // ── Charge par semaine (8 semaines, comme renderWeekChart) ─
-  const inWindow = allDevoirs.filter(d=>getDays_(d._date)>=-7&&getDays_(d._date)<=56);
-  const byWeek = {};
-  inWindow.forEach(ev => {
-    const w = isoWeek(ev._date);
-    if (!byWeek[w]) byWeek[w] = { week:w, total:0, done:0 };
-    byWeek[w].total++;
-    if (effectivelyRendu(ev)) byWeek[w].done++;
-  });
-  const chargeWeeks = Object.values(byWeek).sort((a,b)=>a.week.localeCompare(b.week)).slice(0,8);
-  const maxCharge = Math.max(...chargeWeeks.map(w=>w.total), 1);
-  const thisWeekIso = currentIsoWeek();
-  chargeWeeks.forEach(w => {
-    w.pct_total = Math.round(w.total/maxCharge*100);
-    w.pct_done  = w.total>0 ? Math.round(w.done/w.total*100) : 0;
-    w.is_current = w.week === thisWeekIso;
-    w.pending = w.total - w.done;
-  });
-
   return JSON.stringify({
-    v: 3, updated_at: now.toISOString(),
+    v: 2, updated_at: now.toISOString(),
     next_event: upcomingEvents[0] || null,
     today: todayEvents.slice(0, 5),
     devoirs: { pending:totalPending, done:totalDone,
@@ -4218,35 +4273,14 @@ function buildWidgetPayload() {
     progression: { total:totalAll, done:totalDone,
                    percent:totalAll>0?Math.round(totalDone/totalAll*100):0,
                    matieres:matieresArr.slice(0,4) },
-    week_fixed:   weekFixed,
-    week_sliding: weekSliding,
-    charge_weeks: chargeWeeks,
   });
 }
 
-// Noms des classes provider Android — doivent matcher exactement le package Kotlin
-const WIDGET_PROVIDER_CLASSES = [
-  'fr.thomasetsandie.emmgo.agenda.NextEventWidget',
-  'fr.thomasetsandie.emmgo.agenda.AgendaWidget',
-  'fr.thomasetsandie.emmgo.agenda.DevoirsWidget',
-  'fr.thomasetsandie.emmgo.agenda.ProgressionWidget',
-  'fr.thomasetsandie.emmgo.agenda.WeekFixedWidget',
-  'fr.thomasetsandie.emmgo.agenda.WeekSlidingWidget',
-  'fr.thomasetsandie.emmgo.agenda.ChargeWidget',
-];
-// Nom du fichier SharedPreferences — DOIT être identique côté Kotlin (PREFS_NAME)
-const WIDGET_PREFS_GROUP = 'bsa_widget_prefs';
-
 async function updateWidgets() {
   if (!IS_PACKAGED_APP) return;
-  const bridge = window.Capacitor?.Plugins?.WidgetBridgePlugin;
-  if (!bridge) { console.warn('[Widgets] WidgetBridgePlugin non disponible'); return; }
-  try {
-    await bridge.setRegisteredWidgets({ widgets: WIDGET_PROVIDER_CLASSES });
-    await bridge.setItem({ key: 'bsa_widget_data', group: WIDGET_PREFS_GROUP, value: buildWidgetPayload() });
-    await bridge.reloadAllTimelines();
-    console.log('[Widgets] updateWidgets() OK');
-  } catch(e) { console.error('[Widgets] updateWidgets() échoué :', e); }
+  const bridge = window.Capacitor?.Plugins?.CapacitorWidgetBridge;
+  if (!bridge) return;
+  try { await bridge.sendWidgetData({ data: buildWidgetPayload() }); } catch(_) {}
 }
 
 function processICS(txt) {
@@ -4311,6 +4345,7 @@ function processICS(txt) {
         Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
         const tags = sd.state?.group_tags;
         if (tags && typeof tags === 'object' && !Array.isArray(tags)) groupTagsCache = tags;
+        if (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) archivedCoursesCache = sd.state.archived_courses;
         if (sd.dashboard_name && !AppMeta.customName) {
           AppMeta.customName = sd.dashboard_name;
           updateBrand();
@@ -4364,7 +4399,12 @@ function switchTab(tab) {
    Scroll : topbar compact + bouton retour en haut
 ══════════════════════════════════════════════════════════════ */
 (function initScroll(){
-  const COMPACT_AT = 80;
+  // Hystérésis volontaire (zone morte 40-80px) : évite que le changement de hauteur du
+  // topbar (compact ↔ normal) ne fasse osciller window.scrollY autour d'un seuil unique,
+  // ce qui provoquait un scintillement rapide du bandeau à certaines positions de scroll.
+  const COMPACT_ON  = 80;
+  const COMPACT_OFF = 40;
+  let isCompact = false;
   let ticking = false;
 
   function updateStickyOffsets(){
@@ -4386,6 +4426,8 @@ function switchTab(tab) {
     const discH = (discFilter && discFilter.style.display !== 'none') ? discFilter.getBoundingClientRect().height : 0;
     document.documentElement.style.setProperty('--notes-course-top', (filterTop + mainH + discH) + 'px');
   }
+  // Exposée globalement : appelée aussi depuis switchTab() et d'autres renders, en dehors de cette IIFE
+  window.updateStickyOffsets = updateStickyOffsets;
 
   function onScroll(){
     if(ticking)return;
@@ -4394,7 +4436,9 @@ function switchTab(tab) {
       const y=window.scrollY;
       const topbar=document.querySelector('.topbar');
       const btnTop=document.getElementById('btn-top');
-      topbar?.classList.toggle('compact', y > COMPACT_AT);
+      if (!isCompact && y > COMPACT_ON) isCompact = true;
+      else if (isCompact && y < COMPACT_OFF) isCompact = false;
+      topbar?.classList.toggle('compact', isCompact);
       updateStickyOffsets();
       if(btnTop) btnTop.style.display = y > 300 ? 'flex' : 'none';
       ticking=false;
@@ -4610,6 +4654,22 @@ function setGroupTag(uid,data){
   }
 }
 
+// Archivage manuel d'une matière (onglet Progression) — masque la carte de la liste
+// principale sans toucher aux notes déjà saisies (onglet Notes reste inchangé, juste grisé/replié)
+function isArchivedCourse(key){ return !!archivedCoursesCache[key]; }
+function setArchivedCourse(key,archived){
+  if(Auth.readOnly)return;
+  if(archived)archivedCoursesCache[key]=true;
+  else delete archivedCoursesCache[key];
+  if(Auth.mode==='connected'){
+    Auth._saveServerState();
+  } else {
+    try{localStorage.setItem(ARCHIVED_COURSES_KEY,JSON.stringify(archivedCoursesCache));}catch(_){}
+  }
+  renderProgression();
+  renderNotes();
+}
+
 // Événements groupe "ignorés" (non pertinents — ni atelier, ni sous-groupe)
 function isIgnored(uid){ return !!getGroupTag(uid)?.ignored; }
 function activeGroupEvents(){ return allGroupEvents.filter(e=>!isIgnored(e._uid)); }
@@ -4786,6 +4846,19 @@ function renderGroupList(){
     const pastPill=isPast?`<span class="pill" style="background:var(--bg-grey);color:var(--c-grey)"><i class="ti ti-check"></i> Passé</span>`:'';
     const subInfo=sub?`<div class="card-meta" style="color:var(--c-orange)"><i class="ti ti-git-branch" style="font-size:10px"></i> Même créneau : ${sub._courseName||sub._courseCode||'Live session'}</div>`:'';
 
+    // ── Épreuve notée (soutenances / EMP / projets sans devoir Brightspace) ──
+    const isGradedAtelier = !!tag?.graded;
+    const gradedPill = isGradedAtelier
+      ? `<span class="pill" style="background:var(--bg-teal);color:var(--c-teal)"><i class="ti ti-presentation"></i> Notée</span>` : '';
+    const gradedToggle = (!Auth.readOnly && !sub) ? `
+      <label class="group-tag-btn" title="Faire apparaître cette épreuve dans l'onglet Notes" style="cursor:pointer">
+        <input type="checkbox" ${isGradedAtelier?'checked':''} onchange="toggleAtelierGraded('${ev._uid}',this.checked)" style="margin-right:4px;cursor:pointer"> Épreuve notée
+      </label>${isGradedAtelier?`
+      <select onchange="setAtelierGradedType('${ev._uid}',this.value)" style="height:24px;font-size:11px;padding:0 6px;background:var(--bg2);color:var(--text);border:1px solid var(--border2);border-radius:6px;font-family:var(--font);cursor:pointer">
+        <option value="collectif" ${tag?.gradedType!=='individuel'?'selected':''}>Collectif</option>
+        <option value="individuel" ${tag?.gradedType==='individuel'?'selected':''}>Individuel</option>
+      </select>`:''}` : '';
+
     // ── Bloc course ─────────────────────────────────────────
     const courseBlock=tag?.subjectName||tag?.subject
       ?`<div class="course-block"><span class="course-code">${tag.subject||''}</span><span class="course-name">${tag.subjectName||tag.subject}</span></div>`:'';
@@ -4828,12 +4901,12 @@ function renderGroupList(){
         <div class="tb-time">${timeStr}</div>
       </div>
       <div class="card-body">
-        <div class="tags">${typePill}${pastPill}</div>
+        <div class="tags">${typePill}${gradedPill}${pastPill}</div>
         ${courseBlock}
         <div class="card-title" title="${ev._title}">${ev._title||'—'}</div>
         <div class="card-meta">${timeStr}${endStr}${dur}</div>
         ${subInfo}
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${tagLabel}${ignoreCb}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center">${tagLabel}${ignoreCb}${gradedToggle}</div>
         <div class="tag-form" id="tag-form-${safeUid}">
           <select id="tag-subject-${safeUid}" onchange="updateDevoirSelect('${safeUid}','${ev._uid}')">
             <option value="">— Choisir une matière —</option>${subjectOptions}
@@ -4899,6 +4972,32 @@ function saveGroupTag(uid, safeUid){
   toast(devoirVal==='__subgroup__'?`✓ Marqué comme sous-groupe${code?' de '+name:''}`:`✓ Attribué à ${name||code}`);
 }
 function clearGroupTag(uid){setGroupTag(uid,null);toggleTagForm(uid);renderGroupList();renderProgression();renderDevoirs();renderAgenda();toast('Attribution supprimée');}
+
+// Marquer un atelier (soutenance, EMP, projet...) comme épreuve notée → apparaît dans l'onglet Notes
+// comme un devoir normal, réutilise le même store de notes (getGrade/setGradeData) via son _uid.
+function toggleAtelierGraded(uid, checked) {
+  if (Auth.readOnly) return;
+  const tag = getGroupTag(uid) || {};
+  if (checked) {
+    tag.graded = true;
+    if (!tag.gradedType) tag.gradedType = 'collectif';
+    setGroupTag(uid, tag);
+    if (!getGrade(uid)) setGradeData(uid, { pts: '', total: '' });
+  } else {
+    delete tag.graded;
+    delete tag.gradedType;
+    setGroupTag(uid, (tag.subject || tag.devoirUid || tag.ignored) ? tag : null);
+    setGradeData(uid, null);
+  }
+  renderGroupList(); renderNotes(); updateNotesTab();
+  toast(checked ? '✓ Ajoutée à l\'onglet Notes' : 'Retirée de l\'onglet Notes');
+}
+function setAtelierGradedType(uid, type) {
+  const tag = getGroupTag(uid) || {};
+  tag.gradedType = type === 'individuel' ? 'individuel' : 'collectif';
+  setGroupTag(uid, tag);
+  renderNotes();
+}
 
 /* Section 2 : Vue semaine */
 function setGroupView(mode){
@@ -5021,7 +5120,7 @@ function renderGroupBySubject(){
   const tagged=activeGroupEvents().filter(e=>getGroupTag(e._uid));
   if(!tagged.length){el.innerHTML='<p style="font-size:12px;color:var(--text3)">Aucun atelier attribué à une matière. Clique sur <i class="ti ti-tag"></i> <em>Attribuer</em> dans l\'onglet Ateliers.</p>';return;}
   const by={};
-  tagged.forEach(ev=>{const tag=getGroupTag(ev._uid);const k=tag.subject;if(!by[k])by[k]={code:tag.subject,name:tag.subjectName||tag.subject,ateliers:[],subs:[]};detectSubgroup(ev)?by[k].subs.push(ev):by[k].ateliers.push(ev);});
+  tagged.forEach(ev=>{const tag=getGroupTag(ev._uid);if(isArchivedCourse(tag.subjectName||tag.subject))return;const k=tag.subject;if(!by[k])by[k]={code:tag.subject,name:tag.subjectName||tag.subject,ateliers:[],subs:[]};detectSubgroup(ev)?by[k].subs.push(ev):by[k].ateliers.push(ev);});
   const untagged=activeGroupEvents().filter(e=>!getGroupTag(e._uid)&&getDays(e._date)>=0);
   let rows=Object.values(by).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>{
     const next=[...s.ateliers,...s.subs].filter(e=>getDays(e._date)>=0).sort((a,b)=>a._date-b._date)[0];
@@ -5646,6 +5745,7 @@ function renderWeekChart() {
 /* ══════════════════════════════════════════════════════════════
    Render progression
 ══════════════════════════════════════════════════════════════ */
+let showArchivedCourses = false; // affichage replié/déplié des matières archivées
 function renderProgression() {
   const el=document.getElementById('prog-content');
   if(!el)return;
@@ -5667,9 +5767,11 @@ function renderProgression() {
     if(!d.next||ev._date<d.next)d.next=ev._date;
   });
 
-  const discList=Object.values(disciplines).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const discListAll=Object.values(disciplines).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+  const discList        = discListAll.filter(d=>!isArchivedCourse(d.name));
+  const archivedDiscList= discListAll.filter(d=>isArchivedCourse(d.name));
 
-  const progCards=discList.map(d=>{
+  function buildProgCard(d, archived){
     const pct=d.total>0?Math.round(d.rendus/d.total*100):0;
     const barColor=pct===100?'var(--c-green)':pct>=50?'var(--c-blue)':'var(--c-orange)';
     const nextDeadline=d.upcoming.length>0
@@ -5699,11 +5801,17 @@ function renderProgression() {
       ${avgIndiv?`<span class="prog-type-pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-star"></i> Indiv. ${avgIndiv}/20</span>`:''}
       ${avgColl?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-star"></i> Coll. ${avgColl}/20</span>`:''}
     </div>` : '';
+    const archiveBtn = Auth.readOnly ? '' : (archived
+      ? `<button class="pc-archive-btn" title="Désarchiver" onclick="setArchivedCourse('${d.name.replace(/'/g,"\\'")}',false)"><i class="ti ti-archive-off"></i></button>`
+      : `<button class="pc-archive-btn" title="Archiver cette matière" onclick="setArchivedCourse('${d.name.replace(/'/g,"\\'")}',true)"><i class="ti ti-archive"></i></button>`);
     return`
-    <div class="prog-card">
+    <div class="prog-card${archived?' archived':''}">
       <div class="pc-header">
-        <div class="pc-title">${d.name}</div>
-        ${d.code?`<span class="pc-code">${d.code}</span>`:''}
+        <div class="pc-title">${d.name}${archived?' <span class="pc-archived-pill">Archivée</span>':''}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          ${d.code?`<span class="pc-code">${d.code}</span>`:''}
+          ${archiveBtn}
+        </div>
       </div>
       <div class="prog-bar-wrap">
         <div class="prog-bar" style="width:${pct}%;background:${barColor}"></div>
@@ -5718,7 +5826,9 @@ function renderProgression() {
       ${avgRow}
       ${nextDeadline}
     </div>`;
-  }).join('');
+  }
+
+  const progCards = discList.map(d=>buildProgCard(d,false)).join('');
 
   // Légende ateliers/sous-groupes — affichée seulement si au moins une carte en montre
   const hasGroupInfo = discList.some(d => activeGroupEvents().some(e=>{const t=getGroupTag(e._uid);return t?.subject===d.code&&getDays(e._date)>=0;}));
@@ -5728,9 +5838,29 @@ function renderProgression() {
       <span style="display:inline-flex;align-items:center;gap:5px"><span class="prog-type-pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i></span> Sous-groupes (même créneau qu'une live session)</span>
     </div>` : '';
 
+  // Section matières archivées — repliée par défaut, chip pour l'afficher/masquer
+  let archivedSection = '';
+  if (archivedDiscList.length) {
+    const archivedCards = showArchivedCourses ? archivedDiscList.map(d=>buildProgCard(d,true)).join('') : '';
+    archivedSection = `
+    <div class="prog-archived-wrap">
+      <button class="chip" onclick="showArchivedCourses=!showArchivedCourses;renderProgression()">
+        <i class="ti ti-archive"></i> Matières archivées (${archivedDiscList.length}) <i class="ti ti-chevron-${showArchivedCourses?'up':'down'}"></i>
+      </button>
+      ${showArchivedCourses?`<div class="prog-grid" style="margin-top:12px">${archivedCards}</div>`:''}
+    </div>`;
+  }
+
+  if (!discList.length && archivedDiscList.length && !showArchivedCourses) {
+    el.innerHTML = `<div class="state-box"><i class="ti ti-archive big-icon"></i><p>Toutes tes matières sont archivées.</p></div>${archivedSection}`;
+    renderGroupBySubject();
+    return;
+  }
+
   el.innerHTML=`
     <div class="prog-grid">${progCards}</div>
     ${groupLegend}
+    ${archivedSection}
   `;
   // Ateliers par matière (déplacé depuis l'onglet Ateliers) — section statique sous prog-content
   renderGroupBySubject();
