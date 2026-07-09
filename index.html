@@ -1504,6 +1504,7 @@ const STORAGE_KEY      = 'bsa_ics_url_v2';
 const RENDU_KEY        = 'bsa_rendu_v1';
 const GROUP_TAGS_KEY   = 'bsa_group_tags_v1';
 const ARCHIVED_COURSES_KEY = 'bsa_archived_courses_v1';
+const NOTES_SHOW_ARCHIVED_KEY = 'bsa_notes_show_archived_v1'; // préférence d'affichage, propre à cet appareil
 const THEME_KEY        = 'bsa_theme';
 const PRIVATE_ICS_KEY  = 'bsa_private_ics_url_v1';
 const NOTIF_KEY        = 'bsa_notif_settings_v1';
@@ -2399,10 +2400,10 @@ const Onboarding = {
 
         Auth.mode = 'share'; Auth.readOnly = true; Auth.shareToken = token;
         const raw2 = sd.state?.rendus;
-        Auth._cache = (raw2 && typeof raw2 === 'object' && !Array.isArray(raw2)) ? raw2 : {};
+        Auth._cache = normalizeStateMap(raw2);
         const tags = sd.state?.group_tags;
-        groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-        archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+        groupTagsCache = normalizeStateMap(tags);
+        archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
         if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
         Auth._updateUI();
         pbsSyncConfig('share', token);
@@ -2451,6 +2452,16 @@ const Onboarding = {
 /* ══════════════════════════════════════════════════════════════
    Auth & mode management
 ══════════════════════════════════════════════════════════════ */
+// Normalise une "map" reçue du serveur (rendus, group_tags, grades, archived_courses).
+// PHP encode un tableau associatif vide en JSON [] plutôt que {} (le langage ne
+// distingue pas les deux une fois vides) : un [] reçu ici est donc une map vide
+// légitime, pas une erreur de type. Seul un tableau non vide serait vraiment invalide.
+function normalizeStateMap(v) {
+  if (v && typeof v === 'object' && !Array.isArray(v)) return v;
+  if (Array.isArray(v) && v.length === 0) return {};
+  return {};
+}
+
 const Auth = {
   mode:       'guest',   // 'guest' | 'connected' | 'share'
   readOnly:   false,
@@ -2502,10 +2513,10 @@ const Auth = {
             Auth.readOnly   = true;
             Auth.shareToken = cfg.shareToken;
             const raw = sd.state?.rendus;
-            Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+            Auth._cache = normalizeStateMap(raw);
             const tags = sd.state?.group_tags;
-            groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-            archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+            groupTagsCache = normalizeStateMap(tags);
+            archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
             if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
             Auth._updateUI();
             pbsSyncConfig('share', cfg.shareToken);
@@ -2578,11 +2589,11 @@ const Auth = {
               const _tf = document.getElementById('wc-share-token');
               if (_tf) _tf.value = shareParam;
               const raw = sd.state?.rendus;
-              Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+              Auth._cache = normalizeStateMap(raw);
               // Attributions matière/devoir des ateliers (lecture seule)
               const tags = sd.state?.group_tags;
-              groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-              archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+              groupTagsCache = normalizeStateMap(tags);
+              archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
               // Nom personnalisé défini par le propriétaire
               if (sd.dashboard_name) {
                 AppMeta.customName = sd.dashboard_name;
@@ -2689,11 +2700,11 @@ const Auth = {
   _initGuestGroup() {
     try {
       const tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}');
-      if (tags && typeof tags === 'object') groupTagsCache = tags;
+      groupTagsCache = normalizeStateMap(tags);
     } catch(_) {}
     try {
       const arch = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}');
-      if (arch && typeof arch === 'object') archivedCoursesCache = arch;
+      archivedCoursesCache = normalizeStateMap(arch);
     } catch(_) {}
     let url = '';
     try { url = localStorage.getItem(PRIVATE_ICS_KEY) || ''; } catch(_) {}
@@ -2711,19 +2722,27 @@ const Auth = {
     if (!r.ok) return;
     const d = await r.json();
     const raw = d.state?.rendus;
-    Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
-    groupTagsCache = (d.state?.group_tags && typeof d.state.group_tags === 'object') ? d.state.group_tags : {};
-    archivedCoursesCache = (d.state?.archived_courses && typeof d.state.archived_courses === 'object') ? d.state.archived_courses : {};
-    Auth._gradesCache = (d.state?.grades && typeof d.state.grades === 'object') ? d.state.grades : {};
+    Auth._cache = normalizeStateMap(raw);
+    groupTagsCache = normalizeStateMap(d.state?.group_tags);
+    archivedCoursesCache = normalizeStateMap(d.state?.archived_courses);
+    Auth._gradesCache = normalizeStateMap(d.state?.grades);
     Auth._serverStateLoaded = true; // flag : état chargé depuis le serveur, sauvegardes autorisées
   },
 
   async _saveServerState() {
     if (Auth.mode !== 'connected') return;
-    // Protection critique : ne jamais sauvegarder si l'état serveur n'a pas
-    // encore été chargé — on risquerait d'écraser les données existantes
-    // (notamment grades) avec un cache vide/null issu d'une reconnexion partielle.
-    if (!Auth._serverStateLoaded) return;
+    // Protection critique : ne jamais sauvegarder avant que l'état serveur ait
+    // fini de charger — on risquerait d'écraser les données existantes avec un
+    // cache vide/null issu d'une reconnexion partielle. Mais un clic très rapide
+    // juste après l'ouverture de l'app (ex : archiver une matière dès l'arrivée
+    // sur Progression) peut survenir avant la fin de ce chargement initial :
+    // dans ce cas on patiente un peu au lieu de renoncer immédiatement en silence.
+    if (!Auth._serverStateLoaded) {
+      for (let i = 0; i < 25 && !Auth._serverStateLoaded; i++) {
+        await new Promise(res => setTimeout(res, 200));
+      }
+      if (!Auth._serverStateLoaded) { toast('⚠ Chargement en cours, réessaie dans un instant'); return; }
+    }
     // Sérialisation : chaque sauvegarde attend la fin de la précédente avant de
     // partir, et lit l'état courant au moment de l'envoi (pas au moment de l'appel).
     // Sans ça, deux sauvegardes lancées rapprochées (ex : archiver plusieurs
@@ -3144,10 +3163,10 @@ const Auth = {
       Auth.readOnly   = true;
       Auth.shareToken = token;
       const raw = sd.state?.rendus;
-      Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+      Auth._cache = normalizeStateMap(raw);
       const tags = sd.state?.group_tags;
-      groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-      archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+      groupTagsCache = normalizeStateMap(tags);
+      archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
       if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
       pbsSyncConfig('share', token);
       loadGroupCalendarShare();
@@ -3377,6 +3396,7 @@ function saveGradeField(uid, field, value) {
 let notesFilterCourse = 'all';
 let notesFilterType   = 'all';
 let notesShowArchived = false; // matières archivées masquées par défaut dans l'onglet Notes
+try { notesShowArchived = localStorage.getItem(NOTES_SHOW_ARCHIVED_KEY) === '1'; } catch(_) {}
 let notesExpandedCourses  = new Set(); // matières dépliées manuellement (repliées par défaut, toutes)
 let notesExpandedSections = new Set(); // sous-sections "matière::individuel" / "matière::collectif" dépliées manuellement
 let notesAllExpanded = false; // état du bouton "Tout déplier / Tout replier"
@@ -3441,7 +3461,7 @@ function renderNotes() {
       <button class="chip ${notesFilterType==='individuel'?'active':''}" onclick="notesFilterType='individuel';renderNotes()"><i class="ti ti-user"></i> Individuels</button>
       <button class="chip ${notesFilterType==='collectif'?'active':''}" onclick="notesFilterType='collectif';renderNotes()"><i class="ti ti-users"></i> Collectifs</button>
       <div class="filter-toggles">
-        <label class="past-label"><input type="checkbox" id="notes-show-archived" ${notesShowArchived?'checked':''} onchange="notesShowArchived=this.checked;renderNotes()"> Matières archivées</label>
+        <label class="past-label"><input type="checkbox" id="notes-show-archived" ${notesShowArchived?'checked':''} onchange="notesShowArchived=this.checked;try{localStorage.setItem(NOTES_SHOW_ARCHIVED_KEY,notesShowArchived?'1':'0');}catch(_){}renderNotes()"> Matières archivées</label>
         <button class="chip" onclick="notesToggleAll()">
           <i class="ti ti-${notesAllExpanded?'chevrons-up':'chevrons-down'}"></i> ${notesAllExpanded?'Tout replier':'Tout déplier'}
         </button>
@@ -4149,10 +4169,10 @@ async function wcApplyShare() {
     Auth.readOnly   = true;
     Auth.shareToken = token;
     const raw = sd.state?.rendus;
-    Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    Auth._cache = normalizeStateMap(raw);
     const tags = sd.state?.group_tags;
-    groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-    archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+    groupTagsCache = normalizeStateMap(tags);
+    archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
     if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
     Auth._updateUI();
     pbsSyncConfig('share', token);
@@ -4386,10 +4406,10 @@ function processICS(txt) {
       .then(sd => {
         if (!sd?.ok) return;
         const raw = sd.state?.rendus;
-        Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+        Auth._cache = normalizeStateMap(raw);
         const tags = sd.state?.group_tags;
-        if (tags && typeof tags === 'object' && !Array.isArray(tags)) groupTagsCache = tags;
-        if (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) archivedCoursesCache = sd.state.archived_courses;
+        if (tags !== undefined) groupTagsCache = normalizeStateMap(tags);
+        if (sd.state?.archived_courses !== undefined) archivedCoursesCache = normalizeStateMap(sd.state.archived_courses);
         if (sd.dashboard_name && !AppMeta.customName) {
           AppMeta.customName = sd.dashboard_name;
           updateBrand();
