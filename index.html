@@ -1208,6 +1208,9 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <i class="ti ti-lock"></i> Connecté
       </button>
     </div>
+    <p id="wc-no-backend-note" style="display:none;font-size:11px;color:var(--text3);margin:-10px 0 14px;line-height:1.5">
+      <i class="ti ti-info-circle"></i> Aucun serveur Brightspace Agenda détecté sur cet hébergement (ex : GitHub Pages) : seul le mode local est disponible ici.
+    </p>
 
     <!-- Panneau Local -->
     <div id="wc-pane-local">
@@ -2658,8 +2661,27 @@ const Auth = {
       // Tenter de charger un token persisté (nouveau ou déjà mémorisé)
       const shared = await Auth._loadPersistedShare();
       Auth._updateUI();
+      // Pas de backend local et pas de partage actif : ce serveur n'a pas d'api.php
+      // fonctionnel (ex : page statique sur GitHub Pages). Inutile de proposer des
+      // modes qui échoueront systématiquement. Cette branche n'est jamais atteinte
+      // côté APK (IS_PACKAGED_APP retourne plus haut, voir début de init()).
+      if (!shared) Auth._disableServerModes();
       return shared ? true : undefined;
     }
+  },
+
+  // Masque les modes "Lecture seule" / "Connecté" à l'écran d'accueil quand
+  // aucun backend (api.php) n'a pu être détecté sur l'origine courante.
+  // Ne modifie jamais d'URL : purement une adaptation d'affichage, et jamais
+  // appelée côté APK (voir init()).
+  _disableServerModes() {
+    const shareTab = document.getElementById('wc-tab-share');
+    const connTab  = document.getElementById('wc-tab-connected');
+    const note     = document.getElementById('wc-no-backend-note');
+    if (shareTab) shareTab.style.display = 'none';
+    if (connTab)  connTab.style.display  = 'none';
+    if (note)     note.style.display     = '';
+    if (typeof wcTab === 'function') wcTab('local');
   },
 
   // Initialise l'onglet Ateliers en mode invité depuis localStorage
@@ -4593,19 +4615,40 @@ async function loadGroupCalendar(){
   }
 }
 
-// Fetch direct (CORS) puis fallback proxy.php pour le mode invité
+// Même mécanique que le calendrier Brightspace (loadCalendar) : proxy local
+// PHP → fetch direct → proxies publics tiers en dernier recours. Les étapes
+// 1 et 3 sont sautées en mode packagé (APK), pour la même raison : le fetch
+// direct y est déjà natif via CapacitorHttp, sans restriction CORS.
 async function fetchPrivateIcsGuest(url){
-  // 1. Tentative directe (Outlook/Google autorisent souvent le CORS)
-  try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
-    if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))return t;}
-  }catch(_){}
-  // 2. Fallback proxy.php
-  try{
-    const r=await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
-    if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))return t;}
-  }catch(_){}
-  return null;
+  let txt = null;
+  // 1. Proxy local PHP (inutile en mode packagé : pas de serveur associé)
+  if (!IS_PACKAGED_APP) {
+    try {
+      const r = await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(10000)});
+      if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
+    } catch(_) {}
+  }
+  // 2. Direct (requête native sans CORS si CapacitorHttp est actif)
+  if (!txt) {
+    try {
+      const r = await fetch(url, {signal:AbortSignal.timeout(10000)});
+      if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
+    } catch(_) {}
+  }
+  // 3. Proxies publics (fallback web uniquement ; inutile en mode packagé)
+  if (!txt && !IS_PACKAGED_APP) {
+    for (const pFn of CORS_PROXIES) {
+      try {
+        const p = pFn(url);
+        const r = await fetch(p.url, {signal:AbortSignal.timeout(12000)});
+        if (!r.ok) continue;
+        const ct = r.headers.get('content-type') || '';
+        const body = p.isJson || ct.includes('json') ? ((await r.json()).contents || '') : await r.text();
+        if (body && body.includes('BEGIN:VCALENDAR')) { txt = body; break; }
+      } catch(_) {}
+    }
+  }
+  return txt;
 }
 
 function processGroupICS(txt){
