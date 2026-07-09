@@ -2457,6 +2457,7 @@ const Auth = {
   shareToken: null,
   _cache:     null,      // rendu map cache for connected/share mode
   _exportUrls: { full: '', safe: '' }, // URLs des flux ICS exportés (connecté uniquement)
+  _saveQueue: Promise.resolve(), // sérialise les appels à _saveServerState (voir plus bas)
   get _apiBase() {
     // Web : toujours le même serveur (chemin relatif, comportement
     // historique inchangé), SAUF quand l'utilisateur s'est connecté à un
@@ -2723,11 +2724,24 @@ const Auth = {
     // encore été chargé — on risquerait d'écraser les données existantes
     // (notamment grades) avec un cache vide/null issu d'une reconnexion partielle.
     if (!Auth._serverStateLoaded) return;
-    await apiFetch(Auth._apiBase, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
-    });
+    // Sérialisation : chaque sauvegarde attend la fin de la précédente avant de
+    // partir, et lit l'état courant au moment de l'envoi (pas au moment de l'appel).
+    // Sans ça, deux sauvegardes lancées rapprochées (ex : archiver plusieurs
+    // matières à la suite) peuvent arriver au serveur dans le désordre, et la
+    // plus lente écrase la plus récente avec des données plus anciennes — c'est
+    // ce qui provoquait la perte silencieuse de l'archivage.
+    const run = async () => {
+      try {
+        const r = await apiFetch(Auth._apiBase, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
+        });
+        if (!r.ok) toast('⚠ Sauvegarde serveur échouée, réessaie');
+      } catch (_) { toast('⚠ Sauvegarde serveur impossible (réseau)'); }
+    };
+    Auth._saveQueue = Auth._saveQueue.then(run, run);
+    return Auth._saveQueue;
   },
 
   _updateUI(showLoginBtn = false) {
