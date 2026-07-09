@@ -1208,6 +1208,9 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <i class="ti ti-lock"></i> Connecté
       </button>
     </div>
+    <p id="wc-no-backend-note" style="display:none;font-size:11px;color:var(--text3);margin:-10px 0 14px;line-height:1.5">
+      <i class="ti ti-info-circle"></i> Aucun serveur Brightspace Agenda détecté sur cet hébergement (ex : GitHub Pages) : seul le mode local est disponible ici.
+    </p>
 
     <!-- Panneau Local -->
     <div id="wc-pane-local">
@@ -1501,6 +1504,7 @@ const STORAGE_KEY      = 'bsa_ics_url_v2';
 const RENDU_KEY        = 'bsa_rendu_v1';
 const GROUP_TAGS_KEY   = 'bsa_group_tags_v1';
 const ARCHIVED_COURSES_KEY = 'bsa_archived_courses_v1';
+const NOTES_SHOW_ARCHIVED_KEY = 'bsa_notes_show_archived_v1'; // préférence d'affichage, propre à cet appareil
 const THEME_KEY        = 'bsa_theme';
 const PRIVATE_ICS_KEY  = 'bsa_private_ics_url_v1';
 const NOTIF_KEY        = 'bsa_notif_settings_v1';
@@ -2396,10 +2400,10 @@ const Onboarding = {
 
         Auth.mode = 'share'; Auth.readOnly = true; Auth.shareToken = token;
         const raw2 = sd.state?.rendus;
-        Auth._cache = (raw2 && typeof raw2 === 'object' && !Array.isArray(raw2)) ? raw2 : {};
+        Auth._cache = normalizeStateMap(raw2);
         const tags = sd.state?.group_tags;
-        groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-        archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+        groupTagsCache = normalizeStateMap(tags);
+        archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
         if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
         Auth._updateUI();
         pbsSyncConfig('share', token);
@@ -2448,12 +2452,23 @@ const Onboarding = {
 /* ══════════════════════════════════════════════════════════════
    Auth & mode management
 ══════════════════════════════════════════════════════════════ */
+// Normalise une "map" reçue du serveur (rendus, group_tags, grades, archived_courses).
+// PHP encode un tableau associatif vide en JSON [] plutôt que {} (le langage ne
+// distingue pas les deux une fois vides) : un [] reçu ici est donc une map vide
+// légitime, pas une erreur de type. Seul un tableau non vide serait vraiment invalide.
+function normalizeStateMap(v) {
+  if (v && typeof v === 'object' && !Array.isArray(v)) return v;
+  if (Array.isArray(v) && v.length === 0) return {};
+  return {};
+}
+
 const Auth = {
   mode:       'guest',   // 'guest' | 'connected' | 'share'
   readOnly:   false,
   shareToken: null,
   _cache:     null,      // rendu map cache for connected/share mode
   _exportUrls: { full: '', safe: '' }, // URLs des flux ICS exportés (connecté uniquement)
+  _saveQueue: Promise.resolve(), // sérialise les appels à _saveServerState (voir plus bas)
   get _apiBase() {
     // Web : toujours le même serveur (chemin relatif, comportement
     // historique inchangé), SAUF quand l'utilisateur s'est connecté à un
@@ -2498,10 +2513,10 @@ const Auth = {
             Auth.readOnly   = true;
             Auth.shareToken = cfg.shareToken;
             const raw = sd.state?.rendus;
-            Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+            Auth._cache = normalizeStateMap(raw);
             const tags = sd.state?.group_tags;
-            groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-            archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+            groupTagsCache = normalizeStateMap(tags);
+            archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
             if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
             Auth._updateUI();
             pbsSyncConfig('share', cfg.shareToken);
@@ -2574,11 +2589,11 @@ const Auth = {
               const _tf = document.getElementById('wc-share-token');
               if (_tf) _tf.value = shareParam;
               const raw = sd.state?.rendus;
-              Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+              Auth._cache = normalizeStateMap(raw);
               // Attributions matière/devoir des ateliers (lecture seule)
               const tags = sd.state?.group_tags;
-              groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-              archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+              groupTagsCache = normalizeStateMap(tags);
+              archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
               // Nom personnalisé défini par le propriétaire
               if (sd.dashboard_name) {
                 AppMeta.customName = sd.dashboard_name;
@@ -2658,19 +2673,38 @@ const Auth = {
       // Tenter de charger un token persisté (nouveau ou déjà mémorisé)
       const shared = await Auth._loadPersistedShare();
       Auth._updateUI();
+      // Pas de backend local et pas de partage actif : ce serveur n'a pas d'api.php
+      // fonctionnel (ex : page statique sur GitHub Pages). Inutile de proposer des
+      // modes qui échoueront systématiquement. Cette branche n'est jamais atteinte
+      // côté APK (IS_PACKAGED_APP retourne plus haut, voir début de init()).
+      if (!shared) Auth._disableServerModes();
       return shared ? true : undefined;
     }
+  },
+
+  // Masque les modes "Lecture seule" / "Connecté" à l'écran d'accueil quand
+  // aucun backend (api.php) n'a pu être détecté sur l'origine courante.
+  // Ne modifie jamais d'URL : purement une adaptation d'affichage, et jamais
+  // appelée côté APK (voir init()).
+  _disableServerModes() {
+    const shareTab = document.getElementById('wc-tab-share');
+    const connTab  = document.getElementById('wc-tab-connected');
+    const note     = document.getElementById('wc-no-backend-note');
+    if (shareTab) shareTab.style.display = 'none';
+    if (connTab)  connTab.style.display  = 'none';
+    if (note)     note.style.display     = '';
+    if (typeof wcTab === 'function') wcTab('local');
   },
 
   // Initialise l'onglet Ateliers en mode invité depuis localStorage
   _initGuestGroup() {
     try {
       const tags = JSON.parse(localStorage.getItem(GROUP_TAGS_KEY) || '{}');
-      if (tags && typeof tags === 'object') groupTagsCache = tags;
+      groupTagsCache = normalizeStateMap(tags);
     } catch(_) {}
     try {
       const arch = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}');
-      if (arch && typeof arch === 'object') archivedCoursesCache = arch;
+      archivedCoursesCache = normalizeStateMap(arch);
     } catch(_) {}
     let url = '';
     try { url = localStorage.getItem(PRIVATE_ICS_KEY) || ''; } catch(_) {}
@@ -2688,24 +2722,45 @@ const Auth = {
     if (!r.ok) return;
     const d = await r.json();
     const raw = d.state?.rendus;
-    Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
-    groupTagsCache = (d.state?.group_tags && typeof d.state.group_tags === 'object') ? d.state.group_tags : {};
-    archivedCoursesCache = (d.state?.archived_courses && typeof d.state.archived_courses === 'object') ? d.state.archived_courses : {};
-    Auth._gradesCache = (d.state?.grades && typeof d.state.grades === 'object') ? d.state.grades : {};
+    Auth._cache = normalizeStateMap(raw);
+    groupTagsCache = normalizeStateMap(d.state?.group_tags);
+    archivedCoursesCache = normalizeStateMap(d.state?.archived_courses);
+    Auth._gradesCache = normalizeStateMap(d.state?.grades);
     Auth._serverStateLoaded = true; // flag : état chargé depuis le serveur, sauvegardes autorisées
   },
 
   async _saveServerState() {
     if (Auth.mode !== 'connected') return;
-    // Protection critique : ne jamais sauvegarder si l'état serveur n'a pas
-    // encore été chargé — on risquerait d'écraser les données existantes
-    // (notamment grades) avec un cache vide/null issu d'une reconnexion partielle.
-    if (!Auth._serverStateLoaded) return;
-    await apiFetch(Auth._apiBase, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
-    });
+    // Protection critique : ne jamais sauvegarder avant que l'état serveur ait
+    // fini de charger — on risquerait d'écraser les données existantes avec un
+    // cache vide/null issu d'une reconnexion partielle. Mais un clic très rapide
+    // juste après l'ouverture de l'app (ex : archiver une matière dès l'arrivée
+    // sur Progression) peut survenir avant la fin de ce chargement initial :
+    // dans ce cas on patiente un peu au lieu de renoncer immédiatement en silence.
+    if (!Auth._serverStateLoaded) {
+      for (let i = 0; i < 25 && !Auth._serverStateLoaded; i++) {
+        await new Promise(res => setTimeout(res, 200));
+      }
+      if (!Auth._serverStateLoaded) { toast('⚠ Chargement en cours, réessaie dans un instant'); return; }
+    }
+    // Sérialisation : chaque sauvegarde attend la fin de la précédente avant de
+    // partir, et lit l'état courant au moment de l'envoi (pas au moment de l'appel).
+    // Sans ça, deux sauvegardes lancées rapprochées (ex : archiver plusieurs
+    // matières à la suite) peuvent arriver au serveur dans le désordre, et la
+    // plus lente écrase la plus récente avec des données plus anciennes — c'est
+    // ce qui provoquait la perte silencieuse de l'archivage.
+    const run = async () => {
+      try {
+        const r = await apiFetch(Auth._apiBase, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
+        });
+        if (!r.ok) toast('⚠ Sauvegarde serveur échouée, réessaie');
+      } catch (_) { toast('⚠ Sauvegarde serveur impossible (réseau)'); }
+    };
+    Auth._saveQueue = Auth._saveQueue.then(run, run);
+    return Auth._saveQueue;
   },
 
   _updateUI(showLoginBtn = false) {
@@ -3108,10 +3163,10 @@ const Auth = {
       Auth.readOnly   = true;
       Auth.shareToken = token;
       const raw = sd.state?.rendus;
-      Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+      Auth._cache = normalizeStateMap(raw);
       const tags = sd.state?.group_tags;
-      groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-      archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+      groupTagsCache = normalizeStateMap(tags);
+      archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
       if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
       pbsSyncConfig('share', token);
       loadGroupCalendarShare();
@@ -3341,6 +3396,7 @@ function saveGradeField(uid, field, value) {
 let notesFilterCourse = 'all';
 let notesFilterType   = 'all';
 let notesShowArchived = false; // matières archivées masquées par défaut dans l'onglet Notes
+try { notesShowArchived = localStorage.getItem(NOTES_SHOW_ARCHIVED_KEY) === '1'; } catch(_) {}
 let notesExpandedCourses  = new Set(); // matières dépliées manuellement (repliées par défaut, toutes)
 let notesExpandedSections = new Set(); // sous-sections "matière::individuel" / "matière::collectif" dépliées manuellement
 let notesAllExpanded = false; // état du bouton "Tout déplier / Tout replier"
@@ -3405,7 +3461,7 @@ function renderNotes() {
       <button class="chip ${notesFilterType==='individuel'?'active':''}" onclick="notesFilterType='individuel';renderNotes()"><i class="ti ti-user"></i> Individuels</button>
       <button class="chip ${notesFilterType==='collectif'?'active':''}" onclick="notesFilterType='collectif';renderNotes()"><i class="ti ti-users"></i> Collectifs</button>
       <div class="filter-toggles">
-        <label class="past-label"><input type="checkbox" id="notes-show-archived" ${notesShowArchived?'checked':''} onchange="notesShowArchived=this.checked;renderNotes()"> Matières archivées</label>
+        <label class="past-label"><input type="checkbox" id="notes-show-archived" ${notesShowArchived?'checked':''} onchange="notesShowArchived=this.checked;try{localStorage.setItem(NOTES_SHOW_ARCHIVED_KEY,notesShowArchived?'1':'0');}catch(_){}renderNotes()"> Matières archivées</label>
         <button class="chip" onclick="notesToggleAll()">
           <i class="ti ti-${notesAllExpanded?'chevrons-up':'chevrons-down'}"></i> ${notesAllExpanded?'Tout replier':'Tout déplier'}
         </button>
@@ -4113,10 +4169,10 @@ async function wcApplyShare() {
     Auth.readOnly   = true;
     Auth.shareToken = token;
     const raw = sd.state?.rendus;
-    Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    Auth._cache = normalizeStateMap(raw);
     const tags = sd.state?.group_tags;
-    groupTagsCache = (tags && typeof tags === 'object' && !Array.isArray(tags)) ? tags : {};
-    archivedCoursesCache = (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) ? sd.state.archived_courses : {};
+    groupTagsCache = normalizeStateMap(tags);
+    archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
     if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
     Auth._updateUI();
     pbsSyncConfig('share', token);
@@ -4350,10 +4406,10 @@ function processICS(txt) {
       .then(sd => {
         if (!sd?.ok) return;
         const raw = sd.state?.rendus;
-        Auth._cache = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+        Auth._cache = normalizeStateMap(raw);
         const tags = sd.state?.group_tags;
-        if (tags && typeof tags === 'object' && !Array.isArray(tags)) groupTagsCache = tags;
-        if (sd.state?.archived_courses && typeof sd.state.archived_courses === 'object' && !Array.isArray(sd.state.archived_courses)) archivedCoursesCache = sd.state.archived_courses;
+        if (tags !== undefined) groupTagsCache = normalizeStateMap(tags);
+        if (sd.state?.archived_courses !== undefined) archivedCoursesCache = normalizeStateMap(sd.state.archived_courses);
         if (sd.dashboard_name && !AppMeta.customName) {
           AppMeta.customName = sd.dashboard_name;
           updateBrand();
@@ -4593,19 +4649,40 @@ async function loadGroupCalendar(){
   }
 }
 
-// Fetch direct (CORS) puis fallback proxy.php pour le mode invité
+// Même mécanique que le calendrier Brightspace (loadCalendar) : proxy local
+// PHP → fetch direct → proxies publics tiers en dernier recours. Les étapes
+// 1 et 3 sont sautées en mode packagé (APK), pour la même raison : le fetch
+// direct y est déjà natif via CapacitorHttp, sans restriction CORS.
 async function fetchPrivateIcsGuest(url){
-  // 1. Tentative directe (Outlook/Google autorisent souvent le CORS)
-  try{
-    const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
-    if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))return t;}
-  }catch(_){}
-  // 2. Fallback proxy.php
-  try{
-    const r=await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
-    if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))return t;}
-  }catch(_){}
-  return null;
+  let txt = null;
+  // 1. Proxy local PHP (inutile en mode packagé : pas de serveur associé)
+  if (!IS_PACKAGED_APP) {
+    try {
+      const r = await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(10000)});
+      if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
+    } catch(_) {}
+  }
+  // 2. Direct (requête native sans CORS si CapacitorHttp est actif)
+  if (!txt) {
+    try {
+      const r = await fetch(url, {signal:AbortSignal.timeout(10000)});
+      if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
+    } catch(_) {}
+  }
+  // 3. Proxies publics (fallback web uniquement ; inutile en mode packagé)
+  if (!txt && !IS_PACKAGED_APP) {
+    for (const pFn of CORS_PROXIES) {
+      try {
+        const p = pFn(url);
+        const r = await fetch(p.url, {signal:AbortSignal.timeout(12000)});
+        if (!r.ok) continue;
+        const ct = r.headers.get('content-type') || '';
+        const body = p.isJson || ct.includes('json') ? ((await r.json()).contents || '') : await r.text();
+        if (body && body.includes('BEGIN:VCALENDAR')) { txt = body; break; }
+      } catch(_) {}
+    }
+  }
+  return txt;
 }
 
 function processGroupICS(txt){
