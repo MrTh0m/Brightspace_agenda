@@ -4285,6 +4285,59 @@ function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processIC
 // Seul point de contact entre index.html et les widgets Android natifs.
 // Si la structure interne de allDevoirs/allSessions change, seule cette
 // fonction doit être mise à jour — le Kotlin et les XML ne bougent pas.
+
+function _widgetSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+// Grille jour par jour pour les widgets "Semaine fixe" et "7 jours glissants".
+// `dates` : tableau de Date (minuit local). Format attendu par updateWeekBlocks() dans BsaWidgets.kt.
+function buildWidgetDayBlocks(dates) {
+  const now = new Date();
+  return dates.map(d => {
+    const dayEvents = [];
+    activeSessions().forEach(s=>{ if(s._date && _widgetSameDay(s._date,d)) dayEvents.push({type:'session', _date:s._date, _dateEnd:s._dateEnd, title:s._courseName||s._title||'Session'}); });
+    activeGroupEvents().forEach(e=>{ if(e._date && _widgetSameDay(e._date,d) && !detectSubgroup(e)) dayEvents.push({type:'atelier', _date:e._date, _dateEnd:e._dateEnd, title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier'}); });
+    allDevoirs.forEach(dv=>{ if(dv._date && _widgetSameDay(dv._date,d) && !effectivelyRendu(dv)) dayEvents.push({type:'devoir', _date:dv._date, _dateEnd:null, title:dv._title}); });
+    dayEvents.sort((a,b)=>a._date-b._date);
+    return {
+      label: fmtDay(d),
+      date: d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),
+      is_today: _widgetSameDay(d, now),
+      count: dayEvents.length,
+      events: dayEvents.slice(0,3).map(ev=>({
+        type: ev.type,
+        time: fmtTime(ev._date),
+        time_end: ev._dateEnd ? fmtTime(ev._dateEnd) : '',
+        title: ev.title,
+      })),
+    };
+  });
+}
+
+// Semaine courante + 4 suivantes pour le widget "Charge par semaine".
+// Même logique de regroupement que renderWeekChart() (onglet Agenda), fenêtrée sur 5 semaines.
+function buildWidgetChargeWeeks() {
+  const weekLabels = [0,1,2,3,4].map(i => isoWeek(getWeekMonday(i)));
+  const byWeek = {};
+  allDevoirs.forEach(ev=>{
+    if(!ev._date) return;
+    const w = isoWeek(ev._date);
+    if(!byWeek[w]) byWeek[w] = {total:0, done:0};
+    byWeek[w].total++;
+    if(effectivelyRendu(ev)) byWeek[w].done++;
+  });
+  const maxTotal = Math.max(...weekLabels.map(w=>byWeek[w]?.total||0), 1);
+  return weekLabels.map((w,i)=>{
+    const data = byWeek[w] || {total:0, done:0};
+    const pending = data.total - data.done;
+    return {
+      week: w, is_current: i===0,
+      total: data.total, done: data.done, pending,
+      pct_done: data.total>0 ? Math.round(data.done/data.total*100) : 0,
+      pct_total: Math.round(data.total/maxTotal*100),
+    };
+  });
+}
+
 function buildWidgetPayload() {
   const now     = new Date();
   const fmtTime = d => d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -4327,6 +4380,11 @@ function buildWidgetPayload() {
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
 
+  const mondayThisWeek = getWeekMonday(0);
+  const weekFixedDates = Array.from({length:7}, (_,i)=>{ const d=new Date(mondayThisWeek); d.setDate(d.getDate()+i); return d; });
+  const todayMidnight  = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const weekSlidingDates = Array.from({length:7}, (_,i)=>{ const d=new Date(todayMidnight); d.setDate(d.getDate()+i); return d; });
+
   return JSON.stringify({
     v: 2, updated_at: now.toISOString(),
     next_event: upcomingEvents[0] || null,
@@ -4337,14 +4395,40 @@ function buildWidgetPayload() {
     progression: { total:totalAll, done:totalDone,
                    percent:totalAll>0?Math.round(totalDone/totalAll*100):0,
                    matieres:matieresArr.slice(0,4) },
+    week_fixed: buildWidgetDayBlocks(weekFixedDates),
+    week_sliding: buildWidgetDayBlocks(weekSlidingDates),
+    charge_weeks: buildWidgetChargeWeeks(),
   });
 }
 
+// Noms de classe complets des 7 widgets Android, déclarés dans AndroidManifest.xml.
+// Nécessaires pour setRegisteredWidgets() -> reloadAllTimelines() côté plugin natif.
+const WIDGET_CLASS_NAMES = [
+  'fr.thomasetsandie.emmgo.agenda.NextEventWidget',
+  'fr.thomasetsandie.emmgo.agenda.AgendaWidget',
+  'fr.thomasetsandie.emmgo.agenda.DevoirsWidget',
+  'fr.thomasetsandie.emmgo.agenda.ProgressionWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekFixedWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekSlidingWidget',
+  'fr.thomasetsandie.emmgo.agenda.ChargeWidget',
+];
+let widgetsRegistered = false; // setRegisteredWidgets() n'a besoin d'être appelé qu'une fois par session JS
+
 async function updateWidgets() {
   if (!IS_PACKAGED_APP) return;
-  const bridge = window.Capacitor?.Plugins?.CapacitorWidgetBridge;
+  // Le plugin capacitor-widget-bridge s'expose sous Capacitor.Plugins.WidgetBridgePlugin
+  // (nom déclaré côté natif via @CapacitorPlugin(name = "WidgetBridgePlugin") — PAS "CapacitorWidgetBridge").
+  const bridge = window.Capacitor?.Plugins?.WidgetBridgePlugin;
   if (!bridge) return;
-  try { await bridge.sendWidgetData({ data: buildWidgetPayload() }); } catch(_) {}
+  try {
+    // group/key DOIVENT matcher PREFS_NAME/PREFS_KEY dans BsaWidgets.kt
+    await bridge.setItem({ key: 'bsa_widget_data', group: 'bsa_widget_prefs', value: buildWidgetPayload() });
+    if (!widgetsRegistered) {
+      await bridge.setRegisteredWidgets({ widgets: WIDGET_CLASS_NAMES });
+      widgetsRegistered = true;
+    }
+    await bridge.reloadAllTimelines();
+  } catch(_) {}
 }
 
 function processICS(txt) {
