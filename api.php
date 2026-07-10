@@ -436,7 +436,20 @@ switch ($action) {
     case 'set_state':
         requireAuth();
         if (!isset($input['state'])) respond(['error'=>'Champ state manquant'], 400);
-        writeJson(STATE_FILE, $input['state']) ? respond(['ok'=>true]) : respond(['error'=>'Erreur écriture state.json'], 500);
+        $newState = $input['state'];
+        // PHP ne distingue pas un objet JSON vide {} d'un tableau vide [] : après
+        // json_decode(..., true) les deux deviennent un array() PHP vide, et
+        // json_encode() réécrit toujours un array() vide en [] par défaut. Ça
+        // corrompait silencieusement les "maps" encore vides (typiquement
+        // archived_courses avant le premier archivage) en tableau JSON, que le
+        // client rejette ensuite au chargement (garde de type côté JS) → la
+        // donnée semblait ne jamais persister.
+        foreach (['rendus', 'group_tags', 'grades', 'archived_courses'] as $mapKey) {
+            if (isset($newState[$mapKey]) && is_array($newState[$mapKey]) && empty($newState[$mapKey])) {
+                $newState[$mapKey] = new stdClass();
+            }
+        }
+        writeJson(STATE_FILE, $newState) ? respond(['ok'=>true]) : respond(['error'=>'Erreur écriture state.json'], 500);
 
     case 'regen_token':
         requireAuth();

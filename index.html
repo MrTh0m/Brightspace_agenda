@@ -1429,7 +1429,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       <div id="prog-content"></div>
       <div class="group-section" id="prog-ateliers-wrap" style="display:none">
         <div class="group-section-header">
-          <h3 class="group-section-title"><i class="ti ti-chart-bar"></i> Ateliers par matière</h3>
+          <h3 class="group-section-title"><i class="ti ti-chart-bar"></i> Moyennes par matière</h3>
         </div>
         <div id="group-by-subject"></div>
       </div>
@@ -4035,7 +4035,7 @@ function fmtShort(d){return d.toLocaleDateString('fr-FR',{day:'numeric',month:'s
 function fmtLong(d){return d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short',year:'numeric'});}
 function fmtDay(d){return d.toLocaleDateString('fr-FR',{weekday:'short'});}
 function fmtTime(d){return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-function isoWeek(d){const t=new Date(d);t.setHours(0,0,0,0);t.setDate(t.getDate()+3-(t.getDay()+6)%7);const w=new Date(t.getFullYear(),0,4);return 'S'+String(Math.round(((t-w)/86400000+1)/7)).padStart(2,'0')+' '+t.getFullYear();}
+function isoWeek(d){const t=new Date(d);t.setHours(0,0,0,0);const isoDay=(t.getDay()+6)%7+1;t.setDate(t.getDate()+4-isoDay);const yearStart=new Date(t.getFullYear(),0,1);const w=Math.ceil(((t-yearStart)/86400000+1)/7);return 'S'+String(w).padStart(2,'0')+' '+t.getFullYear();}
 function currentIsoWeek(){ return isoWeek(new Date()); }
 // Indice de jour : composants locaux → UTC midnight exact (sans arrondi, sans problème TZ)
 function dayIdx(d){ return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
@@ -4285,6 +4285,59 @@ function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processIC
 // Seul point de contact entre index.html et les widgets Android natifs.
 // Si la structure interne de allDevoirs/allSessions change, seule cette
 // fonction doit être mise à jour — le Kotlin et les XML ne bougent pas.
+
+function _widgetSameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+
+// Grille jour par jour pour les widgets "Semaine fixe" et "7 jours glissants".
+// `dates` : tableau de Date (minuit local). Format attendu par updateWeekBlocks() dans BsaWidgets.kt.
+function buildWidgetDayBlocks(dates) {
+  const now = new Date();
+  return dates.map(d => {
+    const dayEvents = [];
+    activeSessions().forEach(s=>{ if(s._date && _widgetSameDay(s._date,d)) dayEvents.push({type:'session', _date:s._date, _dateEnd:s._dateEnd, title:s._courseName||s._title||'Session'}); });
+    activeGroupEvents().forEach(e=>{ if(e._date && _widgetSameDay(e._date,d) && !detectSubgroup(e)) dayEvents.push({type:'atelier', _date:e._date, _dateEnd:e._dateEnd, title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier'}); });
+    allDevoirs.forEach(dv=>{ if(dv._date && _widgetSameDay(dv._date,d) && !effectivelyRendu(dv)) dayEvents.push({type:'devoir', _date:dv._date, _dateEnd:null, title:dv._title}); });
+    dayEvents.sort((a,b)=>a._date-b._date);
+    return {
+      label: fmtDay(d),
+      date: d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),
+      is_today: _widgetSameDay(d, now),
+      count: dayEvents.length,
+      events: dayEvents.slice(0,3).map(ev=>({
+        type: ev.type,
+        time: fmtTime(ev._date),
+        time_end: ev._dateEnd ? fmtTime(ev._dateEnd) : '',
+        title: ev.title,
+      })),
+    };
+  });
+}
+
+// Semaine courante + 4 suivantes pour le widget "Charge par semaine".
+// Même logique de regroupement que renderWeekChart() (onglet Agenda), fenêtrée sur 5 semaines.
+function buildWidgetChargeWeeks() {
+  const weekLabels = [0,1,2,3,4].map(i => isoWeek(getWeekMonday(i)));
+  const byWeek = {};
+  allDevoirs.forEach(ev=>{
+    if(!ev._date) return;
+    const w = isoWeek(ev._date);
+    if(!byWeek[w]) byWeek[w] = {total:0, done:0};
+    byWeek[w].total++;
+    if(effectivelyRendu(ev)) byWeek[w].done++;
+  });
+  const maxTotal = Math.max(...weekLabels.map(w=>byWeek[w]?.total||0), 1);
+  return weekLabels.map((w,i)=>{
+    const data = byWeek[w] || {total:0, done:0};
+    const pending = data.total - data.done;
+    return {
+      week: w, is_current: i===0,
+      total: data.total, done: data.done, pending,
+      pct_done: data.total>0 ? Math.round(data.done/data.total*100) : 0,
+      pct_total: Math.round(data.total/maxTotal*100),
+    };
+  });
+}
+
 function buildWidgetPayload() {
   const now     = new Date();
   const fmtTime = d => d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
@@ -4327,6 +4380,11 @@ function buildWidgetPayload() {
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
 
+  const mondayThisWeek = getWeekMonday(0);
+  const weekFixedDates = Array.from({length:7}, (_,i)=>{ const d=new Date(mondayThisWeek); d.setDate(d.getDate()+i); return d; });
+  const todayMidnight  = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const weekSlidingDates = Array.from({length:7}, (_,i)=>{ const d=new Date(todayMidnight); d.setDate(d.getDate()+i); return d; });
+
   return JSON.stringify({
     v: 2, updated_at: now.toISOString(),
     next_event: upcomingEvents[0] || null,
@@ -4337,14 +4395,40 @@ function buildWidgetPayload() {
     progression: { total:totalAll, done:totalDone,
                    percent:totalAll>0?Math.round(totalDone/totalAll*100):0,
                    matieres:matieresArr.slice(0,4) },
+    week_fixed: buildWidgetDayBlocks(weekFixedDates),
+    week_sliding: buildWidgetDayBlocks(weekSlidingDates),
+    charge_weeks: buildWidgetChargeWeeks(),
   });
 }
 
+// Noms de classe complets des 7 widgets Android, déclarés dans AndroidManifest.xml.
+// Nécessaires pour setRegisteredWidgets() -> reloadAllTimelines() côté plugin natif.
+const WIDGET_CLASS_NAMES = [
+  'fr.thomasetsandie.emmgo.agenda.NextEventWidget',
+  'fr.thomasetsandie.emmgo.agenda.AgendaWidget',
+  'fr.thomasetsandie.emmgo.agenda.DevoirsWidget',
+  'fr.thomasetsandie.emmgo.agenda.ProgressionWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekFixedWidget',
+  'fr.thomasetsandie.emmgo.agenda.WeekSlidingWidget',
+  'fr.thomasetsandie.emmgo.agenda.ChargeWidget',
+];
+let widgetsRegistered = false; // setRegisteredWidgets() n'a besoin d'être appelé qu'une fois par session JS
+
 async function updateWidgets() {
   if (!IS_PACKAGED_APP) return;
-  const bridge = window.Capacitor?.Plugins?.CapacitorWidgetBridge;
+  // Le plugin capacitor-widget-bridge s'expose sous Capacitor.Plugins.WidgetBridgePlugin
+  // (nom déclaré côté natif via @CapacitorPlugin(name = "WidgetBridgePlugin") — PAS "CapacitorWidgetBridge").
+  const bridge = window.Capacitor?.Plugins?.WidgetBridgePlugin;
   if (!bridge) return;
-  try { await bridge.sendWidgetData({ data: buildWidgetPayload() }); } catch(_) {}
+  try {
+    // group/key DOIVENT matcher PREFS_NAME/PREFS_KEY dans BsaWidgets.kt
+    await bridge.setItem({ key: 'bsa_widget_data', group: 'bsa_widget_prefs', value: buildWidgetPayload() });
+    if (!widgetsRegistered) {
+      await bridge.setRegisteredWidgets({ widgets: WIDGET_CLASS_NAMES });
+      widgetsRegistered = true;
+    }
+    await bridge.reloadAllTimelines();
+  } catch(_) {}
 }
 
 function processICS(txt) {
@@ -5197,27 +5281,76 @@ function renderGroupWeekList(el,monday){
 }
 
 /* Section 3 : Par matière */
+// Construit, pour chaque matière, les moyennes individuel / collectif / total.
+// Même univers de matières que les tuiles Progression (allDevoirs), enrichi des
+// ateliers "Épreuve notée" (notesGradedAteliers()) — cohérent avec l'onglet Notes.
+function buildSubjectAverages(){
+  const map = {};
+  function ensure(name, code){
+    if(!map[name]) map[name] = { code: code||'', name, indivScores:[], collScores:[] };
+    if(code && !map[name].code) map[name].code = code;
+    return map[name];
+  }
+  function collect(ev){
+    const name = ev._courseName||ev._courseCode||'Sans matière';
+    const e = ensure(name, ev._courseCode);
+    const g = getGrade(ev.UID);
+    if(g && g.pts!=='' && g.total!=='' && parseFloat(g.total)>0){
+      const note = parseFloat(g.pts)/parseFloat(g.total)*20;
+      (ev._type==='individuel'?e.indivScores:e.collScores).push(note);
+    }
+  }
+  allDevoirs.forEach(collect);
+  notesGradedAteliers().forEach(collect);
+  // Complète le code cours à partir des live sessions quand le devoir lui-même
+  // n'en porte pas (le SUMMARY d'un devoir Brightspace n'inclut pas toujours le code).
+  allSessions.forEach(ev=>{
+    const name = ev._courseName||ev._courseCode||'Sans matière';
+    if(map[name] && !map[name].code && ev._courseCode) map[name].code = ev._courseCode;
+  });
+  const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  return Object.values(map).map(e=>{
+    const avgIndiv = avg(e.indivScores);
+    const avgColl  = avg(e.collScores);
+    return {
+      code: e.code, name: e.name,
+      avgIndiv, avgColl,
+      avgTotal: avg([...e.indivScores, ...e.collScores]),
+      archived: isArchivedCourse(e.name),
+      // Validée seulement si individuel ET collectif ont chacun la moyenne
+      // — une moyenne globale ≥ 10/20 ne suffit pas si l'une des deux est en dessous.
+      success: avgIndiv!==null && avgColl!==null && avgIndiv>=10 && avgColl>=10,
+    };
+  }).sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+}
+
 function renderGroupBySubject(){
   const el=document.getElementById('group-by-subject');if(!el)return;
   const wrap=document.getElementById('prog-ateliers-wrap');
-  if(!allGroupEvents.length){if(wrap)wrap.style.display='none';return;}
+  const subjects = buildSubjectAverages();
+  if(!subjects.length){if(wrap)wrap.style.display='none';return;}
   if(wrap)wrap.style.display='';
-  const tagged=activeGroupEvents().filter(e=>getGroupTag(e._uid));
-  if(!tagged.length){el.innerHTML='<p style="font-size:12px;color:var(--text3)">Aucun atelier attribué à une matière. Clique sur <i class="ti ti-tag"></i> <em>Attribuer</em> dans l\'onglet Ateliers.</p>';return;}
-  const by={};
-  tagged.forEach(ev=>{const tag=getGroupTag(ev._uid);if(isArchivedCourse(tag.subjectName||tag.subject))return;const k=tag.subject;if(!by[k])by[k]={code:tag.subject,name:tag.subjectName||tag.subject,ateliers:[],subs:[]};detectSubgroup(ev)?by[k].subs.push(ev):by[k].ateliers.push(ev);});
-  const untagged=activeGroupEvents().filter(e=>!getGroupTag(e._uid)&&getDays(e._date)>=0);
-  let rows=Object.values(by).sort((a,b)=>a.code.localeCompare(b.code)).map(s=>{
-    const next=[...s.ateliers,...s.subs].filter(e=>getDays(e._date)>=0).sort((a,b)=>a._date-b._date)[0];
-    const aDots=s.ateliers.map(()=>`<div class="gs-dot" style="background:var(--c-green)"></div>`).join('');
-    const sDots=s.subs.map(()=>`<div class="gs-dot" style="background:var(--c-orange)"></div>`).join('');
-    return`<tr><td><span class="course-code">${s.code}</span></td><td>${s.name}</td>
-      <td style="text-align:center"><div class="gs-dots" style="justify-content:center">${aDots}</div><span style="font-size:10px;color:var(--text3)">${s.ateliers.length}</span></td>
-      <td style="text-align:center"><div class="gs-dots" style="justify-content:center">${sDots}</div><span style="font-size:10px;color:var(--text3)">${s.subs.length}</span></td>
-      <td style="font-size:11px;color:var(--text2)">${next?fmtShort(next._date)+' · J−'+getDays(next._date):'—'}</td></tr>`;
-  }).join('');
-  if(untagged.length)rows+=`<tr style="opacity:.55"><td colspan="2" style="font-style:italic;color:var(--text3)">Non attribués</td><td style="text-align:center"><span style="font-size:10px;color:var(--text3)">${untagged.length}</span></td><td>—</td><td>—</td></tr>`;
-  el.innerHTML=`<div class="group-subject-table-wrap"><table class="group-subject-table"><thead><tr><th>Code</th><th>Matière</th><th style="text-align:center">Ateliers</th><th style="text-align:center">Sous-gr.</th><th>Prochain</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  function notePill(n){
+    if(n===null) return '<span style="color:var(--text3)">—</span>';
+    const pass = n>=10;
+    const bg = pass?'var(--bg-green)':'var(--bg-red)';
+    const fg = pass?'var(--c-green)':'var(--c-red)';
+    return `<span style="background:${bg};color:${fg};padding:2px 9px;border-radius:10px;font-weight:700;font-size:11px;white-space:nowrap">${n.toFixed(2)}/20</span>`;
+  }
+  const checkIcon = '<i class="ti ti-check" style="color:var(--c-green)"></i>';
+  const rows = subjects.map(s=>`
+    <tr${s.archived?' style="opacity:.6"':''}>
+      <td>${s.code?`<span class="course-code">${s.code}</span>`:'<span style="color:var(--text3)">—</span>'}</td>
+      <td>${s.name}</td>
+      <td style="text-align:center">${notePill(s.avgIndiv)}</td>
+      <td style="text-align:center">${notePill(s.avgColl)}</td>
+      <td style="text-align:center">${notePill(s.avgTotal)}</td>
+      <td style="text-align:center">${s.archived?checkIcon:''}</td>
+      <td style="text-align:center">${s.success?checkIcon:''}</td>
+    </tr>`).join('');
+  el.innerHTML=`<div class="group-subject-table-wrap"><table class="group-subject-table"><thead><tr>
+      <th>Code</th><th>Matière</th><th style="text-align:center">Individuel</th><th style="text-align:center">Collectif</th><th style="text-align:center">Moyenne</th><th style="text-align:center">Terminé</th><th style="text-align:center">Succès</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function renderNextSessionChip() {
@@ -5623,6 +5756,7 @@ function renderGantt() {
   const map = {};
   activeSessions().forEach(ev => {
     const key = ganttKey(ev);
+    if (isArchivedCourse(key)) return; // matière archivée depuis Progression : masquée du planning
     if (!map[key]) map[key] = { code:'', name: ganttName(ev), dates:[] };
     // Stocker le code depuis la première session qui l'a
     if (ev._courseCode && !map[key].code) map[key].code = ev._courseCode;
@@ -5873,18 +6007,16 @@ function renderProgression() {
       ${atelierCount?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> ${atelierCount} atelier${atelierCount>1?'s':''}</span>`:''}
       ${sgCount?`<span class="prog-type-pill" style="background:var(--bg-orange);color:var(--c-orange)"><i class="ti ti-git-branch"></i> ${sgCount} sous-gr.</span>`:''}
     </div>` : '';
-    // Moyennes notes pour cette matière
-    const mkAvg = (type) => {
-      const devs = allDevoirs.filter(ev2=>ev2._type===type&&(ev2._courseName||ev2._courseCode||'')===d.name&&!!getGrade(ev2.UID));
-      const scored = devs.filter(ev2=>{const g=getGrade(ev2.UID);return g&&g.pts!==''&&g.total!==''&&parseFloat(g.total)>0;});
-      if(!scored.length)return null;
-      return (scored.reduce((acc,ev2)=>{const g=getGrade(ev2.UID);return acc+parseFloat(g.pts)/parseFloat(g.total)*20;},0)/scored.length).toFixed(2);
-    };
-    const avgIndiv = mkAvg('individuel');
-    const avgColl  = mkAvg('collectif');
-    const avgRow = (avgIndiv||avgColl) ? `<div class="prog-type-row" style="margin-top:4px">
-      ${avgIndiv?`<span class="prog-type-pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-star"></i> Indiv. ${avgIndiv}/20</span>`:''}
-      ${avgColl?`<span class="prog-type-pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-star"></i> Coll. ${avgColl}/20</span>`:''}
+    // Moyenne notes pour cette matière — combinée individuel + collectif,
+    // ateliers "Épreuve notée" inclus (comme dans l'onglet Notes, cf. notesGradedAteliers())
+    const gradedAll = [...allDevoirs, ...notesGradedAteliers()]
+      .filter(ev2=>(ev2._courseName||ev2._courseCode||'Sans matière')===d.name&&!!getGrade(ev2.UID));
+    const scoredAll = gradedAll.filter(ev2=>{const g=getGrade(ev2.UID);return g&&g.pts!==''&&g.total!==''&&parseFloat(g.total)>0;});
+    const avgCombined = scoredAll.length
+      ? (scoredAll.reduce((acc,ev2)=>{const g=getGrade(ev2.UID);return acc+parseFloat(g.pts)/parseFloat(g.total)*20;},0)/scoredAll.length).toFixed(2)
+      : null;
+    const avgRow = avgCombined ? `<div class="prog-type-row" style="margin-top:4px">
+      <span class="prog-type-pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-star"></i> Moyenne ${avgCombined}/20</span>
     </div>` : '';
     const archiveBtn = Auth.readOnly ? '' : (archived
       ? `<button class="pc-archive-btn" title="Désarchiver" onclick="setArchivedCourse('${d.name.replace(/'/g,"\\'")}',false)"><i class="ti ti-archive-off"></i></button>`
