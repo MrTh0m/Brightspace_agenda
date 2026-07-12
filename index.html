@@ -4294,9 +4294,9 @@ function buildWidgetDayBlocks(dates) {
   const now = new Date();
   return dates.map(d => {
     const dayEvents = [];
-    activeSessions().forEach(s=>{ if(s._date && _widgetSameDay(s._date,d)) dayEvents.push({type:'session', _date:s._date, _dateEnd:s._dateEnd, title:s._courseName||s._title||'Session'}); });
-    activeGroupEvents().forEach(e=>{ if(e._date && _widgetSameDay(e._date,d) && !detectSubgroup(e)) dayEvents.push({type:'atelier', _date:e._date, _dateEnd:e._dateEnd, title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier'}); });
-    allDevoirs.forEach(dv=>{ if(dv._date && _widgetSameDay(dv._date,d) && !effectivelyRendu(dv)) dayEvents.push({type:'devoir', _date:dv._date, _dateEnd:null, title:dv._title}); });
+    activeSessions().forEach(s=>{ if(s._date && _widgetSameDay(s._date,d)) dayEvents.push({type:'session', _date:s._date, _dateEnd:s._dateEnd, title:s._courseName||s._title||'Session', code:s._courseCode||''}); });
+    activeGroupEvents().forEach(e=>{ if(e._date && _widgetSameDay(e._date,d) && !detectSubgroup(e)) dayEvents.push({type:'atelier', _date:e._date, _dateEnd:e._dateEnd, title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', code:(getGroupTag(e._uid)?.subject)||''}); });
+    allDevoirs.forEach(dv=>{ if(dv._date && _widgetSameDay(dv._date,d) && !effectivelyRendu(dv)) dayEvents.push({type:'devoir', _date:dv._date, _dateEnd:null, title:dv._title, code:dv._courseCode||''}); });
     dayEvents.sort((a,b)=>a._date-b._date);
     return {
       label: fmtDay(d),
@@ -4308,6 +4308,7 @@ function buildWidgetDayBlocks(dates) {
         time: fmtTime(ev._date),
         time_end: ev._dateEnd ? fmtTime(ev._dateEnd) : '',
         title: ev.title,
+        code: ev.code || '',
       })),
     };
   });
@@ -4346,36 +4347,50 @@ function buildWidgetPayload() {
 
   const upcomingEvents = [
     ...activeSessions().filter(s=>s._date&&s._date>now).map(s=>({
-      title: s._courseName||s._title||'Session', type:'session',
-      time: fmtTime(s._date), in_min: Math.round((s._date-now)/60000),
-      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+      title: s._courseName||s._title||'Session', type:'session', type_label:'Live Session',
+      time: fmtTime(s._date), time_end: s._dateEnd ? fmtTime(s._dateEnd) : '',
+      in_min: Math.round((s._date-now)/60000),
+      code: s._courseCode||'', instructor: s._instructors||'',
+      tap_url: 'bsa://tab/sessions',
+      join_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : '',
     })),
     ...activeGroupEvents().filter(e=>e._date&&e._date>now&&!detectSubgroup(e)).map(e=>({
-      title: (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
-      time: fmtTime(e._date), in_min: Math.round((e._date-now)/60000),
+      title: (getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', type_label:'Atelier',
+      time: fmtTime(e._date), time_end: e._dateEnd ? fmtTime(e._dateEnd) : '',
+      in_min: Math.round((e._date-now)/60000),
+      code: (getGroupTag(e._uid)?.subject)||'', instructor: '',
       tap_url: 'bsa://tab/groupe',
+      join_url: e._teamsUrl ? `bsa://teams?url=${encodeURIComponent(e._teamsUrl)}` : '',
     })),
   ].sort((a,b)=>a.in_min-b.in_min);
 
   const pendingDevoirs = allDevoirs
     .filter(d=>d._date&&!effectivelyRendu(d))
     .sort((a,b)=>a._date-b._date)
-    .map(d=>({ title:d._title, course:d._courseName||'', in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
+    .map(d=>({ title:d._title, course:d._courseName||'', code:d._courseCode||'', in_days:getDays_(d._date), tap_url:'bsa://tab/devoirs' }));
 
   const todayEvents = [
     ...activeSessions().filter(s=>s._date&&getDays_(s._date)===0).sort((a,b)=>a._date-b._date).map(s=>({
-      time:fmtTime(s._date), title:s._courseName||s._title||'Session', type:'session',
-      tap_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : 'bsa://tab/sessions',
+      time:fmtTime(s._date), time_end: s._dateEnd ? fmtTime(s._dateEnd) : '',
+      title:s._courseName||s._title||'Session', type:'session', type_label:'Live Session',
+      code: s._courseCode||'', instructor: s._instructors||'',
+      is_now: s._date<=now && (!s._dateEnd || s._dateEnd>now),
+      tap_url: 'bsa://tab/sessions',
+      join_url: s._teamsUrl ? `bsa://teams?url=${encodeURIComponent(s._teamsUrl)}` : '',
     })),
     ...activeGroupEvents().filter(e=>e._date&&getDays_(e._date)===0&&!detectSubgroup(e)).sort((a,b)=>a._date-b._date).map(e=>({
-      time:fmtTime(e._date), title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier',
+      time:fmtTime(e._date), time_end: e._dateEnd ? fmtTime(e._dateEnd) : '',
+      title:(getGroupTag(e._uid)?.subjectName)||e._title||'Atelier', type:'atelier', type_label:'Atelier',
+      code: (getGroupTag(e._uid)?.subject)||'', instructor: '',
+      is_now: e._date<=now && (!e._dateEnd || e._dateEnd>now),
       tap_url:'bsa://tab/groupe',
+      join_url: e._teamsUrl ? `bsa://teams?url=${encodeURIComponent(e._teamsUrl)}` : '',
     })),
   ].sort((a,b)=>a.time.localeCompare(b.time));
 
   const matieres = {};
-  allDevoirs.forEach(d=>{ const k=d._courseName||'Autre'; if(!matieres[k])matieres[k]={name:k,done:0,total:0}; matieres[k].total++; if(effectivelyRendu(d))matieres[k].done++; });
-  const matieresArr = Object.values(matieres).filter(m=>m.total>0);
+  allDevoirs.forEach(d=>{ const k=d._courseName||d._courseCode||'Sans matière'; if(!matieres[k])matieres[k]={name:k,code:d._courseCode||'',done:0,total:0}; if(!matieres[k].code&&d._courseCode)matieres[k].code=d._courseCode; matieres[k].total++; if(effectivelyRendu(d))matieres[k].done++; });
+  const matieresArr = Object.values(matieres).filter(m=>m.total>0 && !isArchivedCourse(m.name));
   const totalDone    = allDevoirs.filter(d=>effectivelyRendu(d)).length;
   const totalPending = allDevoirs.filter(d=>!effectivelyRendu(d)&&d._date).length;
   const totalAll     = allDevoirs.length;
@@ -4386,7 +4401,7 @@ function buildWidgetPayload() {
   const weekSlidingDates = Array.from({length:7}, (_,i)=>{ const d=new Date(todayMidnight); d.setDate(d.getDate()+i); return d; });
 
   return JSON.stringify({
-    v: 2, updated_at: now.toISOString(),
+    v: 3, updated_at: now.toISOString(),
     next_event: upcomingEvents[0] || null,
     today: todayEvents.slice(0, 5),
     devoirs: { pending:totalPending, done:totalDone,

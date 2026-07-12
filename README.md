@@ -213,6 +213,21 @@ Section dans ⚙ Paramètres.
 
 ---
 
+## 🆕 Notes de version
+
+### v29-v32 · 10 juillet 2026 · Archivage et moyennes par matière
+- **Archivage des matières terminées** : bouton dédié sur chaque carte de l'onglet Progression ; la matière disparaît du Gantt « Planning des cours » tout en conservant son historique
+- Nouveau tableau **« Moyennes par matière »** (remplace « Ateliers par matière ») : moyennes Individuel, Collectif et Moyenne combinée par matière, colonnes Terminé et Succès (succès uniquement si les deux moyennes sont indépendamment ≥ 10/20, une moyenne globale seule ne suffit pas)
+- Correction de la moyenne combinée par matière : elle inclut désormais les ateliers notés collectivement en plus des devoirs individuels
+- Correction du calcul de semaine ISO (`isoWeek()`) : ancrage sur le jeudi de la semaine du 4 janvier, corrige un décalage d'une semaine observé en 2026
+- Complément automatique du code matière depuis les sessions live (`allSessions`) quand le résumé Brightspace ne le fournit pas
+
+### v33-v35 · 11 juillet 2026 · Widgets Android (payload v3)
+- Le payload des widgets Android (`buildWidgetPayload()`, code partagé avec l'app APK) passe en v3 : ajout des champs code, intervenant, lien de réunion et statut « en cours »
+- Détail complet des nouveautés widgets dans le README du dépôt APK
+
+---
+
 ## 🔒 Sécurité
 
 | Élément | Protection |
