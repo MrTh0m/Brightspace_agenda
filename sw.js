@@ -6,7 +6,7 @@
  *   - API (api.php, proxy.php) : réseau d'abord, cache en secours
  */
 
-const SHELL_VER = 'emmgo-shell-v35';
+const SHELL_VER = 'emmgo-shell-v37';
 const DATA_VER  = 'emmgo-data-v4';
 const ALL_CACHES = [SHELL_VER, DATA_VER];
 
