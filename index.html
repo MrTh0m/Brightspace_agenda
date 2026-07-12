@@ -2434,6 +2434,7 @@ const Onboarding = {
 
       Auth.mode = 'connected'; Auth.readOnly = false; Auth._updateUI();
       pbsSyncConfig('connected', null);
+      await Auth._loadServerState(); // charge rendus/group_tags/grades/archived_courses depuis le serveur (oubli initial de l'onboarding APK)
       if (d.ics_url) Auth._setIcsUrlFields(d.ics_url);
       if (d.dashboard_name) {
         AppMeta.customName = d.dashboard_name; updateBrand();
@@ -4212,6 +4213,7 @@ async function wcApplyConnected() {
 
     Auth.mode = 'connected'; Auth.readOnly = false; Auth._updateUI();
     pbsSyncConfig('connected', null);
+    await Auth._loadServerState(); // charge rendus/group_tags/grades/archived_courses depuis le serveur
     if (d.ics_url) Auth._setIcsUrlFields(d.ics_url);
     if (d.dashboard_name) {
       AppMeta.customName = d.dashboard_name; updateBrand();
@@ -4419,13 +4421,13 @@ function buildWidgetPayload() {
 // Noms de classe complets des 7 widgets Android, déclarés dans AndroidManifest.xml.
 // Nécessaires pour setRegisteredWidgets() -> reloadAllTimelines() côté plugin natif.
 const WIDGET_CLASS_NAMES = [
-  'fr.thomasetsandie.emmgo.agenda.NextEventWidget',
-  'fr.thomasetsandie.emmgo.agenda.AgendaWidget',
-  'fr.thomasetsandie.emmgo.agenda.DevoirsWidget',
-  'fr.thomasetsandie.emmgo.agenda.ProgressionWidget',
-  'fr.thomasetsandie.emmgo.agenda.WeekFixedWidget',
-  'fr.thomasetsandie.emmgo.agenda.WeekSlidingWidget',
-  'fr.thomasetsandie.emmgo.agenda.ChargeWidget',
+  'io.github.mrth0m.brightspaceagenda.NextEventWidget',
+  'io.github.mrth0m.brightspaceagenda.AgendaWidget',
+  'io.github.mrth0m.brightspaceagenda.DevoirsWidget',
+  'io.github.mrth0m.brightspaceagenda.ProgressionWidget',
+  'io.github.mrth0m.brightspaceagenda.WeekFixedWidget',
+  'io.github.mrth0m.brightspaceagenda.WeekSlidingWidget',
+  'io.github.mrth0m.brightspaceagenda.ChargeWidget',
 ];
 let widgetsRegistered = false; // setRegisteredWidgets() n'a besoin d'être appelé qu'une fois par session JS
 
