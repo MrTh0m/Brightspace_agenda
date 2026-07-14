@@ -4,7 +4,7 @@
  * Mettre dans le même dossier que index.html.
  */
 
-$ALLOWED_HOSTS = ['emlyon.brightspace.com', 'brightspace.com', 'em-lyon.com'];
+$ALLOWED_HOSTS = ['brightspace.com'];
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');

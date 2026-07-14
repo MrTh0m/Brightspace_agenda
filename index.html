@@ -1024,7 +1024,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
             <li><strong>Notes</strong> : synthèse des notes par matière (Individuels / Collectifs), moyennes par type et par matière, filtres par cours et par type, filtre "En attente"</li>
             <li><strong>Progression</strong> : barre de progression par matière, moyennes de notes, ateliers par matière, histogramme hebdo, Gantt</li>
             <li><strong>Notifications</strong> : devoirs approchants, ateliers non planifiés, programme du jour, événement imminent</li>
-            <li>Mode invité · Mode connecté · Lien de partage (lecture seule) · PWA installable</li>
+            <li>Mode invité · Mode connecté · Lien de partage (lecture seule)</li>
           </ul>
         </div>
 
@@ -1082,7 +1082,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       <h3><i class="ti ti-link"></i> URL du calendrier ICS Brightspace</h3>
       <div class="field-row">
         <input type="url" id="ics-url" value=""
-          placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
+          placeholder="https://ton-ecole.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN">
         <button class="btn primary" onclick="loadCalendar()">Charger</button>
         <button class="btn" id="btn-unlock-url" onclick="unlockIcsUrl()" title="Saisir une nouvelle URL" style="display:none">
           <i class="ti ti-pencil"></i>
@@ -1222,7 +1222,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
       </label>
       <div class="url-field" style="margin-bottom:10px">
         <input type="url" id="ics-url-setup"
-          placeholder="https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=…">
+          placeholder="https://ton-ecole.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=…">
         <button class="btn primary" onclick="loadFromSetup()">
           <i class="ti ti-player-play"></i> Charger
         </button>
@@ -3825,7 +3825,7 @@ function _initBackupUI() {
 
 const AppMeta = {
   calName:     '',   // X-WR-CALNAME du fichier ICS
-  institution: '',   // sous-domaine de l'URL Brightspace (ex. "EMLYON")
+  institution: '',   // sous-domaine de l'URL Brightspace (ex. "TONECOLE")
   customName:  '',   // nom personnalisé saisi en mode connecté
 };
 
@@ -3849,10 +3849,10 @@ function parseCalMeta(txt) {
 function institutionFromUrl(url) {
   if (!url) return '';
   try {
-    const host = new URL(url).hostname; // "emlyon.brightspace.com"
+    const host = new URL(url).hostname; // "tonecole.brightspace.com"
     if (host.includes('brightspace')) {
-      const sub = host.split('.')[0];   // "emlyon"
-      return sub.charAt(0).toUpperCase() + sub.slice(1); // "Emlyon"
+      const sub = host.split('.')[0];   // "tonecole"
+      return sub.charAt(0).toUpperCase() + sub.slice(1); // "Tonecole"
     }
   } catch(_) {}
   return '';
@@ -4006,9 +4006,9 @@ function isSession(ev) {
   if(s.includes('live session')||s.includes('cours distanciel'))return true;
   if(l.includes('live session')||l.includes('cours distanciel'))return true;
   if(l.includes('teams.microsoft')||l.includes('teams.live.com'))return true;
-  if(l.includes('virtual-room.em-lyon.com'))return true;
+  if(l.includes('virtual-room'))return true;
   if(SESSION_TITLE_RE.test(ev.SUMMARY||''))return true;
-  if(Object.values(ev).join(' ').toLowerCase().includes('virtual-room.em-lyon'))return true;
+  if(Object.values(ev).join(' ').toLowerCase().includes('virtual-room'))return true;
   return false;
 }
 function getType(ev) {
@@ -6128,7 +6128,7 @@ function unlockIcsUrl() {
   f.removeAttribute('readonly');
   f.style.color = '';
   f.style.fontStyle = '';
-  f.placeholder = 'https://emlyon.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN';
+  f.placeholder = 'https://ton-ecole.brightspace.com/d2l/le/calendar/feed/user/feed.ics?token=MON_TOKEN';
   f.focus();
   document.getElementById('btn-unlock-url').style.display = 'none';
 }

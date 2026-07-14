@@ -238,7 +238,7 @@ Section dans ⚙ Paramètres.
 | Dossier `data/` | `.htaccess` Deny all |
 | Token de partage | 32 caractères aléatoires, révocable |
 | Anti-brute-force | Délai 1s |
-| SSRF Brightspace | Domaines `brightspace.com` / `em-lyon.com` uniquement |
+| SSRF Brightspace | Domaine `brightspace.com` uniquement |
 | ICS privée | HTTPS requis, tout domaine |
 
 ---

@@ -23,7 +23,7 @@ define('STATE_FILE',  DATA_DIR . '/state.json');
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, no-cache');
 
-$ALLOWED_HOSTS = ['emlyon.brightspace.com', 'brightspace.com', 'em-lyon.com'];
+$ALLOWED_HOSTS = ['brightspace.com'];
 
 function readJson($file, $default = []) {
     if (!file_exists($file)) return $default;
@@ -148,9 +148,9 @@ function icsIsSession(array $ev) {
     if (strpos($s, 'live session') !== false || strpos($s, 'cours distanciel') !== false) return true;
     if (strpos($l, 'live session') !== false || strpos($l, 'cours distanciel') !== false) return true;
     if (strpos($l, 'teams.microsoft') !== false || strpos($l, 'teams.live.com') !== false) return true;
-    if (strpos($l, 'virtual-room.em-lyon.com') !== false) return true;
+    if (strpos($l, 'virtual-room') !== false) return true;
     if (preg_match('/^\d{4}_[A-Z0-9]+_\d{4}-\d{2}\s+.+/i', icsGetProp($ev, 'SUMMARY'))) return true;
-    if (strpos(mb_strtolower(implode(' ', $ev), 'UTF-8'), 'virtual-room.em-lyon') !== false) return true;
+    if (strpos(mb_strtolower(implode(' ', $ev), 'UTF-8'), 'virtual-room') !== false) return true;
     return false;
 }
 
@@ -537,7 +537,7 @@ switch ($action) {
                     $isSession = str_contains($sl,'live session') || str_contains($sl,'cours distanciel')
                               || str_contains($ll,'live session') || str_contains($ll,'cours distanciel')
                               || str_contains($ll,'teams.microsoft') || str_contains($ll,'teams.live.com')
-                              || str_contains($ll,'virtual-room.em-lyon.com')
+                              || str_contains($ll,'virtual-room')
                               || preg_match($sessionTitleRe, $summary);
 
                     if ($isDevoir) {
