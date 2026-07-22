@@ -4989,13 +4989,13 @@ function renderGroupList(){
     if(d._courseCode&&!subjectMap[d._courseCode])subjectMap[d._courseCode]=d._courseName||d._courseCode;
     else if(!d._courseCode&&d._courseName&&!Object.values(subjectMap).includes(d._courseName))subjectMap[d._courseName]=d._courseName;
   });
-  const subjects=Object.entries(subjectMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const subjects=Object.entries(subjectMap).filter(([code,name])=>!isArchivedCourse(name)).sort((a,b)=>a[0].localeCompare(b[0]));
 
   el.innerHTML=visible.map((ev,i)=>{
     const ignored=isIgnored(ev._uid);
     const sub=detectSubgroup(ev);
     const tag=getGroupTag(ev._uid);
-    const isPast=getDays(ev._date)<0;
+    const isPast=(ev._dateEnd||ev._date)<new Date();
     const days=getDays(ev._date);
     const hasTime=ev._date&&(ev._date.getHours()+ev._date.getMinutes()>0);
     const timeStr=hasTime?fmtTime(ev._date):'–';
@@ -5287,7 +5287,7 @@ function renderGroupWeekList(el,monday){
         const tagLabel=code?`<span style="font-size:10px;color:var(--c-violet);background:var(--bg-violet);padding:0 5px;border-radius:4px;white-space:nowrap;flex-shrink:0">${code}</span>`:'';
         const rendu=e._t==='devoir'&&effectivelyRendu(e);
         const renduMark=rendu?`<span style="font-size:10px;color:var(--c-green);flex-shrink:0"><i class="ti ti-check"></i></span>`:'';
-        const isPast=e._date&&getDays(e._date)<0;
+        const isPast=e._date&&(e._t==='devoir'?getDays(e._date)<0:(e._dateEnd||e._date)<new Date());
         const rowStyle=isPast?'opacity:.5':'';
         const titleStyle=rendu?'text-decoration:line-through':'';
         return`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:0.5px solid var(--border);${rowStyle}">${pill}<span style="font-size:11px;color:var(--text2);white-space:nowrap">${t}${en}</span><span style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${titleStyle}">${e._title||e._courseName||'—'}</span>${tagLabel}${renduMark}</div>`;
@@ -5666,7 +5666,7 @@ function renderSessions() {
 
   el.innerHTML=visible.map((ev,i)=>{
     const days=getDays(ev._date);
-    const isPast=days<0;
+    const isPast=(ev._dateEnd||ev._date)<new Date();
     const hasTime=ev._date&&(ev._date.getHours()+ev._date.getMinutes()>0);
     const startStr=hasTime?fmtTime(ev._date):'–';
     const endStr=(hasTime&&ev._dateEnd)?fmtTime(ev._dateEnd):'';
