@@ -4231,6 +4231,24 @@ async function wcApplyConnected() {
 async function loadCalendar() {
   // ── Mode connecté ou share : fetch ICS côté serveur ─────────────
   if (Auth.mode === 'connected' || Auth.mode === 'share') {
+    // Si l'utilisateur vient de saisir une nouvelle URL dans le champ, la
+    // sauvegarder côté serveur avant de récupérer le calendrier. Avant ce
+    // correctif, cette branche ne faisait jamais que relire l'URL déjà
+    // enregistrée (souvent vide), sans jamais envoyer une URL nouvellement
+    // saisie : le bouton "Charger" des Paramètres ne sauvegardait donc
+    // jamais rien en mode connecté. getIcsUrl() lit dataset.realUrl en
+    // priorité, donc renvoie toujours l'URL réelle même quand le champ
+    // affiche la version masquée (readonly) d'une URL déjà enregistrée.
+    if (Auth.mode === 'connected') {
+      syncUrlFields();
+      const typedUrl = getIcsUrl();
+      if (typedUrl) {
+        try {
+          await apiFetch(Auth._apiBase, { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action:'save_ics_url', ics_url: typedUrl }) });
+        } catch(_) {}
+      }
+    }
     showLoading();
     const shareQ = Auth.mode === 'share' ? `&share=${encodeURIComponent(Auth.shareToken)}` : '';
     try {
