@@ -173,8 +173,10 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   border:1px solid #e8a5a4;border-radius:8px;
   padding:10px 12px;font-size:13px;margin-top:12px;line-height:1.5;
 }
+#err-msg { white-space:pre-line; }
 .paste-zone { margin-top:14px; }
 .paste-zone label { font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px; }
+.paste-zone input { width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2,transparent);color:var(--text);font-size:13px; }
 .paste-zone .hint {
   font-size:11px;color:var(--text3);margin-top:6px;
   background:var(--bg2);border-radius:6px;padding:8px 10px;line-height:1.6;
@@ -1097,6 +1099,9 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
         <textarea id="ics-paste" rows="5"
           placeholder="BEGIN:VCALENDAR&#10;VERSION:2.0&#10;..."
           oninput="tryPaste(this.value)"></textarea>
+        <label for="custom-proxy" style="margin-top:12px">Proxy perso (optionnel) :</label>
+        <input type="url" id="custom-proxy" placeholder="https://mon-proxy.workers.dev/?url={url}"
+          oninput="setCustomProxy(this.value)" autocomplete="off" spellcheck="false">
         <div class="hint">
           <strong>Récupérer le .ics :</strong> Brightspace → Agenda → icône abonnement → Télécharger le calendrier
           → ouvre avec un éditeur texte → Ctrl+A → colle ici.
@@ -2256,12 +2261,66 @@ const DeepLink = {
   teamsUrl(teamsLink){ return `bsa://teams?url=${encodeURIComponent(teamsLink)}`; },
 };
 
-const CORS_PROXIES = [
-  u => ({ url:`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(u)}`,            isJson:false }),
-  u => ({ url:`https://corsproxy.io/?url=${encodeURIComponent(u)}`,              isJson:false }),
-  u => ({ url:`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,     isJson:true  }),
-  u => ({ url:`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,isJson:false }),
-];
+// ── Proxys CORS ─────────────────────────────────────────────────────
+// Ordre d'essai : proxy perso (réglage utilisateur) → proxys publics.
+// proxy.php et le fetch direct sont gérés dans les appelants.
+// Sur un hébergement statique (GitHub Pages), proxy.php n'existe pas :
+// un proxy perso (ex. Cloudflare Worker, voir cors-worker.js) est la voie fiable.
+const CUSTOM_PROXY_KEY = 'bsa_custom_proxy_v1';
+const IS_STATIC_HOST   = /\.github\.io$/i.test(location.hostname);
+function getCustomProxy(){ try { return (localStorage.getItem(CUSTOM_PROXY_KEY)||'').trim(); } catch(_) { return ''; } }
+function setCustomProxy(v){
+  v = (v||'').trim();
+  try { v ? localStorage.setItem(CUSTOM_PROXY_KEY, v) : localStorage.removeItem(CUSTOM_PROXY_KEY); } catch(_) {}
+}
+function buildCustomProxyUrl(tpl, u){
+  const enc = encodeURIComponent(u);
+  return tpl.includes('{url}') ? tpl.replace('{url}', enc) : tpl + (tpl.includes('?') ? '&' : '?') + 'url=' + enc;
+}
+function getCorsProxies(){
+  const list = [];
+  const custom = getCustomProxy();
+  if (/^https:\/\//i.test(custom)) list.push({ name:'Proxy perso', build:u => ({ url: buildCustomProxyUrl(custom, u), isJson:false }) });
+  list.push(
+    { name:'corsproxy.io',      build:u => ({ url:`https://corsproxy.io/?url=${encodeURIComponent(u)}`,               isJson:false }) },
+    { name:'allorigins.win',    build:u => ({ url:`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,      isJson:true  }) },
+    { name:'api.codetabs.com',  build:u => ({ url:`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, isJson:false }) },
+  );
+  return list;
+}
+// Essaie chaque proxy et renvoie le texte ICS, ou null.
+// Le détail de chaque essai est gardé dans lastProxyReport (affiché en cas d'échec).
+let lastProxyReport = [];
+async function fetchIcsViaProxies(url){
+  lastProxyReport = [];
+  for (const px of getCorsProxies()) {
+    const t0 = performance.now();
+    const rec = { name:px.name, result:'' };
+    lastProxyReport.push(rec);
+    try {
+      const p = px.build(url);
+      const r = await fetch(p.url, {signal:AbortSignal.timeout(12000)});
+      if (!r.ok) { rec.result = 'HTTP ' + r.status; continue; }
+      const ct = r.headers.get('content-type') || '';
+      const body = p.isJson || ct.includes('json') ? ((await r.json()).contents || '') : await r.text();
+      if (body && body.includes('BEGIN:VCALENDAR')) {
+        rec.result = 'OK (' + Math.round(performance.now()-t0) + ' ms)';
+        console.table(lastProxyReport);
+        return body;
+      }
+      rec.result = 'réponse sans calendrier';
+    } catch(e) {
+      rec.result = (e && e.name === 'TimeoutError') ? 'délai dépassé (12 s)'
+                 : (e && e.name === 'AbortError')   ? 'annulé'
+                 : 'bloqué (CORS ou réseau)';
+    }
+  }
+  console.table(lastProxyReport);
+  return null;
+}
+function formatProxyReport(){
+  return lastProxyReport.length ? '\nProxys testés :\n' + lastProxyReport.map(r => `• ${r.name} : ${r.result}`).join('\n') : '';
+}
 
 let allDevoirs     = [];
 let allSessions    = [];
@@ -4279,26 +4338,20 @@ async function loadCalendar() {
   let txt = null;
   // 1. Proxy local PHP (inutile en mode packagé : pas de serveur associé,
   //    le fetch direct ci-dessous est déjà natif via CapacitorHttp)
-  if (!IS_PACKAGED_APP) {
+  if (!IS_PACKAGED_APP && !IS_STATIC_HOST) {
     try { const r=await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)}); if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;} } catch(_) {}
   }
   // 2. Direct (requête native sans CORS si CapacitorHttp est actif)
   if (!txt) { try { const r=await fetch(url,{signal:AbortSignal.timeout(5000)}); if(r.ok){const t=await r.text();if(t.includes('BEGIN:VCALENDAR'))txt=t;} } catch(_) {} }
-  // 3. Proxies publics (fallback web uniquement ; inutile en mode packagé)
-  if (!txt && !IS_PACKAGED_APP) {
-    for (const pFn of CORS_PROXIES) {
-      try {
-        const p=pFn(url); const r=await fetch(p.url,{signal:AbortSignal.timeout(12000)}); if(!r.ok)continue;
-        const ct=r.headers.get('content-type')||'';
-        const body=p.isJson||ct.includes('json')?((await r.json()).contents||''):await r.text();
-        if(body&&body.includes('BEGIN:VCALENDAR')){txt=body;break;}
-      } catch(_) {}
-    }
-  }
-  if (!txt) { showError('Impossible de charger le calendrier automatiquement. Vérifie que proxy.php est bien uploadé sur le serveur, ou colle le contenu du .ics ci-dessous.'); return; }
+  // 3. Proxys (perso puis publics ; web uniquement, inutile en mode packagé)
+  if (!txt && !IS_PACKAGED_APP) txt = await fetchIcsViaProxies(url);
+  if (!txt) { showError(IS_STATIC_HOST
+    ? 'Impossible de charger le calendrier : les proxys publics sont indisponibles et proxy.php n\'existe pas sur GitHub Pages. Renseigne un proxy perso ci-dessous, ou colle le contenu du .ics.' + formatProxyReport()
+    : 'Impossible de charger le calendrier automatiquement. Vérifie que proxy.php est bien uploadé sur le serveur, ou colle le contenu du .ics ci-dessous.' + formatProxyReport()); return; }
   processICS(txt);
 }
 
+(function(){ const el=document.getElementById('custom-proxy'); if(el) el.value=getCustomProxy(); })();
 function tryPaste(val){if(val.includes('BEGIN:VCALENDAR')){hideError();processICS(val);}}
 
 // ── Widget payload ──────────────────────────────────────────────────
@@ -4775,7 +4828,7 @@ async function loadGroupCalendar(){
 async function fetchPrivateIcsGuest(url){
   let txt = null;
   // 1. Proxy local PHP (inutile en mode packagé : pas de serveur associé)
-  if (!IS_PACKAGED_APP) {
+  if (!IS_PACKAGED_APP && !IS_STATIC_HOST) {
     try {
       const r = await fetch(`${API_ORIGIN}/proxy.php?url=${encodeURIComponent(url)}`, {signal:AbortSignal.timeout(10000)});
       if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
@@ -4788,19 +4841,8 @@ async function fetchPrivateIcsGuest(url){
       if (r.ok) { const t = await r.text(); if (t.includes('BEGIN:VCALENDAR')) txt = t; }
     } catch(_) {}
   }
-  // 3. Proxies publics (fallback web uniquement ; inutile en mode packagé)
-  if (!txt && !IS_PACKAGED_APP) {
-    for (const pFn of CORS_PROXIES) {
-      try {
-        const p = pFn(url);
-        const r = await fetch(p.url, {signal:AbortSignal.timeout(12000)});
-        if (!r.ok) continue;
-        const ct = r.headers.get('content-type') || '';
-        const body = p.isJson || ct.includes('json') ? ((await r.json()).contents || '') : await r.text();
-        if (body && body.includes('BEGIN:VCALENDAR')) { txt = body; break; }
-      } catch(_) {}
-    }
-  }
+  // 3. Proxys (perso puis publics ; web uniquement, inutile en mode packagé)
+  if (!txt && !IS_PACKAGED_APP) txt = await fetchIcsViaProxies(url);
   return txt;
 }
 
