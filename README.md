@@ -19,6 +19,7 @@ Un seul fichier HTML + un backend PHP léger, hébergeable sur ton propre serveu
 | `api.php` | Backend du mode connecté (auth, état, URL ICS, partage) |
 | `setup.php` | Configuration initiale — mot de passe, token de partage |
 | `test-proxy.php` | Diagnostic réseau/PHP — **à supprimer après usage** |
+| `cors-worker.js`                | Proxy CORS perso (Cloudflare Workers) pour la version GitHub Pages |
 | `manifest.json` | Manifest PWA — installation sur Android/iOS/Desktop |
 | `sw.js` | Service Worker — cache offline + notifications + sync périodique |
 | `icon-192.png` / `icon-512.png` | Icônes PWA |
@@ -225,6 +226,18 @@ Section dans ⚙ Paramètres.
 ### v33-v35 · 11 juillet 2026 · Widgets Android (payload v3)
 - Le payload des widgets Android (`buildWidgetPayload()`, code partagé avec l'app APK) passe en v3 : ajout des champs code, intervenant, lien de réunion et statut « en cours »
 - Détail complet des nouveautés widgets dans le README du dépôt APK
+
+### v42 · 14 octobre 2026 · Proxy CORS perso (correctif GitHub Pages)
+
+- **Correctif** : sur la version GitHub Pages, le chargement du calendrier en mode Local échouait car les proxys publics tiers (corsproxy.io, allorigins, codetabs) ne répondent plus de façon fiable et `proxy.php` n'existe pas sur un hébergement statique
+- Nouveau champ **« Proxy perso (optionnel) »** sous la zone de collage du .ics : accepte une URL HTTPS avec `{url}` (ex. `https://mon-proxy.workers.dev/?url={url}`) ; sans `{url}`, le paramètre `?url=` est ajouté automatiquement
+- Ordre d'essai désormais : `proxy.php` (hébergement avec PHP) → requête directe → **proxy perso** → proxys publics en dernier recours
+- Nouveau fichier `cors-worker.js` : Worker Cloudflare prêt à déployer (offre gratuite), limité aux domaines `brightspace.com` et à l'origine `mrth0m.github.io`
+- Message d'erreur adapté sur GitHub Pages, avec rappel de l'option « coller le .ics »
+- **Diagnostic des proxys** : en cas d'échec, l'erreur liste chaque proxy testé et son résultat (code HTTP, délai dépassé, bloqué par CORS) ; le détail est aussi dans la console du navigateur
+- Code des proxys factorisé (`fetchIcsViaProxies()`), partagé entre le calendrier Brightspace et l'ICS groupe privé
+- Aucun changement pour le mode connecté, le mode lecture seule, l'APK ni l'addon Home Assistant
+- `SHELL_VER` : `emmgo-shell-v41` → `emmgo-shell-v42`
 
 ---
 
