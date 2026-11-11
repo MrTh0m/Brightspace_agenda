@@ -444,7 +444,7 @@ switch ($action) {
         // archived_courses avant le premier archivage) en tableau JSON, que le
         // client rejette ensuite au chargement (garde de type côté JS) → la
         // donnée semblait ne jamais persister.
-        foreach (['rendus', 'group_tags', 'grades', 'archived_courses'] as $mapKey) {
+        foreach (['rendus', 'group_tags', 'grades', 'archived_courses', 'devoir_types'] as $mapKey) {
             if (isset($newState[$mapKey]) && is_array($newState[$mapKey]) && empty($newState[$mapKey])) {
                 $newState[$mapKey] = new stdClass();
             }
