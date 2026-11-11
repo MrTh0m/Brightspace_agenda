@@ -258,7 +258,10 @@ Section dans ⚙ Paramètres.
 - **Correctif** : dans `api.php?action=upcoming`, `stats.individuels` comptait tous les devoirs et `stats.collectifs` les ateliers liés ; les deux comptent désormais les **devoirs restants (non rendus)** de chaque type, comme les tuiles de l'application
 - Le type suit la même règle que l'app (« co-construction » = collectif, sinon individuel) et tient compte des **types forcés** (`devoir_types`, v43)
 - Nouveau champ `devoir_type` (`individuel`, `collectif` ou `null`) sur chaque événement renvoyé
-- Aucun changement nécessaire dans l'intégration HACS ni dans la carte Lovelace ; les tuiles Individuels / Collectifs affichent simplement les nouvelles valeurs
+- Nouvelle statistique `devoirs` : tous les devoirs restants (individuels + collectifs), équivalent de la tuile « À venir » de l'app ; `a_venir` continue de compter tous les événements de la fenêtre
+- `urgents` ne compte plus les devoirs déjà rendus
+- `days_until` est désormais exprimé en **jours calendaires** (0 = aujourd'hui, 1 = demain) : un devoir du lendemain matin consulté la veille au soir renvoyait 0
+- Compatible avec l'intégration HACS existante ; la version 1.3.0 de l'intégration exploite `devoirs` et `devoir_type`
 - `index.html` et `sw.js` inchangés : `SHELL_VER` reste `emmgo-shell-v43`
 
 ---

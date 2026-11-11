@@ -559,7 +559,10 @@ switch ($action) {
                         $type = 'event';
                     }
 
-                    $daysUntil = (int)(($start - $now) / 86400);
+                    // Jours calendaires (0 = aujourd'hui, 1 = demain), comme getDays() dans l'app.
+                    // Un simple ($start - $now) / 86400 donnait 0 pour un devoir du lendemain
+                    // matin consulté la veille au soir.
+                    $daysUntil = (int)round((strtotime(date('Y-m-d', $start)) - strtotime(date('Y-m-d', $now))) / 86400);
                     $events[]  = [
                         'uid'         => $uid,
                         'summary'     => $summary,
@@ -618,8 +621,11 @@ switch ($action) {
                                 $e['devoir_type'] === 'individuel' && !$e['rendu'])),
             'collectifs'  => count(array_filter($events, fn($e) =>
                                 $e['devoir_type'] === 'collectif' && !$e['rendu'])),
+            // Tous les devoirs restants (= individuels + collectifs), tuile "À venir" de l'app
+            'devoirs'     => count(array_filter($events, fn($e) =>
+                                $e['type'] === 'deadline' && !$e['rendu'])),
             'urgents'     => count(array_filter($events, fn($e) =>
-                                $e['type'] === 'deadline' && $e['days_until'] <= 7)),
+                                $e['type'] === 'deadline' && !$e['rendu'] && $e['days_until'] <= 7)),
         ];
 
         $events = array_values(array_slice($events, 0, $limit));
