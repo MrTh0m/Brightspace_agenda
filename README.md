@@ -164,6 +164,8 @@ lequel des deux est le plus proche dans le temps) reste affichée et cliquable v
 - Boutons Copier tâche / Google Cal. / Outlook masqués quand le devoir est rendu
 - **Atelier lié** affiché sur tous les devoirs (individuels et collectifs), uniquement si lié explicitement via l'onglet Ateliers
 - Filtres par type (Individuel/Collectif) et discipline, avec chips de discipline sticky
+- **Type modifiable** : clic sur la pastille Individuel/Collectif pour corriger la détection automatique (icône crayon si forcé)
+- Liste **centrée sur aujourd'hui** : boutons « Afficher 5 précédents » en haut et « Afficher 5 de plus » en bas (idem Live Sessions et Ateliers)
 
 ### Onglet Live Sessions
 - Détection : `Cours distanciel`, `virtual-room`, URLs Teams
@@ -239,6 +241,18 @@ Section dans ⚙ Paramètres.
 - Aucun changement pour le mode connecté, le mode lecture seule, l'APK ni l'addon Home Assistant
 - `SHELL_VER` : `emmgo-shell-v41` → `emmgo-shell-v42`
 
+### v43 · 11 novembre 2026 · Type de devoir modifiable et listes centrées sur aujourd'hui
+
+- **Type de devoir modifiable** : dans l'onglet Devoirs, un clic sur la pastille **Individuel / Collectif** bascule le type quand la détection automatique (présence de « co-construction ») se trompe ; une icône crayon signale un type forcé, un nouveau clic rétablit le type détecté
+- Le type forcé est pris en compte partout : filtres, statistiques, onglets Notes et Progression, rappel « devoir collectif sans atelier », widgets Android
+- Persistance : nouvelle map `devoir_types` dans `state.json` (mode connecté, visible en lecture seule), clé `bsa_devoir_types_v1` en mode invité ; seuls les écarts avec la détection automatique sont stockés
+- Sauvegarde / restauration : nouvelle case **« Types de devoirs modifiés »**
+- **Listes centrées sur aujourd'hui** (Devoirs, Live Sessions, Ateliers) : quel que soit le filtre, la liste démarre au premier événement non passé, même avec « Passés » coché ; s'il reste moins de 5 événements à venir, elle est complétée par les passés les plus récents
+- Nouveau bouton **« Afficher 5 précédents (N restants) »** au-dessus de la liste pour remonter dans le passé 5 par 5, sans perdre la position de lecture ; le bouton « Afficher 5 de plus » du bas est inchangé
+- `api.php` : `devoir_types` ajouté aux maps normalisées de `set_state` (une map vide reste `{}` et non `[]`)
+- ⚠️ À déployer ensemble : `index.html`, `sw.js` et `api.php`. Un client resté en v42 (ex. APK non mis à jour) qui enregistre un rendu ou une note réécrit tout `state.json` et efface les types forcés
+- `SHELL_VER` : `emmgo-shell-v42` → `emmgo-shell-v43`
+
 ---
 
 ## 🔒 Sécurité
@@ -280,7 +294,8 @@ Section dans ⚙ Paramètres.
   },
   "grades": {
     "uid-devoir": { "pts": "12", "total": "20" }
-  }
+  },
+  "devoir_types": { "uid-devoir": "collectif" }
 }
 ```
 
@@ -293,6 +308,7 @@ Section dans ⚙ Paramètres.
 | `bsa_private_ics_url_v1` | URL ICS privée (invité) |
 | `bsa_group_tags_v1` | Attributions + exclusions (invité) |
 | `bsa_grades_v1` | Notes des devoirs (invité) |
+| `bsa_devoir_types_v1` | Types de devoirs forcés manuellement (invité) |
 | `bsa_theme` | Thème |
 | `bsa_notif_settings_v1` | Préférences notifications |
 | `bsa_notif_sent_v1` | Anti-doublon notifications |
