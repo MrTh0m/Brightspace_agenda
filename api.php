@@ -492,6 +492,8 @@ switch ($action) {
         $state      = readJson(STATE_FILE, []);
         $groupTags  = $state['group_tags'] ?? [];
         $rendusMap  = $state['rendus']     ?? [];
+        // Types de devoirs forcés manuellement dans l'app (v43) : prioritaires sur la détection auto
+        $devoirTypes = $state['devoir_types'] ?? [];
         $ignoredMap = [];
         foreach ($groupTags as $uid => $tag) {
             if (!empty($tag['ignored'])) $ignoredMap[$uid] = true;
@@ -540,9 +542,15 @@ switch ($action) {
                               || str_contains($ll,'virtual-room')
                               || preg_match($sessionTitleRe, $summary);
 
+                    // Type de devoir, comme getType() dans index.html : "co-construction"
+                    // = collectif, sinon individuel ; le type forcé dans l'app l'emporte.
+                    $devoirType = null;
                     if ($isDevoir) {
-                        // co-construction = collectif, sinon individuel → tous deadline ici
                         $type = 'deadline';
+                        $devoirType = (str_contains($sl,'co-construction') || str_contains($dl,'co-construction'))
+                                    ? 'collectif' : 'individuel';
+                        $forced = $devoirTypes[$uid] ?? null;
+                        if ($forced === 'collectif' || $forced === 'individuel') $devoirType = $forced;
                     } elseif ($isSession) {
                         $type = 'session';
                     } elseif ($tag && !empty($tag['devoirUid']) && $tag['devoirUid'] !== '__subgroup__') {
@@ -556,6 +564,7 @@ switch ($action) {
                         'uid'         => $uid,
                         'summary'     => $summary,
                         'type'        => $type,
+                        'devoir_type' => $devoirType,   // 'individuel' | 'collectif' | null (hors devoirs)
                         'start'       => $start,
                         'end'         => $end,
                         'start_iso'   => date('c', $start),
@@ -603,8 +612,12 @@ switch ($action) {
         // Métriques agrégées (calculées avant le slice)
         $stats = [
             'a_venir'     => count($events),
-            'individuels' => count(array_filter($events, fn($e) => $e['type'] === 'deadline')),
-            'collectifs'  => count(array_filter($events, fn($e) => $e['type'] === 'workshop')),
+            // Devoirs restants (non rendus) par type, comme les tuiles de l'app.
+            // Auparavant : individuels = tous les devoirs, collectifs = ateliers liés.
+            'individuels' => count(array_filter($events, fn($e) =>
+                                $e['devoir_type'] === 'individuel' && !$e['rendu'])),
+            'collectifs'  => count(array_filter($events, fn($e) =>
+                                $e['devoir_type'] === 'collectif' && !$e['rendu'])),
             'urgents'     => count(array_filter($events, fn($e) =>
                                 $e['type'] === 'deadline' && $e['days_until'] <= 7)),
         ];

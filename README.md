@@ -253,6 +253,14 @@ Section dans ⚙ Paramètres.
 - ⚠️ À déployer ensemble : `index.html`, `sw.js` et `api.php`. Un client resté en v42 (ex. APK non mis à jour) qui enregistre un rendu ou une note réécrit tout `state.json` et efface les types forcés
 - `SHELL_VER` : `emmgo-shell-v42` → `emmgo-shell-v43`
 
+### API · 11 novembre 2026 · Statistiques `upcoming` par type de devoir (intégration HACS)
+
+- **Correctif** : dans `api.php?action=upcoming`, `stats.individuels` comptait tous les devoirs et `stats.collectifs` les ateliers liés ; les deux comptent désormais les **devoirs restants (non rendus)** de chaque type, comme les tuiles de l'application
+- Le type suit la même règle que l'app (« co-construction » = collectif, sinon individuel) et tient compte des **types forcés** (`devoir_types`, v43)
+- Nouveau champ `devoir_type` (`individuel`, `collectif` ou `null`) sur chaque événement renvoyé
+- Aucun changement nécessaire dans l'intégration HACS ni dans la carte Lovelace ; les tuiles Individuels / Collectifs affichent simplement les nouvelles valeurs
+- `index.html` et `sw.js` inchangés : `SHELL_VER` reste `emmgo-shell-v43`
+
 ---
 
 ## 🔒 Sécurité
