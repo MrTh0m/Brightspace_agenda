@@ -371,6 +371,9 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
   transition:background .15s,color .15s;
 }
 .show-more:hover { background:var(--bg2);color:var(--text); }
+.show-more.show-prev { margin-top:0;margin-bottom:10px; }
+.pill.pill-type { cursor:pointer;user-select:none; }
+.pill.pill-type:hover { filter:brightness(.95);box-shadow:0 0 0 1px currentColor inset; }
 
 /* ── Progression tab ── */
 .prog-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:28px; }
@@ -825,6 +828,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-grades" onchange="saveBackupFieldPrefs()"> Notes</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-group_tags" onchange="saveBackupFieldPrefs()"> Attributions ateliers</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-archived_courses" onchange="saveBackupFieldPrefs()"> Matières archivées</label>
+            <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-devoir_types" onchange="saveBackupFieldPrefs()"> Types de devoirs modifiés</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-theme" onchange="saveBackupFieldPrefs()"> Thème</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-filter_prefs" onchange="saveBackupFieldPrefs()"> Préférences de filtres</label>
             <label class="past-label" style="font-size:12px"><input type="checkbox" id="bk-notif_prefs" onchange="saveBackupFieldPrefs()"> Préférences de notifications</label>
@@ -1020,7 +1024,7 @@ textarea { height:auto;padding:10px 12px;resize:vertical;line-height:1.5; }
           <div style="font-weight:600;color:var(--text);margin-bottom:4px"><i class="ti ti-sparkles" style="font-size:12px"></i> Ce que fait cette app</div>
           <ul style="margin:0;padding-left:18px;line-height:1.6">
             <li><strong>Agenda</strong> : vue semaine combinée (devoirs, sessions, ateliers), charge par semaine, planning des cours</li>
-            <li><strong>Devoirs</strong> : suivi des rendus, case "Noté" + saisie de note inline, filtres (Passés / Rendus / Notés), compte à rebours, liens Casier/Google/Outlook</li>
+            <li><strong>Devoirs</strong> : suivi des rendus, type Individuel/Collectif modifiable d'un clic sur la pastille, case "Noté" + saisie de note inline, filtres (Passés / Rendus / Notés), compte à rebours, liens Casier/Google/Outlook</li>
             <li><strong>Live Sessions</strong> : calendrier des cours, bouton Rejoindre, sous-groupes</li>
             <li><strong>Ateliers</strong> : groupes de travail depuis ton agenda privé, attribution matière/devoir, sous-groupes manuels ou auto-détectés</li>
             <li><strong>Notes</strong> : synthèse des notes par matière (Individuels / Collectifs), moyennes par type et par matière, filtres par cours et par type, filtre "En attente"</li>
@@ -1509,6 +1513,7 @@ const STORAGE_KEY      = 'bsa_ics_url_v2';
 const RENDU_KEY        = 'bsa_rendu_v1';
 const GROUP_TAGS_KEY   = 'bsa_group_tags_v1';
 const ARCHIVED_COURSES_KEY = 'bsa_archived_courses_v1';
+const DEVOIR_TYPES_KEY = 'bsa_devoir_types_v1'; // types de devoirs forcés manuellement (mode invité)
 const NOTES_SHOW_ARCHIVED_KEY = 'bsa_notes_show_archived_v1'; // préférence d'affichage, propre à cet appareil
 const THEME_KEY        = 'bsa_theme';
 const PRIVATE_ICS_KEY  = 'bsa_private_ics_url_v1';
@@ -1617,6 +1622,11 @@ function loadFilterPrefs(){
 let allGroupEvents  = [];   // Événements du calendrier privé
 let groupTagsCache  = {};   // { uid: { subject, subjectName, devoirUid } }
 let archivedCoursesCache = {}; // { courseKey: true } — matières archivées manuellement (Progression)
+let devoirTypesCache = {};     // { devoirUid: 'collectif'|'individuel' } — type forcé manuellement, prioritaire sur la détection auto
+function loadGuestDevoirTypes() {
+  try { devoirTypesCache = normalizeStateMap(JSON.parse(localStorage.getItem(DEVOIR_TYPES_KEY) || '{}')); } catch(_) { devoirTypesCache = {}; }
+}
+loadGuestDevoirTypes();
 let groupViewMode   = 'grid';
 let groupWeekOff    = 0;    // 0 = semaine courante
 
@@ -2333,6 +2343,10 @@ let filterGroupDisc    = 'all';   // 'all' | subject name
 let shownDevoirs   = PAGE_SIZE;
 let shownSessions  = PAGE_SIZE;
 let shownGroup     = PAGE_SIZE;
+// Nombre d'événements passés supplémentaires affichés AU-DESSUS du point d'ancrage (aujourd'hui)
+let prevDevoirs    = 0;
+let prevSessions   = 0;
+let prevGroup      = 0;
 let currentTab     = 'agenda';
 
 /* ══════════════════════════════════════════════════════════════
@@ -2463,6 +2477,7 @@ const Onboarding = {
         const tags = sd.state?.group_tags;
         groupTagsCache = normalizeStateMap(tags);
         archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
+        devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
         if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
         Auth._updateUI();
         pbsSyncConfig('share', token);
@@ -2577,6 +2592,7 @@ const Auth = {
             const tags = sd.state?.group_tags;
             groupTagsCache = normalizeStateMap(tags);
             archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
+            devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
             if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
             Auth._updateUI();
             pbsSyncConfig('share', cfg.shareToken);
@@ -2654,6 +2670,7 @@ const Auth = {
               const tags = sd.state?.group_tags;
               groupTagsCache = normalizeStateMap(tags);
               archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
+              devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
               // Nom personnalisé défini par le propriétaire
               if (sd.dashboard_name) {
                 AppMeta.customName = sd.dashboard_name;
@@ -2766,6 +2783,7 @@ const Auth = {
       const arch = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}');
       archivedCoursesCache = normalizeStateMap(arch);
     } catch(_) {}
+    loadGuestDevoirTypes();
     let url = '';
     try { url = localStorage.getItem(PRIVATE_ICS_KEY) || ''; } catch(_) {}
     if (url) {
@@ -2785,6 +2803,7 @@ const Auth = {
     Auth._cache = normalizeStateMap(raw);
     groupTagsCache = normalizeStateMap(d.state?.group_tags);
     archivedCoursesCache = normalizeStateMap(d.state?.archived_courses);
+    devoirTypesCache = normalizeStateMap(d.state?.devoir_types);
     Auth._gradesCache = normalizeStateMap(d.state?.grades);
     Auth._serverStateLoaded = true; // flag : état chargé depuis le serveur, sauvegardes autorisées
   },
@@ -2814,7 +2833,7 @@ const Auth = {
         const r = await apiFetch(Auth._apiBase, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache } }),
+          body:    JSON.stringify({ action: 'set_state', state: { rendus: Auth._cache, group_tags: groupTagsCache, grades: Auth._gradesCache || {}, archived_courses: archivedCoursesCache, devoir_types: devoirTypesCache } }),
         });
         if (!r.ok) toast('⚠ Sauvegarde serveur échouée, réessaie');
       } catch (_) { toast('⚠ Sauvegarde serveur impossible (réseau)'); }
@@ -3070,6 +3089,7 @@ const Auth = {
     // sessions, ateliers et attributions resteraient visibles en mode invité jusqu'au prochain
     // rechargement complet de la page.
     allDevoirs = []; allSessions = []; allGroupEvents = []; groupTagsCache = {}; archivedCoursesCache = {}; Auth._gradesCache = {};
+    loadGuestDevoirTypes(); // retour en mode invité : on reprend les types forcés stockés localement
 
     // Réinitialiser les champs URL : en mode connecté ils contiennent l'URL réelle masquée
     // dans dataset.realUrl, lue en priorité par getIcsUrl()/getPrivateIcsUrl().
@@ -3227,6 +3247,7 @@ const Auth = {
       const tags = sd.state?.group_tags;
       groupTagsCache = normalizeStateMap(tags);
       archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
+      devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
       if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
       pbsSyncConfig('share', token);
       loadGroupCalendarShare();
@@ -3329,6 +3350,70 @@ function setRendu(uid, val) {
     Auth._saveServerState(); // async, fire-and-forget
   }
 }
+// Bascule manuelle du type d'un devoir (individuel ⇄ collectif) quand la détection
+// automatique (présence de "co-construction") se trompe. Si le choix revient au type
+// détecté, l'entrée est supprimée : on ne stocke que les écarts.
+function isDevoirTypeForced(uid) { return !!devoirTypesCache[uid]; }
+function toggleDevoirType(uid) {
+  if (Auth.readOnly) return;
+  const d = allDevoirs.find(x => x.UID === uid);
+  if (!d) return;
+  const next = d._type === 'individuel' ? 'collectif' : 'individuel';
+  if (next === d._autoType) delete devoirTypesCache[uid];
+  else devoirTypesCache[uid] = next;
+  if (Auth.mode === 'connected') {
+    Auth._saveServerState();
+  } else {
+    try { localStorage.setItem(DEVOIR_TYPES_KEY, JSON.stringify(devoirTypesCache)); } catch(_) {}
+  }
+  renderDevoirs();
+  renderProgression();
+  renderNotes();
+  renderStats();
+  updateBadges();
+  renderAgenda();
+  if (typeof updateWidgets === 'function') updateWidgets();
+  toast(next === 'collectif' ? 'Devoir passé en collectif' : 'Devoir passé en individuel');
+}
+
+// Fenêtre de pagination centrée sur aujourd'hui (listes Devoirs / Live Sessions / Ateliers).
+// list : événements filtrés, triés par date croissante. Le premier événement non passé sert
+// d'ancre : on affiche `shown` événements à partir de lui, et `prev` événements passés avant.
+// S'il reste moins d'une page d'événements à venir, on complète avec les passés les plus récents.
+function pageWindow(list, isPastFn, prev, shown) {
+  let anchor = list.findIndex(e => !isPastFn(e));
+  if (anchor < 0) anchor = list.length;
+  const deficit = Math.max(0, Math.min(PAGE_SIZE, list.length) - (list.length - anchor));
+  const start = Math.max(0, anchor - deficit - prev);
+  const end   = Math.min(list.length, anchor + shown);
+  return { visible: list.slice(start, end), before: start, after: list.length - end };
+}
+function showPrevBtnHtml(before, pane) {
+  return `<button class="show-more show-prev" onclick="showPrevious('${pane}')">
+      <i class="ti ti-chevrons-up"></i> Afficher ${Math.min(before,PAGE_SIZE)} précédents (${before} restants)
+    </button>`;
+}
+// Affiche 5 événements plus anciens en conservant la position de lecture : la liste
+// grandit par le haut, on compense donc le défilement de la hauteur ajoutée.
+function showPrevious(pane) {
+  const ids = { devoirs:'devoirs-list', sessions:'sessions-list', group:'group-list' };
+  const el = document.getElementById(ids[pane]);
+  const before = el ? el.scrollHeight : 0;
+  if (pane==='devoirs')  { prevDevoirs  += PAGE_SIZE; renderDevoirs(); }
+  if (pane==='sessions') { prevSessions += PAGE_SIZE; renderSessions(); }
+  if (pane==='group')    { prevGroup    += PAGE_SIZE; renderGroupList(); }
+  if (!el) return;
+  const delta = el.scrollHeight - before;
+  if (delta <= 0) return;
+  let sc = el.parentElement;
+  while (sc && sc !== document.body) {
+    const oy = getComputedStyle(sc).overflowY;
+    if ((oy === 'auto' || oy === 'scroll') && sc.scrollHeight > sc.clientHeight) break;
+    sc = sc.parentElement;
+  }
+  if (sc && sc !== document.body) sc.scrollTop += delta; else window.scrollBy(0, delta);
+}
+
 function toggleRendu(uid, isPast) {
   if (isPast || Auth.readOnly) return;
   setRendu(uid, !isRendu(uid));
@@ -3676,6 +3761,7 @@ const BACKUP_FIELDS = [
   { key: 'grades',          label: 'Notes' },
   { key: 'group_tags',      label: 'Attributions ateliers' },
   { key: 'archived_courses',label: 'Matières archivées' },
+  { key: 'devoir_types',    label: 'Types de devoirs modifiés' },
   { key: 'theme',           label: 'Thème' },
   { key: 'filter_prefs',    label: 'Préférences de filtres' },
   { key: 'notif_prefs',     label: 'Préférences de notifications' },
@@ -3752,6 +3838,7 @@ async function exportBackup(method) {
     if (Auth.mode === 'connected') backup.archived_courses = archivedCoursesCache || {};
     else try { backup.archived_courses = JSON.parse(localStorage.getItem(ARCHIVED_COURSES_KEY) || '{}'); } catch(_) { backup.archived_courses = {}; }
   }
+  if (_backupIncludes('devoir_types')) backup.devoir_types = devoirTypesCache || {};
 
   if (_backupIncludes('theme'))        backup.theme        = localStorage.getItem(THEME_KEY)        || '';
   if (_backupIncludes('filter_prefs')) backup.filter_prefs = localStorage.getItem(FILTER_PREFS_KEY) || '';
@@ -3863,6 +3950,11 @@ function confirmImportBackup() {
   if (wantKey('archived_courses') && backup.archived_courses !== undefined) {
     if (Auth.mode === 'connected') { archivedCoursesCache = backup.archived_courses; Auth._saveServerState(); }
     else try { localStorage.setItem(ARCHIVED_COURSES_KEY, JSON.stringify(backup.archived_courses)); } catch(_) {}
+  }
+  if (wantKey('devoir_types') && backup.devoir_types !== undefined) {
+    devoirTypesCache = normalizeStateMap(backup.devoir_types);
+    if (Auth.mode === 'connected') Auth._saveServerState();
+    else try { localStorage.setItem(DEVOIR_TYPES_KEY, JSON.stringify(devoirTypesCache)); } catch(_) {}
   }
   if (wantKey('theme')           && backup.theme)        try { localStorage.setItem(THEME_KEY, backup.theme); } catch(_) {}
   if (wantKey('filter_prefs')    && backup.filter_prefs) try { localStorage.setItem(FILTER_PREFS_KEY, backup.filter_prefs); } catch(_) {}
@@ -4233,6 +4325,7 @@ async function wcApplyShare() {
     const tags = sd.state?.group_tags;
     groupTagsCache = normalizeStateMap(tags);
     archivedCoursesCache = normalizeStateMap(sd.state?.archived_courses);
+    devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
     if (sd.dashboard_name) { AppMeta.customName = sd.dashboard_name; updateBrand(); }
     Auth._updateUI();
     pbsSyncConfig('share', token);
@@ -4546,11 +4639,11 @@ function processICS(txt) {
     let courseName=locIsName?loc:(ci.name||'');
     const courseCode=ci.code;
     if(!courseName&&courseCode&&courseCodeMap[courseCode])courseName=courseCodeMap[courseCode];
-    return{...ev,_date:parseDt(ev.DTSTART)||parseDt(ev.DTEND),_dateEnd:parseDt(ev.DTEND),_type:getType(ev),_title:cleanDevoirTitle(ev.SUMMARY||''),_courseCode:courseCode,_courseName:courseName,_casierUrl:bsUrls.casierUrl,_eventUrl:bsUrls.eventUrl};
+    return{...ev,_date:parseDt(ev.DTSTART)||parseDt(ev.DTEND),_dateEnd:parseDt(ev.DTEND),_autoType:getType(ev),get _type(){return devoirTypesCache[this.UID]||this._autoType;},_title:cleanDevoirTitle(ev.SUMMARY||''),_courseCode:courseCode,_courseName:courseName,_casierUrl:bsUrls.casierUrl,_eventUrl:bsUrls.eventUrl};
   }).filter(e=>e._date).sort((a,b)=>a._date-b._date);
 
-  shownDevoirs=PAGE_SIZE;
-  shownSessions=PAGE_SIZE;
+  shownDevoirs=PAGE_SIZE;prevDevoirs=0;
+  shownSessions=PAGE_SIZE;prevSessions=0;
 
   hideLoading();
   document.getElementById('setup-card').style.display='none';
@@ -4582,6 +4675,7 @@ function processICS(txt) {
         const tags = sd.state?.group_tags;
         if (tags !== undefined) groupTagsCache = normalizeStateMap(tags);
         if (sd.state?.archived_courses !== undefined) archivedCoursesCache = normalizeStateMap(sd.state.archived_courses);
+        devoirTypesCache = normalizeStateMap(sd.state?.devoir_types);
         if (sd.dashboard_name && !AppMeta.customName) {
           AppMeta.customName = sd.dashboard_name;
           updateBrand();
@@ -4733,21 +4827,21 @@ function switchTab(tab) {
 function setFilter(btn,pane) {
   btn.closest('.filters').querySelectorAll('.chip[data-filter]').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  if(pane==='devoirs'){filterDevoirs=btn.dataset.filter;filterDiscDevoirs='all';shownDevoirs=PAGE_SIZE;renderDevoirs();}
-  if(pane==='sessions'){filterSessions=btn.dataset.filter;filterDiscSessions='all';shownSessions=PAGE_SIZE;renderSessions();}
+  if(pane==='devoirs'){filterDevoirs=btn.dataset.filter;filterDiscDevoirs='all';shownDevoirs=PAGE_SIZE;prevDevoirs=0;renderDevoirs();}
+  if(pane==='sessions'){filterSessions=btn.dataset.filter;filterDiscSessions='all';shownSessions=PAGE_SIZE;prevSessions=0;renderSessions();}
 }
 // Réinitialise la pagination puis rafraîchit — utilisé par les toggles "Passés"/"Rendus"
 // pour que le changement de filtre soit toujours visible immédiatement
 function resetPaginationAndRender(pane) {
-  if (pane==='devoirs') { shownDevoirs=PAGE_SIZE; renderDevoirs(); }
-  if (pane==='sessions'){ shownSessions=PAGE_SIZE; renderSessions(); }
-  if (pane==='group')   { shownGroup=PAGE_SIZE; renderGroupList(); }
+  if (pane==='devoirs') { shownDevoirs=PAGE_SIZE;prevDevoirs=0; renderDevoirs(); }
+  if (pane==='sessions'){ shownSessions=PAGE_SIZE;prevSessions=0; renderSessions(); }
+  if (pane==='group')   { shownGroup=PAGE_SIZE;prevGroup=0; renderGroupList(); }
 }
 function setDisciplineFilter(pane,key,btn) {
   document.getElementById(`disc-filter-${pane}`).querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  if(pane==='devoirs'){filterDiscDevoirs=key;shownDevoirs=PAGE_SIZE;renderDevoirs();}
-  if(pane==='sessions'){filterDiscSessions=key;shownSessions=PAGE_SIZE;renderSessions();}
+  if(pane==='devoirs'){filterDiscDevoirs=key;shownDevoirs=PAGE_SIZE;prevDevoirs=0;renderDevoirs();}
+  if(pane==='sessions'){filterDiscSessions=key;shownSessions=PAGE_SIZE;prevSessions=0;renderSessions();}
 }
 function renderDisciplineChips(pane,items) {
   const container=document.getElementById(`disc-filter-${pane}`);
@@ -4854,7 +4948,7 @@ function processGroupICS(txt){
     _uid:ev.UID||`grp-${Math.random().toString(36).slice(2)}`,
     _teamsUrl:getMeetingUrl(ev),  // lien de réunion Teams/Virtual-room si présent
   })).filter(e=>e._date).sort((a,b)=>a._date-b._date);
-  shownGroup=PAGE_SIZE;
+  shownGroup=PAGE_SIZE;prevGroup=0;
   updateGroupBadge();renderGroupTab();
   renderDevoirs();   // rafraîchir les cartes devoir pour afficher les liens ateliers
   renderProgression(); // rafraîchir les cartes progression (option A) + atelier par matière
@@ -4985,14 +5079,14 @@ function setGroupTypeFilter(btn, type){
   btn.classList.add('active');
   filterGroupType=type;
   filterGroupDisc='all'; // reset disc filter
-  shownGroup=PAGE_SIZE;
+  shownGroup=PAGE_SIZE;prevGroup=0;
   renderGroupList();
 }
 function setGroupDiscFilter(name, btn){
   document.getElementById('disc-filter-groupe')?.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   filterGroupDisc=name;
-  shownGroup=PAGE_SIZE;
+  shownGroup=PAGE_SIZE;prevGroup=0;
   renderGroupList();
 }
 function renderGroupDisciplineChips(items){
@@ -5039,8 +5133,10 @@ function renderGroupList(){
 
   if(!all.length){el.innerHTML='<div class="state-box"><p>Aucun événement à afficher.</p></div>';return;}
 
-  const visible=all.slice(0,shownGroup);
-  const remaining=all.length-visible.length;
+  const now=new Date();
+  const win=pageWindow(all,e=>(e._dateEnd||e._date)<now,prevGroup,shownGroup);
+  const visible=win.visible;
+  const remaining=win.after;
 
   // Construire la liste de sujets pour le formulaire d'attribution
   const subjectMap={};
@@ -5170,6 +5266,7 @@ function renderGroupList(){
     </div>`;
   }).join('');
 
+  if(win.before>0)el.insertAdjacentHTML('afterbegin',showPrevBtnHtml(win.before,'group'));
   if(remaining>0){
     el.innerHTML+=`<button class="show-more" onclick="shownGroup+=PAGE_SIZE;renderGroupList()">
       <i class="ti ti-chevrons-down"></i> Afficher ${Math.min(remaining,PAGE_SIZE)} de plus (${remaining} restants)
@@ -5562,8 +5659,9 @@ function renderDevoirs() {
     return;
   }
 
-  const visible=filtered.slice(0,shownDevoirs);
-  const remaining=filtered.length-visible.length;
+  const win=pageWindow(filtered,d=>getDays(d._date)<0,prevDevoirs,shownDevoirs);
+  const visible=win.visible;
+  const remaining=win.after;
 
   el.innerHTML=visible.map((ev,i)=>{
     const idx=allDevoirs.indexOf(ev);
@@ -5573,9 +5671,17 @@ function renderDevoirs() {
     const manualOnly=isRendu(ev.UID)&&!isPast;  // manually checked, not past
     const uc=urgColor(days),ub=urgBg(days);
 
-    const typePill=ev._type==='individuel'
-      ?`<span class="pill" style="background:var(--bg-indigo);color:var(--c-indigo)"><i class="ti ti-user"></i> Individuel</span>`
-      :`<span class="pill" style="background:var(--bg-green);color:var(--c-green)"><i class="ti ti-users"></i> Collectif</span>`;
+    // Pastille de type : cliquable (hors lecture seule) pour corriger une détection erronée
+    const isIndiv=ev._type==='individuel';
+    const typeStyle=isIndiv?'background:var(--bg-indigo);color:var(--c-indigo)':'background:var(--bg-green);color:var(--c-green)';
+    const typeInner=isIndiv?'<i class="ti ti-user"></i> Individuel':'<i class="ti ti-users"></i> Collectif';
+    const typeForced=isDevoirTypeForced(ev.UID);
+    const typePill=(Auth.readOnly||!ev.UID)
+      ?`<span class="pill" style="${typeStyle}">${typeInner}</span>`
+      :`<span class="pill pill-type" role="button" tabindex="0" style="${typeStyle}"
+          title="${typeForced?'Type modifié manuellement':'Type détecté automatiquement'} — cliquer pour passer en ${isIndiv?'collectif':'individuel'}"
+          onclick="event.stopPropagation();toggleDevoirType('${ev.UID.replace(/'/g,"\\'")}')"
+          onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">${typeInner}<i class="ti ${typeForced?'ti-pencil':'ti-switch-horizontal'}" style="opacity:.7"></i></span>`;
 
     const courseBlock=(ev._courseCode||ev._courseName)?`
       <div class="course-block">
@@ -5663,6 +5769,7 @@ function renderDevoirs() {
     </div>`;
   }).join('');
 
+  if(win.before>0)el.insertAdjacentHTML('afterbegin',showPrevBtnHtml(win.before,'devoirs'));
   if(remaining>0){
     el.innerHTML+=`<button class="show-more" onclick="shownDevoirs+=PAGE_SIZE;renderDevoirs()">
       <i class="ti ti-chevrons-down"></i> Afficher ${Math.min(remaining,PAGE_SIZE)} de plus (${remaining} restants)
@@ -5721,8 +5828,10 @@ function renderSessions() {
   const el=document.getElementById('sessions-list');
   if(!combined.length){el.innerHTML=`<div class="state-box"><i class="ti ti-video-off big-icon"></i><p>Aucune session à afficher.</p></div>`;return;}
 
-  const visible=combined.slice(0,shownSessions);
-  const remaining=combined.length-visible.length;
+  const now=new Date();
+  const win=pageWindow(combined,e=>(e._dateEnd||e._date)<now,prevSessions,shownSessions);
+  const visible=win.visible;
+  const remaining=win.after;
 
   el.innerHTML=visible.map((ev,i)=>{
     const days=getDays(ev._date);
@@ -5790,6 +5899,7 @@ function renderSessions() {
     </div>`;
   }).join('');
 
+  if(win.before>0)el.insertAdjacentHTML('afterbegin',showPrevBtnHtml(win.before,'sessions'));
   if(remaining>0){
     el.innerHTML+=`<button class="show-more" onclick="shownSessions+=PAGE_SIZE;renderSessions()">
       <i class="ti ti-chevrons-down"></i> Afficher ${Math.min(remaining,PAGE_SIZE)} de plus (${remaining} restants)
